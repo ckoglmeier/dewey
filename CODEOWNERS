@@ -1,0 +1,19 @@
+# Classroom CODEOWNERS
+#
+# This file declares the maintainer for each plugin in the Classroom reference
+# repo. GitHub uses it to auto-request reviews on PRs that touch each path.
+#
+# Source of truth for ownership is here + the `owner` field in each plugin.json.
+# Test suite (tests/run.sh) enforces that every plugin/ subdir has a line below.
+
+# Fallback: anything not explicitly owned falls to the repo maintainer.
+*                                       @ck
+
+# Per-plugin ownership
+/plugins/competitive-intelligence/      @ck
+/plugins/customer-research/             @ck
+/plugins/ops-essentials/                @ck
+/plugins/sales-enablement/              @ck
+
+# Guide skill — single maintainer for v1 (see decisions in docs/IMPLEMENTATION-PLAN.md)
+/guide/                                 @ck

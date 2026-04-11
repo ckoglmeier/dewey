@@ -1,0 +1,9 @@
+{
+  "name": "sales-enablement",
+  "description": "Skills for sales: stakeholder follow-ups, deal reviews, account research.",
+  "version": "0.1.0",
+  "owner": {
+    "name": "CK",
+    "contact": "@ck"
+  }
+}

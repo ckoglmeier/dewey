@@ -1,0 +1,9 @@
+{
+  "name": "ops-essentials",
+  "description": "Skills every operator needs: weekly status updates, meeting prep, async standups.",
+  "version": "0.1.0",
+  "owner": {
+    "name": "CK",
+    "contact": "@ck"
+  }
+}
