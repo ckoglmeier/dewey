@@ -1,9 +1,0 @@
-{
-  "name": "exec-feedback",
-  "description": "Template for delivering first-pass document feedback in any executive's voice — configurable for any leader.",
-  "version": "0.1.0",
-  "owner": {
-    "name": "CK",
-    "contact": "@ck"
-  }
-}

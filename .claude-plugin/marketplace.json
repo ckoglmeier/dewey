@@ -36,27 +36,6 @@
       "description": "Skills for sales: stakeholder follow-ups, deal reviews, account research.",
       "category": "sales",
       "tags": ["sales", "stakeholders", "followup"]
-    },
-    {
-      "name": "exec-feedback",
-      "source": "./plugins/exec-feedback",
-      "description": "Template for delivering first-pass document feedback in any executive's voice — configurable for any leader.",
-      "category": "operations",
-      "tags": ["feedback", "writing", "exec"]
-    },
-    {
-      "name": "research-assistant",
-      "source": "./plugins/research-assistant",
-      "description": "Multi-agent research orchestrator with frameworks for industry trends, market sizing, due diligence, company deep dives, and more.",
-      "category": "research",
-      "tags": ["research", "synthesis", "due-diligence"]
-    },
-    {
-      "name": "template-strategy-feedback",
-      "source": "./plugins/template-strategy-feedback",
-      "description": "Strategy pressure-testing toolkit: advisory councils, strategy frameworks, and a session orchestrator.",
-      "category": "strategy",
-      "tags": ["strategy", "council", "frameworks"]
     }
   ]
 }
