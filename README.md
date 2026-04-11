@@ -2,7 +2,7 @@
 
 **An open-source convention for distributing skills inside a company, built on Claude Code.**
 
-Classroom is a Ramp-Dojo–style skill marketplace organized by problem domain, with a Guide skill that helps non-technical users discover, install, and extend skills. It's a reference implementation of a convention any company can adopt — not a SaaS, not a hosted product.
+Classroom is a Ramp-Dojo–style skill marketplace organized by problem domain, with a Guide skill that helps non-technical users discover, install, and extend skills. It's a reference implementation of a convention any company can adopt. 
 
 ## Why this exists
 
