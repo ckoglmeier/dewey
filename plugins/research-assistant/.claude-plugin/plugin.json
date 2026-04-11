@@ -1,0 +1,9 @@
+{
+  "name": "research-assistant",
+  "description": "Multi-agent research orchestrator with parallel web research agents, internal recon, and prose-first synthesis. Frameworks for industry trends, market sizing, analog mapping, build/buy/partner, company deep dives, financials, technology and regulatory landscapes, due diligence, person profiles, and ecosystem mapping.",
+  "version": "2.0.0",
+  "owner": {
+    "name": "CK",
+    "contact": "@ck"
+  }
+}

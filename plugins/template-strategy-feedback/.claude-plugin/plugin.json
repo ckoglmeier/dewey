@@ -1,0 +1,9 @@
+{
+  "name": "template-strategy-feedback",
+  "description": "Strategy pressure-testing toolkit. Two advisory councils, 14 strategy frameworks, and a session orchestrator. Supports multiple company contexts.",
+  "version": "1.0.0",
+  "owner": {
+    "name": "CK",
+    "contact": "@ck"
+  }
+}
