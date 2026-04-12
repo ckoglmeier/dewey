@@ -65,6 +65,38 @@ The fastest way to write an extension is to let the Guide do it:
 
 The Guide reads the parent, asks what you want to add, drafts the extension, shows you the draft, and writes the file only after you approve. See the Guide skill for details.
 
+## Adding a plugin that lives in another repo
+
+Not every plugin in classroom's marketplace has to live in this repo. You can reference a plugin from another git repo by using an object `source` in `.claude-plugin/marketplace.json` instead of a relative path.
+
+The most common shape is `git-subdir`, which points at a specific folder inside an external repo:
+
+```json
+{
+  "name": "research-assistant",
+  "source": {
+    "source": "git-subdir",
+    "url": "https://github.com/ckoglmeier/skills",
+    "path": "templates/research-assistant",
+    "ref": "main"
+  },
+  "description": "Multi-agent research orchestrator with frameworks for industry trends, market sizing, due diligence, and more.",
+  "category": "research",
+  "tags": ["research", "synthesis"]
+}
+```
+
+Claude Code supports four object-source types: `git-subdir`, `github`, `url`, and `npm`. See the [Claude Code marketplace docs](https://docs.claude.com/en/docs/claude-code/plugin-marketplaces) for the full schema.
+
+**Rules of thumb:**
+
+- Use an in-tree plugin (`./plugins/foo`) when classroom is the canonical home for the plugin — when the plugin is authored *for* classroom's audience and its maintainers review PRs here.
+- Use an external plugin when the canonical home is somewhere else — when classroom is simply curating a pointer at a plugin that lives and evolves in its own repo.
+- Always pin with `ref` (branch name) or `sha` (exact commit). `ref: "main"` means "track latest"; a SHA means "deterministic, requires a bump PR to move forward." Classroom currently uses `ref: "main"` for its external entries — simple, with a 24h refresh cadence as the safety net.
+- External plugins do **not** need a CODEOWNERS line or a `plugins/*/` directory in classroom. Ownership and validation live in the upstream repo. Classroom's test suite only validates the schema of the external entry (correct type, required fields, pinning) — it trusts the upstream for content quality.
+
+If you're adding the first external plugin from a new upstream repo, it's worth running `git ls-remote <url>` manually and sparse-cloning the target path once to sanity-check that the upstream layout matches your marketplace entry. A future opt-in test layer will automate this.
+
 ## When NOT to extend
 
 If you want a *completely different* skill — same problem domain but different methodology — just write a new skill from scratch. Don't extend `competitive-analysis` to make `customer-research`. Extension is for *adding* to a parent, not replacing it.

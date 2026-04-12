@@ -260,6 +260,69 @@ missing = on_disk - listed
 assert not missing, \"plugins on disk but not in marketplace: \" + repr(missing)
 '"
 
+# ----------------------------------------------------------------------------
+# Layer 3b: external source schema checks
+# ----------------------------------------------------------------------------
+# For any plugin whose \"source\" is an object (not a \"./\" string), validate
+# the schema so we catch typos and missing pins at test time. Live resolution
+# against the remote is a follow-up (opt-in Layer 8, not yet implemented).
+
+check "external plugin sources declare a known source type" \
+  "python3 -c '
+import json
+m = json.load(open(\".claude-plugin/marketplace.json\"))
+KNOWN = {\"github\", \"url\", \"git-subdir\", \"npm\"}
+for p in m[\"plugins\"]:
+    src = p[\"source\"]
+    if isinstance(src, dict):
+        t = src.get(\"source\")
+        assert t in KNOWN, p[\"name\"] + \": unknown source type \" + repr(t)
+'"
+
+check "external git-subdir sources have url + path + (ref or sha)" \
+  "python3 -c '
+import json
+m = json.load(open(\".claude-plugin/marketplace.json\"))
+for p in m[\"plugins\"]:
+    src = p[\"source\"]
+    if isinstance(src, dict) and src.get(\"source\") == \"git-subdir\":
+        assert src.get(\"url\"), p[\"name\"] + \": git-subdir missing url\"
+        assert src.get(\"path\"), p[\"name\"] + \": git-subdir missing path\"
+        assert src.get(\"ref\") or src.get(\"sha\"), p[\"name\"] + \": git-subdir needs ref or sha\"
+'"
+
+check "external github sources have repo + (ref or sha)" \
+  "python3 -c '
+import json
+m = json.load(open(\".claude-plugin/marketplace.json\"))
+for p in m[\"plugins\"]:
+    src = p[\"source\"]
+    if isinstance(src, dict) and src.get(\"source\") == \"github\":
+        assert src.get(\"repo\"), p[\"name\"] + \": github source missing repo\"
+        assert src.get(\"ref\") or src.get(\"sha\"), p[\"name\"] + \": github needs ref or sha\"
+'"
+
+check "external url sources have url + (ref or sha)" \
+  "python3 -c '
+import json
+m = json.load(open(\".claude-plugin/marketplace.json\"))
+for p in m[\"plugins\"]:
+    src = p[\"source\"]
+    if isinstance(src, dict) and src.get(\"source\") == \"url\":
+        assert src.get(\"url\"), p[\"name\"] + \": url source missing url\"
+        assert src.get(\"ref\") or src.get(\"sha\"), p[\"name\"] + \": url needs ref or sha\"
+'"
+
+check "external npm sources have package" \
+  "python3 -c '
+import json
+m = json.load(open(\".claude-plugin/marketplace.json\"))
+for p in m[\"plugins\"]:
+    src = p[\"source\"]
+    if isinstance(src, dict) and src.get(\"source\") == \"npm\":
+        assert src.get(\"package\"), p[\"name\"] + \": npm source missing package\"
+'"
+
 # Path files reference only plugins that exist
 check "paths/sales-ae.md only references real plugin names" \
   "python3 -c '

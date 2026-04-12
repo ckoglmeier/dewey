@@ -113,11 +113,13 @@ classroom/
 ├── install-dev.sh                # contributor variant (git checkout)
 ├── guide/SKILL.md                # the Guide skill (copied to ~/.claude/skills/classroom/ on install)
 ├── .claude-plugin/marketplace.json   # plugin catalog (Claude Code marketplace)
-├── plugins/                      # problem-domain plugins
+├── plugins/                      # in-tree problem-domain plugins
 │   ├── competitive-intelligence/
 │   ├── customer-research/
 │   ├── ops-essentials/
 │   └── sales-enablement/
+│   # (plus external plugins referenced via git-subdir in marketplace.json —
+│   #  see "External plugins" below)
 ├── paths/                        # curated bundles by role
 │   ├── sales-ae.md
 │   └── ops-analyst.md
@@ -126,6 +128,17 @@ classroom/
     ├── path-files.md
     └── pr-checklist.md
 ```
+
+## External plugins
+
+Classroom's marketplace blends two kinds of plugin entries in `.claude-plugin/marketplace.json`:
+
+1. **In-tree plugins** (relative `source` like `"./plugins/competitive-intelligence"`) — live in this repo. Code-owned here, validated end-to-end by the test suite, shipped as part of the install tarball.
+2. **External plugins** (object `source` with `git-subdir` / `github` / `url` / `npm`) — live in another repo and are cloned by Claude Code at `/plugin install` time. Classroom only validates their schema in the manifest; the upstream repo owns the plugin content.
+
+Today classroom pulls three generic templates from [`ckoglmeier/skills/templates/`](https://github.com/ckoglmeier/skills/tree/main/templates) via `git-subdir`: `exec-feedback`, `research-assistant`, and `template-strategy-feedback`. They're pinned to `ref: "main"`, so classroom tracks the latest shareable version automatically. The tradeoff is that a breaking change upstream can briefly break classroom installs until the next 24h refresh. If that proves too loose, we'll move to SHA pinning with a bump workflow — see [docs/extending-skills.md](docs/extending-skills.md).
+
+Adding an external plugin is a one-line PR: append an entry to the `plugins` array. The `tests/run.sh` suite validates the source schema (correct type, required fields, ref pinning) offline; a follow-up opt-in layer will sparse-clone and verify the upstream plugin.json matches.
 
 ## What's deferred to v1.1+
 
