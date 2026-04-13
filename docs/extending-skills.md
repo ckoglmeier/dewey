@@ -45,7 +45,7 @@ Then additionally:
 | :------- | :--------------------------------------------------- |
 | Personal | `~/.claude/skills/<extension-name>/SKILL.md`         |
 | Project  | `.claude/skills/<extension-name>/SKILL.md`           |
-| Team     | `dojo-extensions-<team>/skills/<extension-name>/SKILL.md` (in a team-managed git repo, distributed via its own marketplace) |
+| Team     | `classroom-extensions-<team>/skills/<extension-name>/SKILL.md` (in a team-managed git repo, distributed via its own marketplace) |
 
 The personal and project paths are standard Claude Code skill locations — extensions are just regular skills that follow the convention. Nothing special needs to be installed.
 

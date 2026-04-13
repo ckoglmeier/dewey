@@ -114,7 +114,7 @@ Goal: let the user customize an existing Classroom skill *without forking it*. G
    - <user's additions, expanded into clear instructions>
    ```
 
-5. **Show the draft** to the user as a code block. Ask: *"Save this to `~/dojo-extensions-<user>/skills/<name>/SKILL.md`?"*
+5. **Show the draft** to the user as a code block. Ask: *"Save this to `~/classroom-extensions-<user>/skills/<name>/SKILL.md`?"*
 6. **On approval**, create the directory and write the file. Confirm the path so they can find it.
 7. **Important convention**: the `extends:` field is a Classroom convention, not a Claude Code runtime feature. The composition happens because the body of the extension explicitly says "load and follow the parent skill" — Claude reads that instruction and loads the parent. Don't omit that line.
 

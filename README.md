@@ -33,7 +33,7 @@ Type `/classroom` and it walks you through discovery, installation, and extendin
 | Tier | What | Managed by | Example |
 |---|---|---|---|
 | **Central** | Shared skills organized by problem domain | Maintainers via PR | `ckoglmeier/classroom` (this repo) |
-| **Team** | Team-specific extensions and customizations | Team leader | `dojo-extensions-<team>` repo |
+| **Team** | Team-specific extensions and customizations | Team leader | `classroom-extensions-<team>` repo |
 | **Personal** | Individual extensions that survive central updates | You | `~/.claude/skills/` local directory |
 
 **Discovery is Claude-native.** You install Classroom, type `/classroom`, tell the Guide your team and role, and it recommends 3–5 skills curated by your team lead via a path file. No web UI, no portal — Claude is the interface.

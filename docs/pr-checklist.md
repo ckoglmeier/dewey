@@ -6,7 +6,7 @@ Skills in the central Classroom repo are **immutable to most users** — once in
 
 ### 1. Does this belong in the central repo?
 
-Central skills are for problems **multiple teams** have. If only one team needs this, it should live in their team extension repo (`dojo-extensions-<team>`), not central.
+Central skills are for problems **multiple teams** have. If only one team needs this, it should live in their team extension repo (`classroom-extensions-<team>`), not central.
 
 Test: can you name three teams that would install this on day one? If not, send it back.
 

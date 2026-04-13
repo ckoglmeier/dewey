@@ -54,13 +54,13 @@ company-classroom/                  # Tier 1: Central (immutable to users)
     ├── sales-ae.md
     └── ops-analyst.md
 
-dojo-extensions-[team_name]/        # Tier 2: Team
+classroom-extensions-[team_name]/        # Tier 2: Team
 ├── .claude-plugin/marketplace.json
 └── skills/
     └── sales-gong-deepdive/        # extends competitive-analysis
         └── SKILL.md                # composes parent by reference
 
-~/dojo-extensions-[user]/           # Tier 3: Personal (local only)
+~/classroom-extensions-[user]/           # Tier 3: Personal (local only)
 └── skills/
     └── my-weekly-review/
 ```
@@ -87,7 +87,7 @@ The single most important piece of net-new work. One skill, four jobs, **always 
 
 1. **Recommend** — Asks team and role → reads `paths/[role].md` → recommends 3–5 skills with one-line "why this matters."
 2. **Install** — Proposes the install plan as a numbered list, asks for approval, then runs `claude plugin install` for each.
-3. **Extend** — Reads parent skill, asks "what would you change?", drafts the local extension SKILL.md, shows it for confirmation, writes to `~/dojo-extensions-[user]/`.
+3. **Extend** — Reads parent skill, asks "what would you change?", drafts the local extension SKILL.md, shows it for confirmation, writes to `~/classroom-extensions-[user]/`.
 4. **Curate (team-leader mode)** — Drafts `paths/[role].md`, opens a PR.
 
 The Guide is itself a skill, auto-installed by `install.sh` to `~/.claude/skills/classroom/`.
