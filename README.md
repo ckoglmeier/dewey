@@ -1,20 +1,30 @@
 # Classroom
 
-**An open-source convention for distributing skills inside a company, built on Claude Code.**
-
-Classroom is a Ramp-Dojo–style skill marketplace organized by problem domain, with a Guide skill that helps non-technical users discover, install, and extend skills. It's a reference implementation of a convention any company can adopt. 
+**A plugin marketplace for Claude Code.**
 
 ## Why this exists
 
-Every company now has 50+ AI skills scattered across teams. Three teams independently built "competitive intelligence." Nobody knows what exists. Quality varies wildly. Team-specific plugins create silos and duplication. **Enablement is a distribution failure.**
+Everyone builds their own Claude Code skills right now, on their local machine. The entire system is living in single-player mode — we don't learn, we don't collaborate, and we have constant errors from binaries shared in Slack, email, and everywhere else. Skills end up siloed with whoever wrote them, duplicated across teams, with no one accountable for quality. Essentially we're setting up an org where everyone trains and enables themselves with no context.
 
-Classroom is the bet that you can solve distribution with three things:
+Skills and context for Claude are just like skills and context for people — the more shared, the faster we can move together. Inspired by Ramp's [Skills Dojo](https://engineering.ramp.com/), Classroom is an open convention any company can adopt.
 
-1. A central git repo that everyone trusts as the source of truth.
-2. A convention that lets anyone extend a central skill *without forking it*, so they stay on the update path.
-3. A Guide skill that walks non-technical users through discovery, installation, and extension — no terminal required.
+### What Classroom solves
 
-This is what Ramp built internally as Glass + Dojo. Classroom is the same idea as an open convention rather than a closed custom harness.
+**A shared marketplace with clear canonical skill ownership** — so we can publish once, access anywhere.
+
+Every skill has an owner — someone accountable for keeping it sharp. Publish once, anyone on the team installs with `claude plugin install <name>@classroom`. No copying files around, no "ask Sarah for her prompt," no three teams maintaining their own version of meeting prep.
+
+**Dynamic pathways, not org charts** — so we can suggest things to leverage for your role, project, or growth areas.
+
+Skills and plugins (a set of skills + connectors) are published by job-to-be-done, not by department, because they should reflect a problem to solve or a workflow. But we still have a gap where we want to push skills to people — like enabling Claude. So this does that. A functional lead bundles ABC for their team; a project lead bundles AYZ for theirs — and the overlap is fine, because it's the same underlying skills. Pathways are just lightweight groupings (a markdown file) that point at shared plugins. You can serve every leader's view of "what my people need" without accidentally shipping the org chart or fragmenting skill ownership.
+
+**Extend without forking** — so I can adapt what I learned in that "training" to my needs and problems.
+
+Users customize a canonical skill by writing a local extension that references the parent — not by copying it. Central updates keep flowing; your customizations ride on top. No drift, no merge conflicts, no "which version is the real one."
+
+**A Guide that meets people where they are** — so you can explore and discover in the flow of work.
+
+Type `/classroom` and it walks you through discovery, installation, and extending existing skills — all conversational, all with confirmation before it does anything. Non-technical users never touch a config file.
 
 ## How it works
 
@@ -118,8 +128,6 @@ classroom/
 │   ├── customer-research/
 │   ├── ops-essentials/
 │   └── sales-enablement/
-│   # (plus external plugins referenced via git-subdir in marketplace.json —
-│   #  see "External plugins" below)
 ├── paths/                        # curated bundles by role
 │   ├── sales-ae.md
 │   └── ops-analyst.md
@@ -131,14 +139,12 @@ classroom/
 
 ## External plugins
 
-Classroom's marketplace blends two kinds of plugin entries in `.claude-plugin/marketplace.json`:
+Classroom's marketplace supports two kinds of plugin entries in `.claude-plugin/marketplace.json`:
 
 1. **In-tree plugins** (relative `source` like `"./plugins/competitive-intelligence"`) — live in this repo. Code-owned here, validated end-to-end by the test suite, shipped as part of the install tarball.
-2. **External plugins** (object `source` with `git-subdir` / `github` / `url` / `npm`) — live in another repo and are cloned by Claude Code at `/plugin install` time. Classroom only validates their schema in the manifest; the upstream repo owns the plugin content.
+2. **External plugins** (object `source` with `git-subdir` / `github` / `url` / `npm`) — live in another repo and are cloned by Claude Code at `plugin install` time. Classroom only validates their schema in the manifest; the upstream repo owns the plugin content.
 
-Today classroom pulls three generic templates from [`ckoglmeier/skills/templates/`](https://github.com/ckoglmeier/skills/tree/main/templates) via `git-subdir`: `exec-feedback`, `research-assistant`, and `template-strategy-feedback`. They're pinned to `ref: "main"`, so classroom tracks the latest shareable version automatically. The tradeoff is that a breaking change upstream can briefly break classroom installs until the next 24h refresh. If that proves too loose, we'll move to SHA pinning with a bump workflow — see [docs/extending-skills.md](docs/extending-skills.md).
-
-Adding an external plugin is a one-line PR: append an entry to the `plugins` array. The `tests/run.sh` suite validates the source schema (correct type, required fields, ref pinning) offline; a follow-up opt-in layer will sparse-clone and verify the upstream plugin.json matches.
+Adding an external plugin is a one-line PR: append an entry to the `plugins` array. The `tests/run.sh` suite validates the source schema (correct type, required fields, ref pinning) offline.
 
 ## What's deferred to v1.1+
 
@@ -160,3 +166,11 @@ Adding an external plugin is a one-line PR: append an entry to the `plugins` arr
 ## License
 
 MIT. Take it, change it, ship it.
+
+---
+
+*Skills shared like seeds —*
+*one prompt blooms across the org,*
+*no one works alone.*
+
+— from CK's desk
