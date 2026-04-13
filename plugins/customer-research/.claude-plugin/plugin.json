@@ -2,7 +2,7 @@
   "name": "customer-research",
   "description": "Skills for preparing for customer interviews, synthesizing feedback, and building personas.",
   "version": "0.1.0",
-  "owner": {
+  "author": {
     "name": "CK",
     "contact": "@ck"
   }

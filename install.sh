@@ -188,19 +188,46 @@ else
   cp "$GUIDE_SOURCE" "$GUIDE_SKILL_DIR/SKILL.md"
 fi
 
-# ---- Step 3: register marketplace + hook in settings.json -------------------
+# ---- Step 3: register marketplace + hook ------------------------------------
+
+# 3a. Register the Classroom marketplace in the plugin registry.
+#     Claude Code stores marketplace state in known_marketplaces.json, not in
+#     settings.json. We write there directly so we don't depend on `claude`
+#     being on PATH (curl|bash installs may run outside a Claude Code session).
+KNOWN_MKTS="$HOME/.claude/plugins/known_marketplaces.json"
+say "Registering Classroom marketplace in $KNOWN_MKTS"
+
+mkdir -p "$(dirname "$KNOWN_MKTS")"
+
+if command -v python3 >/dev/null 2>&1; then
+  python3 - "$KNOWN_MKTS" "$CLASSROOM_DIR" <<'PY'
+import json, sys, datetime
+path, classroom_dir = sys.argv[1], sys.argv[2]
+try:
+    with open(path) as f:
+        data = json.load(f)
+except (json.JSONDecodeError, FileNotFoundError):
+    data = {}
+
+data["classroom"] = {
+    "source": {"source": "directory", "path": classroom_dir},
+    "installLocation": classroom_dir,
+    "lastUpdated": datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.000Z")
+}
+
+with open(path, "w") as f:
+    json.dump(data, f, indent=2)
+PY
+else
+  warn "python3 not found — cannot register marketplace. Run: claude plugin marketplace add $CLASSROOM_DIR"
+fi
+
+# 3b. Add the SessionStart hook in settings.json.
 say "Updating $SETTINGS_FILE"
 
 if [ ! -f "$SETTINGS_FILE" ]; then
   cat > "$SETTINGS_FILE" <<EOF
 {
-  "extraKnownMarketplaces": {
-    "classroom": {
-      "source": "url",
-      "url": "$CLASSROOM_REPO",
-      "ref": "$CLASSROOM_REF"
-    }
-  },
   "hooks": {
     "SessionStart": [
       {
@@ -217,17 +244,14 @@ if [ ! -f "$SETTINGS_FILE" ]; then
 }
 EOF
 elif command -v python3 >/dev/null 2>&1; then
-  python3 - "$SETTINGS_FILE" "$CLASSROOM_REPO" "$CLASSROOM_REF" "$HOOK_SCRIPT" <<'PY'
+  python3 - "$SETTINGS_FILE" "$HOOK_SCRIPT" <<'PY'
 import json, sys
-path, repo, ref, hook_script = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
+path, hook_script = sys.argv[1], sys.argv[2]
 try:
     with open(path) as f:
         data = json.load(f)
 except (json.JSONDecodeError, FileNotFoundError):
     data = {}
-
-mkts = data.setdefault("extraKnownMarketplaces", {})
-mkts["classroom"] = {"source": "url", "url": repo, "ref": ref}
 
 hooks = data.setdefault("hooks", {})
 session_start = hooks.setdefault("SessionStart", [])
@@ -247,7 +271,7 @@ with open(path, "w") as f:
 PY
 else
   warn "python3 not found — cannot safely merge settings.json. Skipping merge."
-  warn "Manually add the Classroom marketplace and SessionStart hook to $SETTINGS_FILE."
+  warn "Manually add the SessionStart hook to $SETTINGS_FILE."
 fi
 
 # ---- Step 4: write the refresh script ---------------------------------------

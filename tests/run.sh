@@ -404,12 +404,12 @@ check "settings.json was created" \
 check "settings.json is valid JSON" \
   "python3 -c 'import json; json.load(open(\"$SANDBOX/.claude/settings.json\"))'"
 
-check "settings.json registers classroom marketplace" \
+check "known_marketplaces.json registers classroom marketplace" \
   "python3 -c '
 import json
-s = json.load(open(\"$SANDBOX/.claude/settings.json\"))
-assert \"extraKnownMarketplaces\" in s
-assert \"classroom\" in s[\"extraKnownMarketplaces\"]
+s = json.load(open(\"$SANDBOX/.claude/plugins/known_marketplaces.json\"))
+assert \"classroom\" in s
+assert s[\"classroom\"][\"source\"][\"source\"] == \"directory\"
 '"
 
 check "settings.json has SessionStart hook pointing at first-run script" \
@@ -476,33 +476,34 @@ import json
 s = json.load(open('\$SANDBOX2/.claude/settings.json'))
 assert s.get('theme') == 'dark', 'theme key was lost'
 assert s.get('unrelated', {}).get('keep') == 'me', 'unrelated key was lost'
-assert 'extraKnownMarketplaces' in s, 'classroom marketplace not added'
+mk = json.load(open('\$SANDBOX2/.claude/plugins/known_marketplaces.json'))
+assert 'classroom' in mk, 'classroom marketplace not registered'
 \"
 rm -rf \"\$SANDBOX2\"
 "
 
 # ============================================================================
-# LAYER 5: OWNERSHIP (plugin.json owner field + CODEOWNERS)
+# LAYER 5: OWNERSHIP (plugin.json author field + CODEOWNERS)
 # ============================================================================
 section "Layer 5 — Ownership"
 
 check "CODEOWNERS exists at repo root" \
   "test -f CODEOWNERS"
 
-# Every plugin.json must declare an owner with name + contact
+# Every plugin.json must declare an author with name + contact
 for plugin_dir in plugins/*/; do
   plugin_name=$(basename "$plugin_dir")
   manifest="$plugin_dir.claude-plugin/plugin.json"
 
-  check "[$plugin_name] plugin.json has owner.name and owner.contact" \
+  check "[$plugin_name] plugin.json has author.name and author.contact" \
     "python3 -c '
 import json
 p = json.load(open(\"$manifest\"))
-assert \"owner\" in p, \"missing owner field\"
-o = p[\"owner\"]
-assert isinstance(o, dict), \"owner must be an object\"
-assert o.get(\"name\"), \"owner.name required\"
-assert o.get(\"contact\"), \"owner.contact required\"
+assert \"author\" in p, \"missing author field\"
+o = p[\"author\"]
+assert isinstance(o, dict), \"author must be an object\"
+assert o.get(\"name\"), \"author.name required\"
+assert o.get(\"contact\"), \"author.contact required\"
 '"
 
   check "[$plugin_name] CODEOWNERS has a line for plugins/$plugin_name/" \
@@ -572,11 +573,12 @@ check "tarball install installed Guide as personal skill" \
 check "tarball install left no .old or .new sibling dirs" \
   "test ! -e '$TARBALL_SANDBOX_CLASSROOM.new' && ! ls -d '$TARBALL_SANDBOX_CLASSROOM'.old.* >/dev/null 2>&1"
 
-check "tarball install registered the marketplace in settings.json" \
+check "tarball install registered the marketplace in known_marketplaces.json" \
   "python3 -c '
 import json
-s = json.load(open(\"$TARBALL_SANDBOX/.claude/settings.json\"))
-assert \"classroom\" in s.get(\"extraKnownMarketplaces\", {})
+s = json.load(open(\"$TARBALL_SANDBOX/.claude/plugins/known_marketplaces.json\"))
+assert \"classroom\" in s
+assert s[\"classroom\"][\"source\"][\"source\"] == \"directory\"
 '"
 
 check "tarball install dropped a refresh script" \

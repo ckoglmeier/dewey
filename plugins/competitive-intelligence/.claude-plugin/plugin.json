@@ -2,7 +2,7 @@
   "name": "competitive-intelligence",
   "description": "Skills for analyzing competitors, their messaging, pricing, and product moves.",
   "version": "0.1.0",
-  "owner": {
+  "author": {
     "name": "CK",
     "contact": "@ck"
   }
