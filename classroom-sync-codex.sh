@@ -24,6 +24,7 @@ set -euo pipefail
 CLASSROOM_DIR="${CLASSROOM_DIR:-$HOME/.claude/classroom}"
 CODEX_HOME="${CODEX_HOME:-$HOME/.codex}"
 CODEX_SKILLS_DIR="$CODEX_HOME/skills"
+CODEX_CONTEXT_DIR="$CODEX_HOME/context"
 
 DRY_RUN=0
 STATUS_ONLY=0
@@ -77,6 +78,16 @@ list_skills() {
   fi
 }
 
+# ---- list_context_dirs: print "<plugin>|<source_dir>" pairs -----------------
+# Each plugin's whole context/ directory is one symlink unit.
+list_context_dirs() {
+  while IFS= read -r ctx_dir; do
+    [[ -d "$ctx_dir" ]] || continue
+    plugin_name="$(basename "$(dirname "$ctx_dir")")"
+    printf "%s|%s\n" "$plugin_name" "$ctx_dir"
+  done < <(find "$CLASSROOM_DIR/plugins" -mindepth 2 -maxdepth 2 -type d -name context 2>/dev/null | sort)
+}
+
 # Verify we have at least one skill
 skill_count=0
 while IFS='|' read -r _name _path; do
@@ -90,7 +101,7 @@ fi
 
 # ---- Remove mode ------------------------------------------------------------
 if [[ "$REMOVE" -eq 1 ]]; then
-  say "Removing Classroom symlinks from $CODEX_SKILLS_DIR"
+  say "Removing Classroom symlinks from $CODEX_SKILLS_DIR and $CODEX_CONTEXT_DIR"
   removed=0
   while IFS='|' read -r skill_name src; do
     target="$CODEX_SKILLS_DIR/$skill_name/SKILL.md"
@@ -104,6 +115,19 @@ if [[ "$REMOVE" -eq 1 ]]; then
       removed=$((removed + 1))
     fi
   done < <(list_skills)
+  while IFS='|' read -r plugin_name src; do
+    target="$CODEX_CONTEXT_DIR/$plugin_name"
+    if [[ -L "$target" ]]; then
+      if [[ "$DRY_RUN" -eq 1 ]]; then
+        note "[dry-run] Would remove context symlink: $target"
+      else
+        rm -f "$target"
+      fi
+      removed=$((removed + 1))
+    fi
+  done < <(list_context_dirs)
+  # Try to remove the context dir if it's empty
+  [[ "$DRY_RUN" -eq 0 ]] && rmdir "$CODEX_CONTEXT_DIR" 2>/dev/null || true
   [[ "$DRY_RUN" -eq 0 ]] && say "Removed $removed Classroom symlink(s) from Codex."
   [[ "$DRY_RUN" -eq 1 ]] && say "[dry-run] Would remove $removed symlink(s)."
   exit 0
@@ -158,17 +182,61 @@ while IFS='|' read -r skill_name src; do
   fi
 done < <(list_skills)
 
+# ---- Context sync -----------------------------------------------------------
+ctx_synced=0
+ctx_stale=0
+ctx_missing=0
+while IFS='|' read -r plugin_name src; do
+  target="$CODEX_CONTEXT_DIR/$plugin_name"
+
+  if [[ -L "$target" && "$(readlink "$target")" == "$src" ]]; then
+    ctx_synced=$((ctx_synced + 1))
+    if [[ "$STATUS_ONLY" -eq 1 ]]; then
+      printf "  %s %-40s → %s\n" "$(green ✓)" "context/$plugin_name" "$src"
+    fi
+  elif [[ -L "$target" ]]; then
+    ctx_stale=$((ctx_stale + 1))
+    if [[ "$STATUS_ONLY" -eq 1 ]]; then
+      printf "  %s %-40s (stale context symlink → %s)\n" "$(yellow ●)" "context/$plugin_name" "$(readlink "$target")"
+    elif [[ "$DRY_RUN" -eq 0 ]]; then
+      ln -sfn "$src" "$target"
+      ctx_synced=$((ctx_synced + 1))
+    fi
+  elif [[ -e "$target" ]]; then
+    ctx_stale=$((ctx_stale + 1))
+    if [[ "$STATUS_ONLY" -eq 1 ]]; then
+      printf "  %s %-40s (existing path, not managed by Classroom)\n" "$(yellow ●)" "context/$plugin_name"
+    elif [[ "$DRY_RUN" -eq 1 ]]; then
+      printf "  %s %-40s (would skip — existing non-symlink)\n" "$(yellow ●)" "context/$plugin_name"
+    fi
+  else
+    ctx_missing=$((ctx_missing + 1))
+    if [[ "$STATUS_ONLY" -eq 1 ]]; then
+      printf "  %s %-40s (not in Codex yet)\n" "$(red ✗)" "context/$plugin_name"
+    elif [[ "$DRY_RUN" -eq 1 ]]; then
+      printf "  %s %-40s → %s\n" "$(green +)" "context/$plugin_name" "$src"
+    else
+      mkdir -p "$CODEX_CONTEXT_DIR"
+      ln -sfn "$src" "$target"
+      ctx_synced=$((ctx_synced + 1))
+    fi
+  fi
+done < <(list_context_dirs)
+
 if [[ "$STATUS_ONLY" -eq 1 ]]; then
   echo
-  printf "  Synced: %d  |  Stale/manual: %d  |  Missing: %d\n" "$synced" "$stale" "$missing"
-  printf "  Codex skills dir: %s\n" "$CODEX_SKILLS_DIR"
-  [[ "$missing" -gt 0 ]] && printf "  Run without --status to sync missing skills.\n"
+  printf "  Skills:   synced %d, stale %d, missing %d\n" "$synced" "$stale" "$missing"
+  printf "  Context:  synced %d, stale %d, missing %d\n" "$ctx_synced" "$ctx_stale" "$ctx_missing"
+  printf "  Codex skills dir:  %s\n" "$CODEX_SKILLS_DIR"
+  printf "  Codex context dir: %s\n" "$CODEX_CONTEXT_DIR"
+  [[ "$missing" -gt 0 || "$ctx_missing" -gt 0 ]] && printf "  Run without --status to sync missing items.\n"
   exit 0
 fi
 
 if [[ "$DRY_RUN" -eq 1 ]]; then
   echo
   say "[dry-run] Would sync $((synced + missing)) skill(s) to $CODEX_SKILLS_DIR"
+  say "[dry-run] Would sync $((ctx_synced + ctx_missing)) context bundle(s) to $CODEX_CONTEXT_DIR"
   exit 0
 fi
 
@@ -223,4 +291,8 @@ if [[ "$new_count" -gt 0 || "$stale" -gt 0 ]]; then
 else
   say "Codex skills already up to date ($synced skill(s))"
 fi
-note "Codex skills dir: $CODEX_SKILLS_DIR"
+note "Codex skills dir:  $CODEX_SKILLS_DIR"
+if [[ "$ctx_synced" -gt 0 || "$ctx_missing" -gt 0 ]]; then
+  say "Synced $ctx_synced context bundle(s)"
+  note "Codex context dir: $CODEX_CONTEXT_DIR"
+fi

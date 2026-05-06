@@ -2,11 +2,24 @@
 name: competitive-analysis
 description: Analyzes a competitor's positioning, messaging, pricing, and recent moves. Use when the user asks about a competitor by name, wants a battlecard, or is preparing for a deal where a specific competitor is in the conversation.
 argument-hint: "[competitor-name]"
+requires-context:
+  - competitive-intelligence/positioning
 ---
 
 # Competitive analysis
 
 Produce a structured competitive analysis of the named competitor. The output should be useful in a real sales or product conversation — not a generic SWOT.
+
+## First, load context
+
+Before analysing the competitor, load the canonical positioning context so the brief reflects current company truth, not the model's guesses:
+
+- Stable ID: `competitive-intelligence/positioning`
+- Look for it at one of these paths (read whichever exists):
+  - `~/.claude/classroom/plugins/competitive-intelligence/context/positioning/positioning.md` (Claude Code or Cowork)
+  - `~/.codex/context/competitive-intelligence/positioning/positioning.md` (standalone Codex)
+
+Read the file in full. If neither path exists, stop and tell the user the `competitive-intelligence` plugin appears to be incomplete — they should run `/classroom update`. Do not proceed with a brief based on guessed positioning.
 
 ## What to gather
 

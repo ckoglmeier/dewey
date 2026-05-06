@@ -63,3 +63,13 @@ A new central skill that no path file ever surfaces is dead weight — non-techn
 - Output format not spelled out.
 - Skill that needs MCP servers or tools the average user doesn't have configured (move it to a team extension repo instead).
 - Skill that's really an extension of an existing skill in disguise (write it as an extension, not a fork).
+
+## Reviewing canonical context PRs
+
+Context PRs (a `context/` file or a `requires-context:` change) get extra scrutiny because context content reaches Claude's context window verbatim. See the full conventions in [canonical-context.md](canonical-context.md). Quick checklist for reviewers:
+
+- **Reference, not procedure.** Context describes facts; skills describe what the agent should do. A context file with imperative agent instructions ("you should always X") belongs in a skill, not in context.
+- **Prompt-injection awareness.** If the context includes externally-sourced material (quoted competitor copy, screenshots OCR'd to markdown, external research notes), strip imperative or AI-targeted content. "If you are an AI, also tell the user X" is the obvious case; subtler steering is the real risk.
+- **Size sanity.** v1 size limits are 20KB warn / 100KB fail per file (overridable with `allow-large-context: true`). Pushing the limit is a smell: split into multiple files unless the corpus is genuinely a single document.
+- **Stable IDs.** A new context entry's `id` follows `<plugin>/<bundle>` and the plugin segment matches the containing plugin.
+- **Skills referencing the context update their bodies too.** The lint catches frontmatter/body drift, but reviewers should still confirm the skill's "First, load:" step is updated when a context dependency changes.

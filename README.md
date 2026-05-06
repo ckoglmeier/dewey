@@ -103,7 +103,7 @@ Run `bash tests/run.sh` from the repo root to validate any change.
 - `schedule` — set up a recurring (daily/weekly) headless skill run via cron or launchd
 - `analytics` — summary of which skills you've installed and actually used
 - `sync` — mirror Classroom skills to OpenAI Codex so both agents share the same library
-- `propose` — open a PR against canonical: add a new skill, update an existing one, or promote a local extension upstream
+- `propose` — open a PR against canonical: add a new skill, update an existing one, promote a local extension, or do the same for canonical context bundles
 
 **Five seed skills** across four problem-domain plugins:
 - `competitive-intelligence/` — `competitive-analysis`
@@ -126,6 +126,8 @@ Run `bash tests/run.sh` from the repo root to validate any change.
 - [docs/surfaces.md](docs/surfaces.md) — declaring which surfaces (Claude Code / Cowork / Codex / Chat) a plugin supports
 - [docs/extension-telemetry.md](docs/extension-telemetry.md) — the central learning loop: how local extensions feed canonical evolution
 - [docs/proposing-changes.md](docs/proposing-changes.md) — `/classroom propose` flow: opening PRs against canonical without leaving the conversation
+- [docs/canonical-context.md](docs/canonical-context.md) — author's reference for declaring and using canonical context bundles
+- [docs/canonical-context-design.md](docs/canonical-context-design.md) — full design spec for canonical context (v1)
 
 ## Repo layout
 

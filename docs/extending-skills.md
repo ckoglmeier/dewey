@@ -97,6 +97,12 @@ Claude Code supports four object-source types: `git-subdir`, `github`, `url`, an
 
 If you're adding the first external plugin from a new upstream repo, it's worth running `git ls-remote <url>` manually and sparse-cloning the target path once to sanity-check that the upstream layout matches your marketplace entry. A future opt-in test layer will automate this.
 
+## What about reference content (battlecards, brand voice, strategy)?
+
+Skills are about *procedure*. If you want to publish *content* — a battlecard, brand voice guide, ICP definition, strategy doc — that's a separate concept called **canonical context**. It uses the same publish/version/own/extend machinery but lives in a `context/` folder alongside `skills/`. Skills declare `requires-context:` to depend on it.
+
+See [canonical-context.md](canonical-context.md) for how to author and depend on canonical context, and [canonical-context-design.md](canonical-context-design.md) for the design rationale.
+
 ## When NOT to extend
 
 If you want a *completely different* skill — same problem domain but different methodology — just write a new skill from scratch. Don't extend `competitive-analysis` to make `customer-research`. Extension is for *adding* to a parent, not replacing it.

@@ -4,15 +4,20 @@ Most Classroom users only consume skills. A smaller group authors them — adds 
 
 The `/classroom propose` flow exists to make this path conversational instead of "clone the repo, edit, PR." Non-engineer authors should not have to touch git directly.
 
-## Three sub-flows
+## Six sub-flows
+
+Three for skills, three parallel for canonical context:
 
 | Sub-flow | When to use it |
 |---|---|
 | `new-skill` | You have a fresh idea for a skill that doesn't exist yet |
-| `update <skill>` | You want to change an existing canonical skill (improve instructions, fix a step, broaden trigger language) |
-| `promote <extension>` | You wrote a local extension that's working well, and you want to either (a) merge its additions into the parent canonical or (b) split it out as a new canonical skill |
+| `update <skill>` | You want to change an existing canonical skill |
+| `promote <extension>` | You wrote a local skill extension and want to absorb it into canonical |
+| `new-context` | Add a new canonical context bundle (battlecards, brand voice, strategy doc) |
+| `update-context <id>` | Update an existing canonical context bundle |
+| `promote-context-extension` | You wrote a local context extension (`extends-context:`) and want to absorb it |
 
-The `promote` flow is the loop closure: extensions are signal of what's missing from canonical, and `propose promote` is how that signal becomes a real PR.
+The `promote` and `promote-context-extension` sub-flows close the loop: extensions are the highest-quality signal of what's missing from canonical, and these flows turn that signal into a real PR.
 
 ## What happens behind the scenes
 

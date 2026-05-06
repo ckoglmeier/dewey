@@ -97,8 +97,13 @@ Commit it to your repo so Codex sees the skill list in every session.
 Everything in the Classroom reference cache is mirrored:
 - All skills from all installed plugins (`plugins/*/skills/*/SKILL.md`)
 - The Guide skill itself (`guide/SKILL.md` → `~/.codex/skills/classroom/SKILL.md`)
+- All canonical context directories (`plugins/*/context/`) → `~/.codex/context/<plugin>/`
 
-Skills that exist in `~/.codex/skills/` but are not from Classroom are **not touched**.
+Skills and context that exist in `~/.codex/skills/` or `~/.codex/context/` but are not from Classroom are **not touched**.
+
+### Why a separate `~/.codex/context/` directory?
+
+Classroom skills declare `requires-context:` for canonical content (see [canonical-context.md](canonical-context.md)). On Claude Code and Cowork, those files live at `~/.claude/classroom/plugins/<plugin>/context/...`. Standalone Codex doesn't share `~/.claude/`, so the sync mirrors each plugin's `context/` directory to `~/.codex/context/<plugin>/`. Skills authored for Classroom should reference both possible paths in their "First, load:" step so they work in either environment.
 
 ## Refresh cadence
 

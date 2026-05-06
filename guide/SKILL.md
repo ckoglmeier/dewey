@@ -1,7 +1,7 @@
 ---
 name: classroom
 description: Classroom Guide. Helps the user discover, install, extend, schedule, and find owners of skills from their company's Classroom marketplace. Use when the user mentions Classroom, asks what skills exist for their role, or runs /classroom.
-argument-hint: "[recommend|install|extend|curate-path|owners|update|schedule|analytics|sync|propose]"
+argument-hint: "[recommend|install|extend|curate-path|owners|update|schedule|analytics|sync|propose|propose-context]"
 allowed-tools: Bash(claude *) Bash(cat *) Bash(ls *) Bash(mkdir *) Bash(git *) Bash(bash *) Bash(gh *) Bash(launchctl *) Bash(crontab *) Bash(python3 *) Read Write Edit Glob Grep
 ---
 
@@ -116,17 +116,25 @@ Goal: install one or more plugins from the marketplace. Always confirm before ru
 
 1. **If you arrived from §1**, you already have the plugin list (already filtered by surface). Skip to step 3.
 2. **Otherwise**, detect the current surface (see "Surface awareness"), read `~/.claude/classroom/.claude-plugin/marketplace.json`, and for each plugin also read its `plugin.json` to check `surfaces`. Present only plugins whose `surfaces` includes the current surface as a numbered list with descriptions. If any plugins were filtered out, mention the count: *"3 plugins not shown because they don't run in `<surface>`."* Ask which one(s) to install.
-3. **Show the install plan** as a confirmation block (see "Core operating principle" above) listing each plugin and where it's coming from.
-4. **On approval**, run the install for each:
+3. **Resolve `requires-context:` dependencies before confirming.** For each plugin the user wants to install, read its skills' frontmatter and collect every `requires-context:` ID. For each ID, look up which plugin owns it by scanning `marketplace.json` and the plugin manifests under `~/.claude/classroom/plugins/`. Build the set of context-providing plugins that need to be installed. Subtract any that are already installed (`~/.claude/plugins/cache/<plugin>/` exists).
+
+   - **If all required context plugins are already installed**: no extra step. Continue.
+   - **If any are missing**: tell the user clearly, e.g. *"`competitive-analysis` requires context from the `brand` plugin, which isn't installed. Install `brand` too?"* Wait for an explicit yes/no.
+     - On **yes**: add the missing plugins to the install plan in step 4.
+     - On **no**: refuse the original install. Tell the user the skill would fail at runtime without its context. Do not install in a known-incomplete state.
+   - **If a required context ID can't be resolved at all** (no plugin in the marketplace declares it): stop with an error. The skill is broken — flag it for its owner via `/classroom owners`.
+
+4. **Show the install plan** as a confirmation block (see "Core operating principle" above) listing each plugin and where it's coming from. If you added context plugins in step 3, show them too with a brief note: *"Added `brand` because `competitive-analysis` needs its `brand/voice` context."*
+5. **On approval**, run the install for each:
 
    ```
    claude plugin install <plugin-name>@classroom
    ```
 
    Run each as a separate Bash call so the user sees output for each one. If a plugin fails to install, stop and surface the error — don't silently continue.
-5. **Confirm success** by listing what was installed and one example slash command per plugin. Encourage the user to try one immediately so they get a "wow" before the conversation ends. Per the Ramp finding, the moment a non-technical user runs their first installed skill on real data is when Classroom becomes real to them.
+6. **Confirm success** by listing what was installed and one example slash command per plugin. Encourage the user to try one immediately so they get a "wow" before the conversation ends. Per the Ramp finding, the moment a non-technical user runs their first installed skill on real data is when Classroom becomes real to them.
 
-6. **Emit analytics** after each successful install, via the telemetry helper:
+7. **Emit analytics** after each successful install, via the telemetry helper:
 
    ```bash
    bash ~/.claude/classroom-telemetry.sh emit event=skill_install plugin=PLUGIN_NAME via=VIA
@@ -492,7 +500,9 @@ Goal: turn a drafted change into a GitHub PR against the canonical Classroom rep
    If it fails, surface the error verbatim and stop. Common cases: `gh` not installed, `gh` not authenticated. Tell the user how to fix and stop — do not proceed.
 
 2. **Identify the sub-flow** from `$1` (e.g. `/classroom propose update meeting-prep`) or by asking:
-   - *"What do you want to propose? (a) add a new skill, (b) update an existing one, (c) promote one of your local extensions"*
+   - *"What do you want to propose? (a) add a new skill, (b) update an existing one, (c) promote one of your local extensions, (d) add a new context bundle, (e) update an existing context bundle, (f) promote a local context extension"*
+
+   Sub-flows a/b/c follow the original skill paths below. Sub-flows d/e/f follow the parallel **context** paths after Sub-flow C. The "Open the PR" section is shared by all six.
 
 ### Sub-flow A: new-skill
 
@@ -520,6 +530,35 @@ Goal: turn a drafted change into a GitHub PR against the canonical Classroom rep
 4. Ask: *"Should this become (a) an update absorbed into the parent canonical, or (b) a new canonical sibling skill in the same plugin?"*
    - **(a) absorb**: merge the extension's "Then additionally:" body into the parent's body. Treat as sub-flow B from this point.
    - **(b) sibling**: take the extension as-is, drop the `extends:` frontmatter and the "load and follow the parent" preamble, repromote it as standalone. Treat as sub-flow A from this point.
+5. Apply that flow's drafting and approval steps.
+
+### Sub-flow D: new-context
+
+1. Ask: *"Which plugin should own this context bundle?"* List existing plugins. Allow selecting a plugin that has no `context/` yet (we'll add the directory). For brand-new context-only plugins, defer to a follow-up — for now require an existing plugin.
+2. Ask: bundle name (kebab-case), title, one-line description, and the markdown body. The body should be reference material, not procedure (see [docs/canonical-context-design.md](https://github.com/ckoglmeier/classroom/blob/main/docs/canonical-context-design.md) — "Content safety").
+3. **Draft two changes**:
+   - The new context file at `plugins/<plugin>/context/<bundle>/<bundle>.md`.
+   - An update to `plugins/<plugin>/.claude-plugin/plugin.json` adding an entry under `context: [...]` with `id: <plugin>/<bundle>`, `path`, `title`, `description`. Show both as a unified diff.
+4. Show the draft. Ask for explicit approval.
+5. **Target paths:** two files in this PR. Run the helper twice in sequence (same branch). The propose helper supports staging multiple files on one branch — run `propose` for each, with `--branch` reused.
+
+### Sub-flow E: update-context
+
+1. Identify the context bundle from `$2` (e.g. `/classroom propose update-context competitive-intelligence/positioning`) or by asking.
+2. Read the current canonical context file. Read the canonical positioning entry from `plugin.json` to confirm the on-disk path.
+3. Ask: *"What do you want to change?"* Take the answer in plain language.
+4. **Draft the revision.** Apply the change to the body, preserving any existing structure (headings, lists). Don't rewrite the file unless the user explicitly asks for a rewrite.
+5. Show the diff. Ask for explicit approval.
+6. **Target path:** `plugins/<plugin>/context/<bundle>/<file>` — same as canonical.
+
+### Sub-flow F: promote-context-extension
+
+1. List the user's local context extensions: anything under `~/.claude/skills/` or `~/classroom-extensions-*/skills/` whose SKILL.md has an `extends-context:` frontmatter field. (These are context extension files in the same convention as skill extensions, just pointing at canonical context.)
+2. Ask which one to promote.
+3. Read the extension and the canonical context it extends.
+4. Ask: *"Should this become (a) merged into the canonical bundle, or (b) a new sibling context bundle in the same plugin?"*
+   - **(a) merge**: append the extension's body to the canonical file. Treat as sub-flow E from this point.
+   - **(b) sibling**: take the extension's body as-is, register it as a new bundle in `plugin.json`. Treat as sub-flow D from this point.
 5. Apply that flow's drafting and approval steps.
 
 ### Open the PR (all sub-flows)
