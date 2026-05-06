@@ -716,6 +716,253 @@ test -z \"\$out\"
 rm -rf "$TARBALL_SANDBOX_CLASSROOM/.git"
 
 # ============================================================================
+# LAYER 8: SCHEDULE HELPER
+# ============================================================================
+section "Layer 8 — Schedule helper (classroom-schedule.sh)"
+
+SCHED_SRC="$REPO_ROOT/classroom-schedule.sh"
+
+check "classroom-schedule.sh exists" \
+  "test -f '$SCHED_SRC'"
+
+check "classroom-schedule.sh has clean bash syntax" \
+  "bash -n '$SCHED_SRC'"
+
+# Dry-run: daily schedule should print without creating any files
+SCHED_SANDBOX="$(mktemp -d)"
+TMPDIRS_TO_CLEAN+=("$SCHED_SANDBOX")
+check "schedule.sh --dry-run daily exits 0 and prints plist/crontab" \
+  "
+sched_out=\$(ANTHROPIC_API_KEY=sk-test-key HOME='$SCHED_SANDBOX' \
+  bash '$SCHED_SRC' --skill meeting-prep --trigger daily --time 08:00 --dry-run 2>&1)
+echo \"\$sched_out\" | grep -qiE '(dry-run|plist|meeting-prep)'
+"
+
+check "schedule.sh --dry-run does NOT create any files in HOME" \
+  "
+ANTHROPIC_API_KEY=sk-test-key HOME='$SCHED_SANDBOX' \
+  bash '$SCHED_SRC' --skill meeting-prep --trigger daily --time 08:00 --dry-run >/dev/null 2>&1
+find '$SCHED_SANDBOX' -type f | grep -qv '^$'; test \$? -ne 0 || true
+test ! -f '$SCHED_SANDBOX/Library/LaunchAgents/com.classroom.meeting-prep.plist'
+"
+
+# Weekly dry-run
+check "schedule.sh --dry-run weekly exits 0" \
+  "ANTHROPIC_API_KEY=sk-test-key HOME='$SCHED_SANDBOX' \
+  bash '$SCHED_SRC' --skill meeting-prep --trigger weekly --day 1 --time 09:00 --dry-run >/dev/null 2>&1"
+
+# Missing API key must fail
+check "schedule.sh fails when ANTHROPIC_API_KEY is unset" \
+  "
+unset ANTHROPIC_API_KEY
+HOME='$SCHED_SANDBOX' bash '$SCHED_SRC' --skill meeting-prep --trigger daily --time 08:00 --dry-run >/dev/null 2>&1
+test \$? -ne 0
+"
+
+# Invalid skill name must fail
+check "schedule.sh fails with non-kebab-case skill name" \
+  "ANTHROPIC_API_KEY=sk-test-key HOME='$SCHED_SANDBOX' \
+  bash '$SCHED_SRC' --skill 'Meeting Prep!' --trigger daily --time 08:00 --dry-run >/dev/null 2>&1; test \$? -ne 0"
+
+# Invalid time must fail
+check "schedule.sh fails with invalid --time" \
+  "ANTHROPIC_API_KEY=sk-test-key HOME='$SCHED_SANDBOX' \
+  bash '$SCHED_SRC' --skill meeting-prep --trigger daily --time '25:99' --dry-run >/dev/null 2>&1; test \$? -ne 0"
+
+# install.sh drops classroom-schedule.sh from the snapshot
+check "install.sh installs classroom-schedule.sh to \$HOME/.claude" \
+  "test -x '$SANDBOX/.claude/classroom-schedule.sh'"
+
+check "installed classroom-schedule.sh has clean bash syntax" \
+  "bash -n '$SANDBOX/.claude/classroom-schedule.sh'"
+
+# ============================================================================
+# LAYER 9: ANALYTICS LOG
+# ============================================================================
+section "Layer 9 — Analytics log"
+
+check "install.sh creates classroom-analytics.log when CLASSROOM_TELEMETRY != 0" \
+  "test -f '$SANDBOX/.claude/classroom-analytics.log'"
+
+check "classroom-analytics.log is a file (not dir, not symlink)" \
+  "test -f '$SANDBOX/.claude/classroom-analytics.log' && test ! -L '$SANDBOX/.claude/classroom-analytics.log'"
+
+# When telemetry is disabled, analytics log should NOT be created
+NOTEL_SANDBOX="$(mktemp -d)"
+NOTEL_CLASSROOM="$NOTEL_SANDBOX/.claude/classroom"
+TMPDIRS_TO_CLEAN+=("$NOTEL_SANDBOX")
+mkdir -p "$NOTEL_CLASSROOM"
+cp -R "$REPO_ROOT/." "$NOTEL_CLASSROOM/"
+check "install.sh does NOT create analytics log when CLASSROOM_TELEMETRY=0" \
+  "
+CLASSROOM_TELEMETRY=0 HOME='$NOTEL_SANDBOX' CLASSROOM_DIR='$NOTEL_CLASSROOM' \
+  CLASSROOM_REPO='file://$REPO_ROOT' CLASSROOM_REF=main CLASSROOM_USE_INPLACE=1 \
+  bash '$REPO_ROOT/install.sh' >/dev/null 2>&1
+test ! -f '$NOTEL_SANDBOX/.claude/classroom-analytics.log'
+"
+
+# Any JSONL written to the log by the first-run hook must be valid JSON
+check "first-run hook appends valid JSON to analytics log" \
+  "
+HOME='$SANDBOX' bash '$SANDBOX/.claude/classroom-first-run.sh' >/dev/null 2>&1
+if [ -s '$SANDBOX/.claude/classroom-analytics.log' ]; then
+  python3 -c '
+import json, sys
+with open(\"$SANDBOX/.claude/classroom-analytics.log\") as f:
+    for i, line in enumerate(f, 1):
+        line = line.strip()
+        if line:
+            try:
+                obj = json.loads(line)
+                assert \"ts\" in obj, f\"line {i}: missing ts\"
+                assert \"event\" in obj, f\"line {i}: missing event\"
+            except json.JSONDecodeError as e:
+                sys.exit(f\"line {i}: invalid JSON: {e}\")
+'
+fi
+"
+
+# ============================================================================
+# LAYER 10: CODEX SYNC
+# ============================================================================
+section "Layer 10 — Codex sync (classroom-sync-codex.sh)"
+
+SYNC_SRC="$REPO_ROOT/classroom-sync-codex.sh"
+
+check "classroom-sync-codex.sh exists" \
+  "test -f '$SYNC_SRC'"
+
+check "classroom-sync-codex.sh has clean bash syntax" \
+  "bash -n '$SYNC_SRC'"
+
+# install.sh drops the sync script
+check "install.sh installs classroom-sync-codex.sh to \$HOME/.claude" \
+  "test -x '$SANDBOX/.claude/classroom-sync-codex.sh'"
+
+check "installed classroom-sync-codex.sh has clean bash syntax" \
+  "bash -n '$SANDBOX/.claude/classroom-sync-codex.sh'"
+
+# --dry-run: skills found in the Classroom cache, printed but not written
+SYNC_SANDBOX="$(mktemp -d)"
+TMPDIRS_TO_CLEAN+=("$SYNC_SANDBOX")
+# Give it a fake ~/.codex so Codex is "detected"
+mkdir -p "$SYNC_SANDBOX/.codex"
+
+check "sync --dry-run lists skills without writing files" \
+  "
+sync_out=\$(CLASSROOM_DIR='$REPO_ROOT' CODEX_HOME='$SYNC_SANDBOX/.codex' HOME='$SYNC_SANDBOX' \
+  bash '$SYNC_SRC' --dry-run 2>&1)
+# Must mention at least one skill or 'dry-run'
+echo \"\$sync_out\" | grep -qiE '(dry-run|skill|SKILL)'
+# Must NOT have created any files in codex skills dir
+test ! -d '$SYNC_SANDBOX/.codex/skills' || test -z \"\$(find '$SYNC_SANDBOX/.codex/skills' -type f -o -type l 2>/dev/null)\"
+"
+
+# --status: runs without error
+check "sync --status exits 0 and prints output" \
+  "
+sync_out=\$(CLASSROOM_DIR='$REPO_ROOT' CODEX_HOME='$SYNC_SANDBOX/.codex' HOME='$SYNC_SANDBOX' \
+  bash '$SYNC_SRC' --status 2>&1)
+echo \"\$sync_out\" | grep -qiE '(synced|missing|not in Codex|skill)'
+"
+
+# Actual sync: creates symlinks
+LIVE_SYNC_SANDBOX="$(mktemp -d)"
+TMPDIRS_TO_CLEAN+=("$LIVE_SYNC_SANDBOX")
+mkdir -p "$LIVE_SYNC_SANDBOX/.codex"
+
+check "sync (no flags) creates symlinks in ~/.codex/skills/" \
+  "
+CLASSROOM_DIR='$REPO_ROOT' CODEX_HOME='$LIVE_SYNC_SANDBOX/.codex' HOME='$LIVE_SYNC_SANDBOX' \
+  bash '$SYNC_SRC' >/dev/null 2>&1
+test -d '$LIVE_SYNC_SANDBOX/.codex/skills'
+find '$LIVE_SYNC_SANDBOX/.codex/skills' -name 'SKILL.md' | grep -q .
+"
+
+check "synced SKILL.md files are symlinks (not copies)" \
+  "find '$LIVE_SYNC_SANDBOX/.codex/skills' -name 'SKILL.md' -type l | grep -q ."
+
+check "synced symlinks point to the Classroom cache" \
+  "
+python3 -c '
+import os, sys
+skills_dir = \"$LIVE_SYNC_SANDBOX/.codex/skills\"
+classroom_dir = \"$REPO_ROOT\"
+for root, dirs, files in os.walk(skills_dir):
+    for f in files:
+        if f == \"SKILL.md\":
+            p = os.path.join(root, f)
+            target = os.readlink(p)
+            assert target.startswith(classroom_dir), f\"symlink {p} points outside classroom: {target}\"
+'
+"
+
+check "Guide skill (classroom) is included in sync" \
+  "test -L '$LIVE_SYNC_SANDBOX/.codex/skills/classroom/SKILL.md'"
+
+# --remove: removes symlinks
+check "sync --remove removes only Classroom symlinks" \
+  "
+CLASSROOM_DIR='$REPO_ROOT' CODEX_HOME='$LIVE_SYNC_SANDBOX/.codex' HOME='$LIVE_SYNC_SANDBOX' \
+  bash '$SYNC_SRC' --remove >/dev/null 2>&1
+# After removal, no Classroom SKILL.md symlinks should remain
+remaining=\$(find '$LIVE_SYNC_SANDBOX/.codex/skills' -name 'SKILL.md' -type l 2>/dev/null | wc -l | tr -d ' ')
+test \"\$remaining\" = '0'
+"
+
+# Codex not detected: exits with error
+NO_CODEX_SANDBOX="$(mktemp -d)"
+TMPDIRS_TO_CLEAN+=("$NO_CODEX_SANDBOX")
+check "sync exits non-zero when Codex not detected and HOME has no ~/.codex" \
+  "
+CLASSROOM_DIR='$REPO_ROOT' CODEX_HOME='$NO_CODEX_SANDBOX/.codex' HOME='$NO_CODEX_SANDBOX' \
+  bash '$SYNC_SRC' >/dev/null 2>&1; test \$? -ne 0
+"
+
+# Classroom not installed: exits with error
+NO_CLASSROOM_SANDBOX="$(mktemp -d)"
+TMPDIRS_TO_CLEAN+=("$NO_CLASSROOM_SANDBOX")
+mkdir -p "$NO_CLASSROOM_SANDBOX/.codex"
+check "sync exits non-zero when CLASSROOM_DIR missing" \
+  "
+CLASSROOM_DIR='$NO_CLASSROOM_SANDBOX/nonexistent' CODEX_HOME='$NO_CLASSROOM_SANDBOX/.codex' HOME='$NO_CLASSROOM_SANDBOX' \
+  bash '$SYNC_SRC' >/dev/null 2>&1; test \$? -ne 0
+"
+
+# --agents-md: generates AGENTS.md
+AGENTS_SANDBOX="$(mktemp -d)"
+TMPDIRS_TO_CLEAN+=("$AGENTS_SANDBOX")
+mkdir -p "$AGENTS_SANDBOX/.codex"
+check "sync --agents-md writes an AGENTS.md file" \
+  "
+CLASSROOM_DIR='$REPO_ROOT' CODEX_HOME='$AGENTS_SANDBOX/.codex' HOME='$AGENTS_SANDBOX' \
+  bash '$SYNC_SRC' --agents-md '$AGENTS_SANDBOX' >/dev/null 2>&1
+test -f '$AGENTS_SANDBOX/AGENTS.md'
+grep -q 'Classroom' '$AGENTS_SANDBOX/AGENTS.md'
+"
+
+check "generated AGENTS.md mentions at least one skill" \
+  "grep -qE '^\- \`/' '$AGENTS_SANDBOX/AGENTS.md'"
+
+# install.sh with CLASSROOM_SYNC_CODEX=0 must not run sync
+NO_SYNC_SANDBOX="$(mktemp -d)"
+NO_SYNC_CLASSROOM="$NO_SYNC_SANDBOX/.claude/classroom"
+TMPDIRS_TO_CLEAN+=("$NO_SYNC_SANDBOX")
+mkdir -p "$NO_SYNC_CLASSROOM"
+cp -R "$REPO_ROOT/." "$NO_SYNC_CLASSROOM/"
+check "install.sh skips Codex sync when CLASSROOM_SYNC_CODEX=0" \
+  "
+CLASSROOM_SYNC_CODEX=0 HOME='$NO_SYNC_SANDBOX' CLASSROOM_DIR='$NO_SYNC_CLASSROOM' \
+  CLASSROOM_REPO='file://$REPO_ROOT' CLASSROOM_REF=main CLASSROOM_USE_INPLACE=1 \
+  bash '$REPO_ROOT/install.sh' >/dev/null 2>&1
+test ! -d '$NO_SYNC_SANDBOX/.codex/skills'
+"
+
+# docs/codex-sync.md exists
+check "docs/codex-sync.md exists" \
+  "test -f '$REPO_ROOT/docs/codex-sync.md'"
+
+# ============================================================================
 # RESULTS
 # ============================================================================
 TOTAL=$((PASSED + FAILED))

@@ -1,8 +1,8 @@
 ---
 name: classroom
-description: Classroom Guide. Helps the user discover, install, extend, and find owners of skills from their company's Classroom marketplace. Use when the user mentions Classroom, asks what skills exist for their role, or runs /classroom.
-argument-hint: "[recommend|install|extend|curate-path|owners|update]"
-allowed-tools: Bash(claude *) Bash(cat *) Bash(ls *) Bash(mkdir *) Bash(git *) Bash(bash *) Read Write Edit Glob Grep
+description: Classroom Guide. Helps the user discover, install, extend, schedule, and find owners of skills from their company's Classroom marketplace. Use when the user mentions Classroom, asks what skills exist for their role, or runs /classroom.
+argument-hint: "[recommend|install|extend|curate-path|owners|update|schedule|analytics|sync]"
+allowed-tools: Bash(claude *) Bash(cat *) Bash(ls *) Bash(mkdir *) Bash(git *) Bash(bash *) Bash(launchctl *) Bash(crontab *) Bash(python3 *) Read Write Edit Glob Grep
 ---
 
 # Classroom Guide
@@ -41,6 +41,9 @@ Look at `$ARGUMENTS`. The first word (`$0`) is the subcommand. If empty, show th
 - `curate-path` → §4 Curate Path (team-lead mode)
 - `owners` → §5 Owners
 - `update` → §6 Update (re-runs the installer to refresh the Guide itself)
+- `schedule` → §7 Schedule (headless/recurring skill runs)
+- `analytics` → §8 Analytics (usage summary from local log)
+- `sync` → §9 Sync (mirror skills to Codex, show sync status)
 - empty / anything else → show the menu below
 
 ### Menu (when no subcommand)
@@ -53,8 +56,11 @@ Look at `$ARGUMENTS`. The first word (`$0`) is the subcommand. If empty, show th
 > 4. **Curate a team path** *(team leads)* — Define which skills your team should install on day one.
 > 5. **Find who maintains a skill** — Look up the owner of any plugin so you know who to ping.
 > 6. **Update Classroom** — Pull the latest version of the Guide and the reference cache.
+> 7. **Schedule a skill** — Run a skill automatically on a daily or weekly schedule.
+> 8. **View your usage analytics** — See which skills you use most and which are gathering dust.
+> 9. **Sync with Codex** — Mirror Classroom skills to OpenAI Codex so both agents share the same library.
 >
-> Reply with `1`, `2`, `3`, `4`, `5`, or `6`.
+> Reply with `1`–`9`.
 
 Then route based on their choice.
 
@@ -69,6 +75,14 @@ Goal: figure out the user's team and role, then recommend the 3–5 most relevan
 3. **No matching path?** Tell them there's no curated path yet for their role, and offer to: (a) recommend based on the plugin descriptions in `marketplace.json` matched to their stated team, or (b) help their team lead create a path file (route to §4).
 4. **Path found?** Read the path file. It will list 3–5 plugins with one-line "why this matters." Present them to the user as a numbered list with the *why* preserved verbatim.
 5. **Ask for confirmation:** *"Want me to install these for you?"* If yes, route to §2 with the list pre-filled. If they want to pick a subset, let them say "1, 3" and only install those.
+
+6. **Emit analytics** after you present the recommendation (regardless of whether they say yes):
+
+   ```bash
+   bash -c 'if [ "${CLASSROOM_TELEMETRY:-1}" != "0" ]; then printf "{\"ts\":\"%s\",\"event\":\"guide_recommend\",\"path\":\"%s\",\"plugins\":[%s]}\n" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "PATH_NAME" "\"plugin1\",\"plugin2\"" >> ~/.claude/classroom-analytics.log 2>/dev/null; fi'
+   ```
+
+   Replace `PATH_NAME` with the path file name (e.g. `sales-ae`) and the plugins array with the actual recommended plugin names as quoted strings.
 
 Important: do not list every plugin in the marketplace. The whole point of the path file is curation. If the path lists 4 plugins, you recommend exactly those 4.
 
@@ -89,6 +103,14 @@ Goal: install one or more plugins from the marketplace. Always confirm before ru
 
    Run each as a separate Bash call so the user sees output for each one. If a plugin fails to install, stop and surface the error — don't silently continue.
 5. **Confirm success** by listing what was installed and one example slash command per plugin. Encourage the user to try one immediately so they get a "wow" before the conversation ends. Per the Ramp finding, the moment a non-technical user runs their first installed skill on real data is when Classroom becomes real to them.
+
+6. **Emit analytics** (after each successful install, if telemetry is not disabled):
+
+   ```bash
+   bash -c 'if [ "${CLASSROOM_TELEMETRY:-1}" != "0" ]; then printf "{\"ts\":\"%s\",\"event\":\"skill_install\",\"skill\":\"%s\",\"via\":\"%s\"}\n" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "PLUGIN_NAME" "VIA" >> ~/.claude/classroom-analytics.log 2>/dev/null; fi'
+   ```
+
+   Replace `PLUGIN_NAME` with the actual plugin name and `VIA` with `"recommend"` (if they arrived from §1) or `"browse"` (if they browsed the catalog directly).
 
 ---
 
@@ -212,6 +234,202 @@ Goal: pull the latest version of the Classroom Guide and reference cache. The re
 4. Tell the user to start a new Claude Code session if they want the updated Guide to load — Claude reads skills at session start.
 
 If the installer fails (no network, permission error), surface the error and stop. Do not silently retry.
+
+---
+
+## §7 Schedule
+
+Goal: set up an automatic recurring run of a Classroom skill without the user needing to be present.
+
+1. **Ask which skill to schedule.** List what's installed:
+   ```
+   claude plugin list
+   ```
+   Present the result as a numbered list. Ask which skill they want to run automatically. If they say "meeting prep" or similar plain language, map it to the closest installed skill name.
+
+2. **Ask the trigger:**
+   - *Daily* — runs every day at a time they choose
+   - *Weekly* — runs on a day of the week at a time they choose
+
+   Ask: *"Should this run daily or weekly, and at what time?"* (e.g., "Weekly on Mondays at 8 AM.")
+
+3. **Check ANTHROPIC_API_KEY.** Run:
+   ```bash
+   bash -c 'echo "${ANTHROPIC_API_KEY:+set}"'
+   ```
+   If the output is empty (key not set), stop and tell the user: *"Your ANTHROPIC_API_KEY isn't in the current environment. Set it in your shell profile and re-run `/classroom schedule`."* Do not proceed.
+
+4. **Ask for any context.** *"Any context to pass each time it runs? For example, 'draft for my team's weekly sync' or 'focus on Q3 competitive moves'. Leave blank to just run the skill as-is."*
+
+5. **Show the plan** as a confirmation block:
+   > **About to do:** Schedule `/weekly-status-update` to run every Monday at 8:00 AM.
+   >
+   > **Command:** `claude --print "Run /weekly-status-update — draft for my team's weekly sync (scheduled run, <date>)"`
+   >
+   > **Output:** `~/classroom-logs/weekly-status-update.log`
+   >
+   > Say **yes** to proceed, **cancel** to stop.
+
+6. **On approval**, call the scheduler helper:
+
+   ```bash
+   bash ~/.claude/classroom-schedule.sh --skill SKILL_NAME --trigger TRIGGER --time HH:MM [--day N] [--context "CONTEXT"]
+   ```
+
+   For weekly triggers, `--day` is the day of week (0=Sun, 1=Mon, …, 6=Sat). Convert day names to numbers (Monday=1, Friday=5, etc.).
+
+7. **Show the output** from the helper. If it fails, surface the error and stop.
+
+8. **Unschedule.** If the user says "unschedule" or "remove" at step 1, ask which skill to remove, confirm, then run:
+   ```bash
+   bash ~/.claude/classroom-schedule.sh --skill SKILL_NAME --remove
+   ```
+
+9. **Emit analytics** on success:
+   ```bash
+   bash -c 'if [ "${CLASSROOM_TELEMETRY:-1}" != "0" ]; then printf "{\"ts\":\"%s\",\"event\":\"schedule_created\",\"skill\":\"%s\",\"trigger\":\"%s\"}\n" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "SKILL_NAME" "TRIGGER" >> ~/.claude/classroom-analytics.log 2>/dev/null; fi'
+   ```
+
+See `docs/scheduled-runs.md` in the Classroom reference cache (`~/.claude/classroom/`) for troubleshooting and manual management instructions.
+
+---
+
+## §8 Analytics
+
+Goal: show the user a human-readable summary of their Classroom usage from the local analytics log.
+
+This subcommand is read-only — no confirm-before-action block needed.
+
+1. **Check the log exists:**
+   ```bash
+   bash -c 'test -f ~/.claude/classroom-analytics.log && wc -l < ~/.claude/classroom-analytics.log || echo 0'
+   ```
+   If the log is missing or empty, tell the user: *"No usage data yet — the log starts recording once you use Classroom skills."* Stop.
+
+2. **Read and parse the log:**
+   ```bash
+   python3 - << 'EOF'
+   import json, sys, collections
+   from datetime import datetime, timezone
+
+   events = []
+   with open(os.path.expanduser('~/.claude/classroom-analytics.log')) as f:
+       for line in f:
+           line = line.strip()
+           if line:
+               try:
+                   events.append(json.loads(line))
+               except json.JSONDecodeError:
+                   pass
+
+   installs = [e for e in events if e.get('event') == 'skill_install']
+   invokes  = [e for e in events if e.get('event') == 'skill_invoke']
+   refreshes = [e for e in events if e.get('event') == 'refresh_success']
+
+   install_counts = collections.Counter(e.get('skill') for e in installs)
+   invoke_counts  = collections.Counter(e.get('skill') for e in invokes)
+   installed_skills = set(install_counts)
+   used_skills = set(invoke_counts)
+   unused = installed_skills - used_skills
+
+   last_refresh = max((e.get('ts','') for e in refreshes), default=None)
+
+   print(json.dumps({
+       'installs': install_counts.most_common(),
+       'invokes':  invoke_counts.most_common(),
+       'unused':   list(unused),
+       'last_refresh': last_refresh,
+       'total_events': len(events),
+   }))
+   EOF
+   ```
+
+   Note: add `import os` to the script above before running.
+
+3. **Present the results** as a readable summary:
+
+   ```
+   ## Your Classroom usage
+
+   **Most-used skills:**
+   1. meeting-prep — 12 times
+   2. stakeholder-followup — 5 times
+
+   **Installed but never used:**
+   - competitive-analysis  ← consider uninstalling or trying it this week
+
+   **Last cache refresh:** 2026-05-06T14:00:00Z
+   **Total events logged:** 47
+   ```
+
+   If `unused` is non-empty, gently suggest trying those skills or using `/classroom update` to see if they have new features.
+
+4. **Opt-out reminder.** If the user asks how to disable telemetry, tell them: *"Set `CLASSROOM_TELEMETRY=0` in your shell profile (`~/.zshrc` or `~/.bashrc`) and events will stop being logged. To clear existing data: `rm ~/.claude/classroom-analytics.log`."*
+
+---
+
+## §9 Sync
+
+Goal: keep Classroom skills available in OpenAI Codex so users who work in both agents share the same skill library. SKILL.md format is identical between Claude Code and Codex — the sync is a directory mirror, no translation needed.
+
+This subcommand has three modes. Look at `$1` (the word after `sync`):
+- `status` (or no argument) → show current sync state
+- `force` → re-sync all skills now
+- `agents-md` → generate an AGENTS.md in the current working directory for Codex project context
+
+### Status (default)
+
+1. **Check Codex is installed:**
+   ```bash
+   bash -c 'test -d ~/.codex || command -v codex >/dev/null 2>&1 && echo detected || echo not-detected'
+   ```
+   If not detected, tell the user: *"Codex isn't installed or `~/.codex/` doesn't exist. Install Codex first: https://github.com/openai/codex"*
+
+2. **Run the sync helper in status mode:**
+   ```bash
+   bash ~/.claude/classroom-sync-codex.sh --status
+   ```
+
+3. **Present the output** and explain: *"Skills marked ✓ are already in Codex. Skills marked ✗ aren't synced yet — say 'sync now' to mirror them."*
+
+4. **If they say sync now** → proceed to Force Sync below.
+
+### Force sync
+
+1. **Show the plan:**
+   > **About to do:** Mirror all Classroom skills to `~/.codex/skills/` as symlinks. Skills already there will be updated; non-Classroom files won't be touched.
+   >
+   > Say **yes** to proceed.
+
+2. **On approval:**
+   ```bash
+   bash ~/.claude/classroom-sync-codex.sh
+   ```
+
+3. **Confirm** by listing what was synced. Tell the user: *"Codex will pick these up on next session start — no Codex restart needed if it's already running."*
+
+4. **Emit analytics:**
+   ```bash
+   bash -c 'if [ "${CLASSROOM_TELEMETRY:-1}" != "0" ]; then printf "{\"ts\":\"%s\",\"event\":\"codex_sync\",\"mode\":\"force\"}\n" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> ~/.claude/classroom-analytics.log 2>/dev/null; fi'
+   ```
+
+### Generate AGENTS.md
+
+If the user asks for `agents-md` or says "generate an AGENTS.md":
+
+1. **Confirm target directory** — default is their current working directory. Ask: *"Write AGENTS.md to `<cwd>`?"*
+
+2. **On approval:**
+   ```bash
+   bash ~/.claude/classroom-sync-codex.sh --agents-md .
+   ```
+
+3. **Show them** what was written. Explain: *"Commit this AGENTS.md to your repo so Codex sees the Classroom skill list automatically when it works in that project."*
+
+### If Codex isn't detected
+
+Tell the user:
+> Codex isn't installed — `~/.codex/` doesn't exist and `codex` isn't on PATH. Once you install Codex, re-run the Classroom installer (`/classroom update`) and it will detect Codex automatically and mirror skills. Or run `/classroom sync force` at any time.
 
 ---
 

@@ -4,8 +4,12 @@
 # What this does:
 #   1. Downloads the Classroom reference snapshot to ~/.claude/classroom (tarball, no git required)
 #   2. Copies the Guide skill to ~/.claude/skills/classroom (so it's available immediately)
-#   3. Adds the Classroom marketplace to ~/.claude/settings.json via extraKnownMarketplaces
-#   4. Installs a refresh + first-run hook on Claude Code SessionStart
+#   3. Registers the Classroom marketplace in ~/.claude/plugins/known_marketplaces.json
+#   4. Installs the schedule helper to ~/.claude/classroom-schedule.sh
+#   5. Installs the Codex sync helper to ~/.claude/classroom-sync-codex.sh
+#   6. If Codex is detected (~/.codex/ or codex on PATH), mirrors skills to ~/.codex/skills/
+#   7. Initializes the analytics log at ~/.claude/classroom-analytics.log
+#   8. Installs a refresh + first-run hook on Claude Code SessionStart
 #
 # Safe to re-run. Atomic swap means readers never observe a half-written cache.
 #
@@ -33,10 +37,14 @@ CLASSROOM_DIR="${CLASSROOM_DIR:-$HOME/.claude/classroom}"
 CLASSROOM_TARBALL="${CLASSROOM_TARBALL:-}"
 CLASSROOM_TARBALL_SHA256="${CLASSROOM_TARBALL_SHA256:-}"
 CLASSROOM_USE_INPLACE="${CLASSROOM_USE_INPLACE:-0}"
+CLASSROOM_SYNC_CODEX="${CLASSROOM_SYNC_CODEX:-auto}"  # auto | 1 | 0
 SETTINGS_FILE="$HOME/.claude/settings.json"
 GUIDE_SKILL_DIR="$HOME/.claude/skills/classroom"
 HOOK_SCRIPT="$HOME/.claude/classroom-first-run.sh"
 REFRESH_SCRIPT="$HOME/.claude/classroom-refresh.sh"
+SCHEDULE_SCRIPT="$HOME/.claude/classroom-schedule.sh"
+SYNC_CODEX_SCRIPT="$HOME/.claude/classroom-sync-codex.sh"
+ANALYTICS_LOG="$HOME/.claude/classroom-analytics.log"
 FIRST_RUN_MARKER="$HOME/.claude/classroom-onboarded"
 
 # ---- Helpers ----------------------------------------------------------------
@@ -274,7 +282,49 @@ else
   warn "Manually add the SessionStart hook to $SETTINGS_FILE."
 fi
 
-# ---- Step 4: write the refresh script ---------------------------------------
+# ---- Step 4a: install the schedule helper -----------------------------------
+SCHEDULE_SOURCE="$CLASSROOM_DIR/classroom-schedule.sh"
+if [ -f "$SCHEDULE_SOURCE" ]; then
+  say "Installing schedule helper to $SCHEDULE_SCRIPT"
+  cp "$SCHEDULE_SOURCE" "$SCHEDULE_SCRIPT"
+  chmod +x "$SCHEDULE_SCRIPT"
+else
+  warn "classroom-schedule.sh not found in snapshot — skipping schedule helper install"
+fi
+
+# ---- Step 4b: install the Codex sync helper ---------------------------------
+SYNC_CODEX_SOURCE="$CLASSROOM_DIR/classroom-sync-codex.sh"
+if [ -f "$SYNC_CODEX_SOURCE" ]; then
+  say "Installing Codex sync helper to $SYNC_CODEX_SCRIPT"
+  cp "$SYNC_CODEX_SOURCE" "$SYNC_CODEX_SCRIPT"
+  chmod +x "$SYNC_CODEX_SCRIPT"
+else
+  warn "classroom-sync-codex.sh not found in snapshot — skipping Codex sync helper install"
+fi
+
+# ---- Step 4c: run initial Codex sync if Codex is detected -------------------
+_codex_detected=0
+if [ -d "$HOME/.codex" ] || command -v codex >/dev/null 2>&1; then
+  _codex_detected=1
+fi
+
+if [ "$CLASSROOM_SYNC_CODEX" = "1" ] || { [ "$CLASSROOM_SYNC_CODEX" = "auto" ] && [ "$_codex_detected" -eq 1 ]; }; then
+  if [ -x "$SYNC_CODEX_SCRIPT" ]; then
+    say "Codex detected — syncing Classroom skills to ~/.codex/skills/"
+    if ! CLASSROOM_DIR="$CLASSROOM_DIR" bash "$SYNC_CODEX_SCRIPT" 2>/dev/null; then
+      warn "Codex skill sync failed — run /classroom sync manually to retry"
+    fi
+  fi
+fi
+
+# ---- Step 4d: initialize analytics log (if telemetry not disabled) ----------
+CLASSROOM_TELEMETRY="${CLASSROOM_TELEMETRY:-1}"
+if [ "$CLASSROOM_TELEMETRY" != "0" ] && [ ! -f "$ANALYTICS_LOG" ]; then
+  say "Initializing analytics log at $ANALYTICS_LOG"
+  touch "$ANALYTICS_LOG"
+fi
+
+# ---- Step 5: write the refresh script ---------------------------------------
 say "Writing refresh script to $REFRESH_SCRIPT"
 cat > "$REFRESH_SCRIPT" <<REFRESH_EOF
 #!/usr/bin/env bash
@@ -395,6 +445,19 @@ fi
 rm -rf "\$tmp_root"
 touch "\$MARKER"
 log "refreshed from \$url"
+
+# Post-refresh: mirror updated skills to Codex if available
+SYNC_SCRIPT="\$HOME/.claude/classroom-sync-codex.sh"
+if [ -x "\$SYNC_SCRIPT" ]; then
+  if [ -d "\$HOME/.codex" ] || command -v codex >/dev/null 2>&1; then
+    if ! CLASSROOM_DIR="\$CLASSROOM_DIR" bash "\$SYNC_SCRIPT" >/dev/null 2>&1; then
+      log "codex sync failed after refresh (non-fatal)"
+    else
+      log "codex sync completed"
+    fi
+  fi
+fi
+
 exit 0
 REFRESH_EOF
 chmod +x "$REFRESH_SCRIPT"
@@ -422,6 +485,11 @@ if [ -f "\$MARKER" ]; then
   exit 0
 fi
 
+# Emit first_run analytics event
+if [ "\${CLASSROOM_TELEMETRY:-1}" != "0" ]; then
+  printf '{"ts":"%s","event":"first_run"}\n' "\$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "\$HOME/.claude/classroom-analytics.log" 2>/dev/null || true
+fi
+
 cat <<'WELCOME'
 Welcome to Classroom — your company's skill marketplace.
 
@@ -445,6 +513,9 @@ echo "  Reference cache:  $CLASSROOM_DIR"
 echo "  Guide skill:      $GUIDE_SKILL_DIR/SKILL.md"
 echo "  Settings:         $SETTINGS_FILE"
 echo "  Refresh script:   $REFRESH_SCRIPT"
+echo "  Schedule helper:  $SCHEDULE_SCRIPT"
+echo "  Codex sync:       $SYNC_CODEX_SCRIPT"
 echo "  First-run hook:   $HOOK_SCRIPT"
+echo "  Analytics log:    $ANALYTICS_LOG"
 echo
 echo "Next: open Claude Code and you'll see a welcome message. Type /classroom to start."

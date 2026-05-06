@@ -97,6 +97,9 @@ Run `bash tests/run.sh` from the repo root to validate any change.
 - `curate-path` — team-lead mode: draft a path file and open a PR
 - `owners` — look up the maintainer of any plugin
 - `update` — re-run the installer to update the Guide and force a cache refresh
+- `schedule` — set up a recurring (daily/weekly) headless skill run via cron or launchd
+- `analytics` — summary of which skills you've installed and actually used
+- `sync` — mirror Classroom skills to OpenAI Codex so both agents share the same library
 
 **Five seed skills** across four problem-domain plugins:
 - `competitive-intelligence/` — `competitive-analysis`
@@ -112,6 +115,10 @@ Run `bash tests/run.sh` from the repo root to validate any change.
 - [docs/extending-skills.md](docs/extending-skills.md) — the composition convention
 - [docs/path-files.md](docs/path-files.md) — how team leaders curate
 - [docs/pr-checklist.md](docs/pr-checklist.md) — central-repo PR review bar
+- [docs/npm-packs.md](docs/npm-packs.md) — publishing a plugin to npm
+- [docs/telemetry.md](docs/telemetry.md) — local analytics log, opt-out, forwarding
+- [docs/scheduled-runs.md](docs/scheduled-runs.md) — headless/recurring skill runs
+- [docs/codex-sync.md](docs/codex-sync.md) — syncing Classroom skills to OpenAI Codex
 
 ## Repo layout
 
@@ -121,6 +128,8 @@ classroom/
 ├── CODEOWNERS                    # per-plugin maintainers (GitHub auto-review)
 ├── install.sh                    # one-line install bootstrap (no git required)
 ├── install-dev.sh                # contributor variant (git checkout)
+├── classroom-schedule.sh         # scheduler helper (installed to ~/.claude/ by install.sh)
+├── classroom-sync-codex.sh       # Codex sync helper (installed to ~/.claude/ by install.sh)
 ├── guide/SKILL.md                # the Guide skill (copied to ~/.claude/skills/classroom/ on install)
 ├── .claude-plugin/marketplace.json   # plugin catalog (Claude Code marketplace)
 ├── plugins/                      # in-tree problem-domain plugins
