@@ -2,6 +2,8 @@
 
 **A plugin marketplace for Claude Code and Codex (working on Cowork!)**
 
+Skills are authored once in standard `SKILL.md` format and run in either agent. When both are installed, Classroom mirrors its skills into Codex automatically — see [docs/codex-sync.md](docs/codex-sync.md).
+
 ## Why this exists
 
 Everyone builds their own Claude Code skills right now, on their local machine. The entire system is living in single-player mode — we don't learn, we don't collaborate, and we have constant errors from binaries shared in Slack, email, and everywhere else. Skills end up siloed with whoever wrote them, duplicated across teams, with no one accountable for quality. Essentially we're setting up an org where everyone trains and enables themselves with no context.
@@ -53,8 +55,9 @@ This:
 2. Installs the Guide as a personal skill at `~/.claude/skills/classroom`
 3. Adds the Classroom marketplace to `~/.claude/settings.json`
 4. Installs a `SessionStart` hook that prints a welcome on first run and kicks off a background refresh
+5. If OpenAI Codex is detected (`~/.codex/` or `codex` on PATH), mirrors all skills into `~/.codex/skills/` as symlinks so Codex picks them up too
 
-Then open Claude Code and type `/classroom`.
+Then open Claude Code (or Codex) and type `/classroom`.
 
 > **Note:** the install script downloads from `$CLASSROOM_REPO` (default: a placeholder GitHub URL). If you're forking this repo for your own company, set `CLASSROOM_REPO` to your fork's URL before running the script.
 
