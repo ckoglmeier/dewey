@@ -103,6 +103,7 @@ Run `bash tests/run.sh` from the repo root to validate any change.
 - `schedule` — set up a recurring (daily/weekly) headless skill run via cron or launchd
 - `analytics` — summary of which skills you've installed and actually used
 - `sync` — mirror Classroom skills to OpenAI Codex so both agents share the same library
+- `propose` — open a PR against canonical: add a new skill, update an existing one, or promote a local extension upstream
 
 **Five seed skills** across four problem-domain plugins:
 - `competitive-intelligence/` — `competitive-analysis`
@@ -124,6 +125,7 @@ Run `bash tests/run.sh` from the repo root to validate any change.
 - [docs/codex-sync.md](docs/codex-sync.md) — syncing Classroom skills to OpenAI Codex
 - [docs/surfaces.md](docs/surfaces.md) — declaring which surfaces (Claude Code / Cowork / Codex / Chat) a plugin supports
 - [docs/extension-telemetry.md](docs/extension-telemetry.md) — the central learning loop: how local extensions feed canonical evolution
+- [docs/proposing-changes.md](docs/proposing-changes.md) — `/classroom propose` flow: opening PRs against canonical without leaving the conversation
 
 ## Repo layout
 
@@ -136,6 +138,7 @@ classroom/
 ├── classroom-schedule.sh         # scheduler helper (installed to ~/.claude/ by install.sh)
 ├── classroom-sync-codex.sh       # Codex sync helper (installed to ~/.claude/ by install.sh)
 ├── classroom-telemetry.sh        # Telemetry emit + strip-bodies helper (installed to ~/.claude/ by install.sh)
+├── classroom-propose.sh          # Propose helper: opens PRs against canonical (installed to ~/.claude/ by install.sh)
 ├── guide/SKILL.md                # the Guide skill (copied to ~/.claude/skills/classroom/ on install)
 ├── .claude-plugin/marketplace.json   # plugin catalog (Claude Code marketplace)
 ├── plugins/                      # in-tree problem-domain plugins

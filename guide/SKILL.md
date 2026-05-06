@@ -1,8 +1,8 @@
 ---
 name: classroom
 description: Classroom Guide. Helps the user discover, install, extend, schedule, and find owners of skills from their company's Classroom marketplace. Use when the user mentions Classroom, asks what skills exist for their role, or runs /classroom.
-argument-hint: "[recommend|install|extend|curate-path|owners|update|schedule|analytics|sync]"
-allowed-tools: Bash(claude *) Bash(cat *) Bash(ls *) Bash(mkdir *) Bash(git *) Bash(bash *) Bash(launchctl *) Bash(crontab *) Bash(python3 *) Read Write Edit Glob Grep
+argument-hint: "[recommend|install|extend|curate-path|owners|update|schedule|analytics|sync|propose]"
+allowed-tools: Bash(claude *) Bash(cat *) Bash(ls *) Bash(mkdir *) Bash(git *) Bash(bash *) Bash(gh *) Bash(launchctl *) Bash(crontab *) Bash(python3 *) Read Write Edit Glob Grep
 ---
 
 # Classroom Guide
@@ -63,6 +63,7 @@ Look at `$ARGUMENTS`. The first word (`$0`) is the subcommand. If empty, show th
 - `schedule` → §7 Schedule (headless/recurring skill runs)
 - `analytics` → §8 Analytics (usage summary from local log)
 - `sync` → §9 Sync (mirror skills to Codex, show sync status)
+- `propose` → §10 Propose (open a PR to add or update a canonical skill)
 - empty / anything else → show the menu below
 
 ### Menu (when no subcommand)
@@ -78,8 +79,9 @@ Look at `$ARGUMENTS`. The first word (`$0`) is the subcommand. If empty, show th
 > 7. **Schedule a skill** — Run a skill automatically on a daily or weekly schedule.
 > 8. **View your usage analytics** — See which skills you use most and which are gathering dust.
 > 9. **Sync with Codex** — Mirror Classroom skills to OpenAI Codex so both agents share the same library.
+> 10. **Propose a canonical skill change** — Open a PR to add a new skill, update one you own, or promote a local extension upstream.
 >
-> Reply with `1`–`9`.
+> Reply with `1`–`10`.
 
 Then route based on their choice.
 
@@ -474,6 +476,79 @@ If the user asks for `agents-md` or says "generate an AGENTS.md":
 
 Tell the user:
 > Codex isn't installed — `~/.codex/` doesn't exist and `codex` isn't on PATH. Once you install Codex, re-run the Classroom installer (`/classroom update`) and it will detect Codex automatically and mirror skills. Or run `/classroom sync force` at any time.
+
+---
+
+## §10 Propose
+
+Goal: turn a drafted change into a GitHub PR against the canonical Classroom repo. Three sub-flows: **new-skill** (add one), **update** (change an existing one), **promote** (turn a local extension into a canonical proposal). All three converge on the same helper command at the end.
+
+### Pre-flight
+
+1. **Check prerequisites.** Run:
+   ```bash
+   bash ~/.claude/classroom-propose.sh --check
+   ```
+   If it fails, surface the error verbatim and stop. Common cases: `gh` not installed, `gh` not authenticated. Tell the user how to fix and stop — do not proceed.
+
+2. **Identify the sub-flow** from `$1` (e.g. `/classroom propose update meeting-prep`) or by asking:
+   - *"What do you want to propose? (a) add a new skill, (b) update an existing one, (c) promote one of your local extensions"*
+
+### Sub-flow A: new-skill
+
+1. Ask: *"Which plugin should this skill go in?"* List existing plugins from `~/.claude/classroom/.claude-plugin/marketplace.json`. Allow "new plugin" as an option (defer to a follow-up — for now require an existing plugin).
+2. Ask: skill name (kebab-case), one-line description, what the skill should do (the body).
+3. **Draft the SKILL.md.** Use the same shape as existing skills (frontmatter with `name`, `description`, optional `argument-hint`; markdown body that's direct and instructive). Default `surfaces` to `["claude-code", "cowork", "codex", "chat"]` if the body uses no Bash, otherwise drop `chat`. The plugin's `surfaces` already constrains, but the skill should be authored to fit.
+4. Show the draft. Ask for explicit approval to proceed.
+5. **Target path:** `plugins/<plugin>/skills/<skill-name>/SKILL.md`
+6. Skip to "Open the PR" below.
+
+### Sub-flow B: update
+
+1. Identify the skill from `$2` or by asking. The parent must exist under `~/.claude/classroom/plugins/`.
+2. Read the current canonical SKILL.md so you can show its present state.
+3. Ask: *"What do you want to change?"* Take their answer in plain language.
+4. **Draft the revision.** Apply the change to the canonical body, preserving structure. Keep the existing frontmatter unless the change explicitly modifies it.
+5. Show the diff (use `diff -u` mentally — show old → new chunks). Ask for explicit approval.
+6. **Target path:** `plugins/<plugin>/skills/<skill>/SKILL.md` (same as canonical).
+
+### Sub-flow C: promote
+
+1. List the user's local extensions: anything under `~/.claude/skills/` or `~/classroom-extensions-*/skills/` whose SKILL.md has an `extends:` frontmatter field.
+2. Ask which one to promote.
+3. Read the extension and the parent it extends.
+4. Ask: *"Should this become (a) an update absorbed into the parent canonical, or (b) a new canonical sibling skill in the same plugin?"*
+   - **(a) absorb**: merge the extension's "Then additionally:" body into the parent's body. Treat as sub-flow B from this point.
+   - **(b) sibling**: take the extension as-is, drop the `extends:` frontmatter and the "load and follow the parent" preamble, repromote it as standalone. Treat as sub-flow A from this point.
+5. Apply that flow's drafting and approval steps.
+
+### Open the PR (all sub-flows)
+
+After the user approves the draft:
+
+1. **Stage the content** to a temporary file, e.g. `/tmp/classroom-propose-content.md`.
+2. **Stage the PR body** to a separate temp file with: a one-paragraph summary, the rationale (especially if this is a promote — cite the analytics signal: how many users created similar extensions), and a "Generated via /classroom propose" footer.
+3. **Build a branch name**: `propose/<sub-flow>-<skill>-<short-hash>` where short-hash is `$(date +%Y%m%d-%H%M%S)` to avoid collisions.
+4. **Build a title**: short imperative — e.g., "Add `competitive-deepdive` to competitive-intelligence" or "Update `meeting-prep`: add stakeholder mapping step".
+5. **Run the helper**:
+   ```bash
+   bash ~/.claude/classroom-propose.sh propose \
+     --target-path "TARGET_PATH" \
+     --content-file /tmp/classroom-propose-content.md \
+     --branch "BRANCH_NAME" \
+     --title "TITLE" \
+     --body-file /tmp/classroom-propose-body.md
+   ```
+6. **Show the PR URL** to the user when the helper prints it. Tell them: *"CODEOWNERS will tag the right reviewer automatically. You'll get a notification when they respond."*
+
+If the helper exits non-zero, surface its stderr and stop. Common failures:
+- Tests fail in the working tree → tell the user the lint output, suggest editing the draft and rerunning.
+- Push rejected → likely an auth or branch-protection issue. Tell the user the message verbatim and don't retry blindly.
+- Fork-flow needed and `gh repo fork` failed → suggest running `gh auth refresh -s public_repo,repo`.
+
+### Where canonical lives
+
+The propose helper writes to a working clone at `~/.claude/classroom-author/` (separate from the read-only reference cache at `~/.claude/classroom/`). Don't confuse these — the cache is what skills actually load from at runtime; the working clone is only used during a propose flow.
 
 ---
 

@@ -8,9 +8,10 @@
 #   4. Installs the schedule helper to ~/.claude/classroom-schedule.sh
 #   5. Installs the Codex sync helper to ~/.claude/classroom-sync-codex.sh
 #   6. Installs the telemetry helper to ~/.claude/classroom-telemetry.sh
-#   7. If Codex is detected (~/.codex/ or codex on PATH), mirrors skills to ~/.codex/skills/
-#   8. Initializes the analytics log at ~/.claude/classroom-analytics.log
-#   9. Installs a refresh + first-run hook on Claude Code SessionStart
+#   7. Installs the propose helper to ~/.claude/classroom-propose.sh
+#   8. If Codex is detected (~/.codex/ or codex on PATH), mirrors skills to ~/.codex/skills/
+#   9. Initializes the analytics log at ~/.claude/classroom-analytics.log
+#   10. Installs a refresh + first-run hook on Claude Code SessionStart
 #
 # Safe to re-run. Atomic swap means readers never observe a half-written cache.
 #
@@ -46,6 +47,7 @@ REFRESH_SCRIPT="$HOME/.claude/classroom-refresh.sh"
 SCHEDULE_SCRIPT="$HOME/.claude/classroom-schedule.sh"
 SYNC_CODEX_SCRIPT="$HOME/.claude/classroom-sync-codex.sh"
 TELEMETRY_SCRIPT="$HOME/.claude/classroom-telemetry.sh"
+PROPOSE_SCRIPT="$HOME/.claude/classroom-propose.sh"
 ANALYTICS_LOG="$HOME/.claude/classroom-analytics.log"
 FIRST_RUN_MARKER="$HOME/.claude/classroom-onboarded"
 
@@ -314,6 +316,16 @@ else
   warn "classroom-telemetry.sh not found in snapshot — skipping telemetry helper install"
 fi
 
+# ---- Step 4b3: install the propose helper -----------------------------------
+PROPOSE_SOURCE="$CLASSROOM_DIR/classroom-propose.sh"
+if [ -f "$PROPOSE_SOURCE" ]; then
+  say "Installing propose helper to $PROPOSE_SCRIPT"
+  cp "$PROPOSE_SOURCE" "$PROPOSE_SCRIPT"
+  chmod +x "$PROPOSE_SCRIPT"
+else
+  warn "classroom-propose.sh not found in snapshot — skipping propose helper install"
+fi
+
 # ---- Step 4c: run initial Codex sync if Codex is detected -------------------
 _codex_detected=0
 if [ -d "$HOME/.codex" ] || command -v codex >/dev/null 2>&1; then
@@ -528,6 +540,7 @@ echo "  Refresh script:   $REFRESH_SCRIPT"
 echo "  Schedule helper:  $SCHEDULE_SCRIPT"
 echo "  Codex sync:       $SYNC_CODEX_SCRIPT"
 echo "  Telemetry helper: $TELEMETRY_SCRIPT"
+echo "  Propose helper:   $PROPOSE_SCRIPT"
 echo "  First-run hook:   $HOOK_SCRIPT"
 echo "  Analytics log:    $ANALYTICS_LOG"
 echo
