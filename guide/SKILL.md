@@ -31,6 +31,25 @@ Classroom reference data lives at `~/.claude/classroom/` (placed there by the in
 
 If `~/.claude/classroom/` does not exist, tell the user the install script hasn't run, and stop. Do not try to recover.
 
+## Surface awareness
+
+Classroom skills declare which surfaces they support in `plugin.json` under `surfaces` (e.g. `["claude-code", "cowork", "codex", "chat"]`). When recommending or listing plugins, filter to those that include the **current surface**.
+
+Detect the current surface in this order:
+
+1. If `$CLASSROOM_SURFACE` is set in the environment, use that value.
+2. Otherwise, infer:
+   - If `~/Library/Application Support/Claude/cowork-enabled-cli-ops.json` exists *and* `~/.claude/sessions/` shows a recent Cowork session → `cowork`
+   - If `~/.codex/` exists and `$CODEX_HOME` or `codex` is on PATH → could be `codex`
+   - Otherwise, default to `claude-code`
+3. If you can't tell with confidence, ask the user: *"Are you using Claude Code, Cowork, Codex, or claude.ai chat?"* Their answer is the surface.
+
+When filtering: a plugin missing the `surfaces` field is treated as `["claude-code"]` (the conservative default).
+
+If a recommended-by-path plugin doesn't match the current surface, skip it and tell the user: *"`<plugin>` isn't compatible with `<surface>` — it requires tools that aren't available there."* Don't silently drop it.
+
+See [docs/surfaces.md](https://github.com/ckoglmeier/classroom/blob/main/docs/surfaces.md) for the full convention.
+
 ## Routing
 
 Look at `$ARGUMENTS`. The first word (`$0`) is the subcommand. If empty, show the menu.
@@ -70,11 +89,12 @@ Then route based on their choice.
 
 Goal: figure out the user's team and role, then recommend the 3–5 most relevant skills.
 
-1. **Ask** in one message: *"What team are you on, and what's your role?"* (Example: "Sales, AE.")
-2. **List available paths.** Read `~/.claude/classroom/paths/` and look for a path file matching their role. If `paths/sales-ae.md` exists for "Sales, AE", use that.
-3. **No matching path?** Tell them there's no curated path yet for their role, and offer to: (a) recommend based on the plugin descriptions in `marketplace.json` matched to their stated team, or (b) help their team lead create a path file (route to §4).
-4. **Path found?** Read the path file. It will list 3–5 plugins with one-line "why this matters." Present them to the user as a numbered list with the *why* preserved verbatim.
-5. **Ask for confirmation:** *"Want me to install these for you?"* If yes, route to §2 with the list pre-filled. If they want to pick a subset, let them say "1, 3" and only install those.
+1. **Detect the current surface** (see "Surface awareness" above). You'll filter recommendations against it.
+2. **Ask** in one message: *"What team are you on, and what's your role?"* (Example: "Sales, AE.")
+3. **List available paths.** Read `~/.claude/classroom/paths/` and look for a path file matching their role. If `paths/sales-ae.md` exists for "Sales, AE", use that.
+4. **No matching path?** Tell them there's no curated path yet for their role, and offer to: (a) recommend based on the plugin descriptions in `marketplace.json` matched to their stated team, or (b) help their team lead create a path file (route to §4).
+5. **Path found?** Read the path file. It will list 3–5 plugins with one-line "why this matters." For each, read its `plugin.json` and check `surfaces`. Drop any whose `surfaces` doesn't include the current surface, and tell the user which ones were dropped and why. Present the remaining plugins as a numbered list with the *why* preserved verbatim.
+6. **Ask for confirmation:** *"Want me to install these for you?"* If yes, route to §2 with the list pre-filled. If they want to pick a subset, let them say "1, 3" and only install those.
 
 6. **Emit analytics** after you present the recommendation (regardless of whether they say yes):
 
@@ -92,8 +112,8 @@ Important: do not list every plugin in the marketplace. The whole point of the p
 
 Goal: install one or more plugins from the marketplace. Always confirm before running each install.
 
-1. **If you arrived from §1**, you already have the plugin list. Skip to step 3.
-2. **Otherwise**, read `~/.claude/classroom/.claude-plugin/marketplace.json` and present the plugins as a numbered list with their descriptions. Ask which one(s) to install.
+1. **If you arrived from §1**, you already have the plugin list (already filtered by surface). Skip to step 3.
+2. **Otherwise**, detect the current surface (see "Surface awareness"), read `~/.claude/classroom/.claude-plugin/marketplace.json`, and for each plugin also read its `plugin.json` to check `surfaces`. Present only plugins whose `surfaces` includes the current surface as a numbered list with descriptions. If any plugins were filtered out, mention the count: *"3 plugins not shown because they don't run in `<surface>`."* Ask which one(s) to install.
 3. **Show the install plan** as a confirmation block (see "Core operating principle" above) listing each plugin and where it's coming from.
 4. **On approval**, run the install for each:
 

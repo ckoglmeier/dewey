@@ -5,5 +5,11 @@
   "author": {
     "name": "CK",
     "contact": "@ck"
-  }
+  },
+  "surfaces": [
+    "claude-code",
+    "cowork",
+    "codex",
+    "chat"
+  ]
 }

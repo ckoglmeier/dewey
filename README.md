@@ -122,6 +122,7 @@ Run `bash tests/run.sh` from the repo root to validate any change.
 - [docs/telemetry.md](docs/telemetry.md) — local analytics log, opt-out, forwarding
 - [docs/scheduled-runs.md](docs/scheduled-runs.md) — headless/recurring skill runs
 - [docs/codex-sync.md](docs/codex-sync.md) — syncing Classroom skills to OpenAI Codex
+- [docs/surfaces.md](docs/surfaces.md) — declaring which surfaces (Claude Code / Cowork / Codex / Chat) a plugin supports
 
 ## Repo layout
 
