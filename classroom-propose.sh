@@ -142,20 +142,56 @@ do_propose() {
   fi
 
   local repo_dir="$CLASSROOM_AUTHOR_DIR"
-  say "Branching: $branch"
-  git -C "$repo_dir" checkout --quiet -b "$branch" 2>/dev/null \
-    || git -C "$repo_dir" checkout --quiet "$branch"
+  local tmp_parent worktree_dir base_ref
+  tmp_parent="$(mktemp -d)"
+  worktree_dir="$tmp_parent/worktree"
 
-  local dest="$repo_dir/$target_path"
+  if git -C "$repo_dir" rev-parse --verify origin/main >/dev/null 2>&1; then
+    base_ref="origin/main"
+  elif git -C "$repo_dir" rev-parse --verify main >/dev/null 2>&1; then
+    base_ref="main"
+  else
+    base_ref="HEAD"
+  fi
+
+  cleanup_worktree() {
+    if [[ -n "${worktree_dir:-}" && -d "$worktree_dir/.git" ]]; then
+      git -C "$repo_dir" worktree remove --force "$worktree_dir" >/dev/null 2>&1 || true
+    fi
+    if [[ -n "${tmp_parent:-}" && -d "$tmp_parent" ]]; then
+      rm -rf "$tmp_parent"
+    fi
+  }
+
+  say "Preparing temporary worktree from $base_ref"
+  if ! git -C "$repo_dir" worktree add --quiet --detach "$worktree_dir" "$base_ref"; then
+    cleanup_worktree
+    err "failed to create temporary worktree"
+    return 1
+  fi
+
+  if [[ $dry_run -eq 0 ]]; then
+    say "Branching: $branch"
+    if ! git -C "$worktree_dir" checkout --quiet -B "$branch"; then
+      cleanup_worktree
+      err "failed to create branch: $branch"
+      return 1
+    fi
+  else
+    say "[dry-run] validating change in a temporary worktree"
+  fi
+
+  local dest="$worktree_dir/$target_path"
   mkdir -p "$(dirname "$dest")"
   cp "$content_file" "$dest"
   note "Staged content at $target_path"
 
-  if [[ -x "$repo_dir/tests/run.sh" ]]; then
+  if [[ -x "$worktree_dir/tests/run.sh" ]]; then
     say "Running tests/run.sh against the working tree"
-    if ! ( cd "$repo_dir" && bash tests/run.sh ) >/tmp/classroom-propose-test.log 2>&1; then
+    if ! ( cd "$worktree_dir" && bash tests/run.sh ) >/tmp/classroom-propose-test.log 2>&1; then
       err "tests/run.sh failed. Output:"
       tail -30 /tmp/classroom-propose-test.log >&2
+      cleanup_worktree
       return 1
     fi
     note "tests passed"
@@ -163,17 +199,26 @@ do_propose() {
     note "no tests/run.sh in working tree — skipping lint"
   fi
 
-  git -C "$repo_dir" add -- "$target_path"
-  git -C "$repo_dir" commit --quiet -m "$title"
-
   if [[ $dry_run -eq 1 ]]; then
     say "[dry-run] would push branch '$branch' and open a PR"
+    note "Diff:"
+    git -C "$worktree_dir" diff -- "$target_path" | sed 's/^/    /'
     note "Title: $title"
     note "Body:"
     sed 's/^/    /' "$body_file" >&2
-    git -C "$repo_dir" checkout --quiet main 2>/dev/null || true
-    git -C "$repo_dir" branch -D "$branch" >/dev/null 2>&1 || true
+    cleanup_worktree
     return 0
+  fi
+
+  if ! git -C "$worktree_dir" add -- "$target_path"; then
+    cleanup_worktree
+    err "failed to stage: $target_path"
+    return 1
+  fi
+  if ! git -C "$worktree_dir" commit --quiet -m "$title"; then
+    cleanup_worktree
+    err "failed to commit change; content may be unchanged"
+    return 1
   fi
 
   local mode
@@ -181,27 +226,58 @@ do_propose() {
   say "Push mode: $mode"
 
   if [[ "$mode" == "write" ]]; then
-    git -C "$repo_dir" push --quiet -u origin "$branch"
+    if ! git -C "$worktree_dir" push --quiet -u origin "$branch"; then
+      cleanup_worktree
+      err "failed to push branch: $branch"
+      return 1
+    fi
     local pr_url
-    pr_url=$(cd "$repo_dir" && gh pr create --title "$title" --body-file "$body_file" --base main --head "$branch")
+    if ! pr_url=$(cd "$worktree_dir" && gh pr create --title "$title" --body-file "$body_file" --base main --head "$branch"); then
+      cleanup_worktree
+      err "failed to open pull request"
+      return 1
+    fi
     say "$(green ✓) Pull request opened: $pr_url"
   else
     # Fork mode: fork the repo (idempotent), push to fork, open cross-repo PR.
     local owner_repo fork_owner
     owner_repo=$(echo "$CLASSROOM_REPO" | sed -E 's#.*github\.com[:/]##; s#\.git$##')
     say "User does not have write access; using fork-and-PR flow"
-    fork_owner=$(gh repo fork "$owner_repo" --remote --remote-name=fork --clone=false 2>&1 | sed -nE 's/.*Created fork ([^ ]+).*/\1/p')
+    if ! fork_owner=$(gh repo fork "$owner_repo" --remote --remote-name=fork --clone=false 2>&1 | sed -nE 's/.*Created fork ([^ ]+).*/\1/p'); then
+      cleanup_worktree
+      err "failed to create or inspect fork"
+      return 1
+    fi
     if [[ -z "$fork_owner" ]]; then
       # Already-forked path: detect existing fork
-      fork_owner=$(gh api user --jq .login)/$(basename "$owner_repo")
+      if ! fork_owner="$(gh api user --jq .login)/$(basename "$owner_repo")"; then
+        cleanup_worktree
+        err "failed to detect fork owner"
+        return 1
+      fi
     fi
-    git -C "$repo_dir" remote get-url fork >/dev/null 2>&1 \
-      || git -C "$repo_dir" remote add fork "https://github.com/$fork_owner.git"
-    git -C "$repo_dir" push --quiet -u fork "$branch"
+    if ! git -C "$worktree_dir" remote get-url fork >/dev/null 2>&1; then
+      if ! git -C "$worktree_dir" remote add fork "https://github.com/$fork_owner.git"; then
+        cleanup_worktree
+        err "failed to add fork remote"
+        return 1
+      fi
+    fi
+    if ! git -C "$worktree_dir" push --quiet -u fork "$branch"; then
+      cleanup_worktree
+      err "failed to push branch to fork: $branch"
+      return 1
+    fi
     local pr_url
-    pr_url=$(cd "$repo_dir" && gh pr create --title "$title" --body-file "$body_file" --base main --head "${fork_owner%%/*}:$branch" --repo "$owner_repo")
+    if ! pr_url=$(cd "$worktree_dir" && gh pr create --title "$title" --body-file "$body_file" --base main --head "${fork_owner%%/*}:$branch" --repo "$owner_repo"); then
+      cleanup_worktree
+      err "failed to open pull request"
+      return 1
+    fi
     say "$(green ✓) Pull request opened: $pr_url"
   fi
+
+  cleanup_worktree
 }
 
 # ---- Argument dispatch -----------------------------------------------------

@@ -162,6 +162,7 @@ say "Classroom installer starting"
 
 require curl
 require tar
+require python3
 
 if ! command -v claude >/dev/null 2>&1; then
   warn "Claude Code CLI ('claude') not found on PATH."

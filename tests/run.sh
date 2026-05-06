@@ -738,6 +738,36 @@ sched_out=\$(ANTHROPIC_API_KEY=sk-test-key HOME='$SCHED_SANDBOX' \
 echo \"\$sched_out\" | grep -qiE '(dry-run|plist|meeting-prep)'
 "
 
+check "schedule.sh macOS plist uses direct args and XML-escapes values" \
+  "
+sched_out=\$(ANTHROPIC_API_KEY='sk-test&bad<key>' HOME='$SCHED_SANDBOX' CLASSROOM_PLATFORM=macos \
+  bash '$SCHED_SRC' --skill meeting-prep --trigger daily --time 08:00 --context 'quote \" and dollar \$(touch /tmp/classroom-poc) <tag>' --dry-run 2>&1)
+echo \"\$sched_out\" | grep -q '<string>--print</string>'
+echo \"\$sched_out\" | grep -q 'sk-test&amp;bad&lt;key&gt;'
+echo \"\$sched_out\" | grep -q '&quot; and dollar \$(touch /tmp/classroom-poc) &lt;tag&gt;'
+! echo \"\$sched_out\" | grep -q '<string>/bin/bash</string>'
+python3 -c '
+import re, sys, xml.etree.ElementTree as ET
+text = sys.stdin.read()
+m = re.search(r\"(<\\?xml.*?</plist>)\", text, re.S)
+assert m, \"plist not found\"
+ET.fromstring(m.group(1))
+' <<< \"\$sched_out\"
+"
+
+check "schedule.sh Linux dry-run writes wrapper and keeps secrets out of cron" \
+  "
+sched_out=\$(ANTHROPIC_API_KEY='sk-test&bad<key>' HOME='$SCHED_SANDBOX' CLASSROOM_PLATFORM=linux \
+  bash '$SCHED_SRC' --skill meeting-prep --trigger weekly --day 1 --time 09:00 --context 'quote \" and dollar \$(touch /tmp/classroom-poc) <tag>' --dry-run 2>&1)
+echo \"\$sched_out\" | grep -q 'Would write wrapper'
+echo \"\$sched_out\" | grep -q '# classroom:meeting-prep'
+echo \"\$sched_out\" | grep -q 'ANTHROPIC_API_KEY=sk-test\\\\\\&bad'
+cron_line=\$(echo \"\$sched_out\" | grep '# classroom:meeting-prep')
+echo \"\$cron_line\" | grep -q '.claude/classroom-scheduled/meeting-prep.sh'
+! echo \"\$cron_line\" | grep -q 'ANTHROPIC_API_KEY'
+! echo \"\$cron_line\" | grep -q 'touch /tmp/classroom-poc'
+"
+
 check "schedule.sh --dry-run does NOT create any files in HOME" \
   "
 ANTHROPIC_API_KEY=sk-test-key HOME='$SCHED_SANDBOX' \
@@ -928,7 +958,7 @@ NO_CODEX_SANDBOX="$(mktemp -d)"
 TMPDIRS_TO_CLEAN+=("$NO_CODEX_SANDBOX")
 check "sync exits non-zero when Codex not detected and HOME has no ~/.codex" \
   "
-CLASSROOM_DIR='$REPO_ROOT' CODEX_HOME='$NO_CODEX_SANDBOX/.codex' HOME='$NO_CODEX_SANDBOX' \
+CLASSROOM_DIR='$REPO_ROOT' CODEX_HOME='$NO_CODEX_SANDBOX/.codex' HOME='$NO_CODEX_SANDBOX' CLASSROOM_CODEX_DETECTED=0 \
   bash '$SYNC_SRC' >/dev/null 2>&1; test \$? -ne 0
 "
 
@@ -1213,7 +1243,7 @@ BODY="$PROPOSE_SANDBOX/body.md"
 printf -- "---\nname: bar\ndescription: test\n---\nbody\n" > "$DRAFT"
 printf "Test PR body\n" > "$BODY"
 
-check "propose --dry-run stages file, runs lint, exits 0 without pushing" \
+check "propose --dry-run validates file, runs lint, exits 0 without pushing" \
   "
 CLASSROOM_AUTHOR_DIR='$PROPOSE_AUTHOR_DIR' \
   bash '$PROPOSE_SRC' propose \
@@ -1224,6 +1254,29 @@ CLASSROOM_AUTHOR_DIR='$PROPOSE_AUTHOR_DIR' \
     --body-file '$BODY' \
     --dry-run >/dev/null 2>&1
 test \$? -eq 0
+"
+
+check "propose --dry-run leaves author checkout unchanged" \
+  "
+test \"\$(git -C '$PROPOSE_AUTHOR_DIR' branch --show-current)\" = 'main'
+test ! -f '$PROPOSE_AUTHOR_DIR/plugins/demo/skills/bar/SKILL.md'
+! git -C '$PROPOSE_AUTHOR_DIR' rev-parse --verify propose/test-bar >/dev/null 2>&1
+"
+
+git -C "$PROPOSE_AUTHOR_DIR" branch propose/existing main
+EXISTING_BRANCH_SHA="$(git -C "$PROPOSE_AUTHOR_DIR" rev-parse propose/existing)"
+check "propose --dry-run preserves an existing branch with the same name" \
+  "
+CLASSROOM_AUTHOR_DIR='$PROPOSE_AUTHOR_DIR' \
+  bash '$PROPOSE_SRC' propose \
+    --target-path 'plugins/demo/skills/bar/SKILL.md' \
+    --content-file '$DRAFT' \
+    --branch propose/existing \
+    --title 'Add bar skill' \
+    --body-file '$BODY' \
+    --dry-run >/dev/null 2>&1
+test \"\$(git -C '$PROPOSE_AUTHOR_DIR' rev-parse propose/existing)\" = '$EXISTING_BRANCH_SHA'
+test \"\$(git -C '$PROPOSE_AUTHOR_DIR' branch --show-current)\" = 'main'
 "
 
 check "propose rejects absolute target-path" \
@@ -1290,11 +1343,13 @@ for plugin_dir in plugins/*/; do
 
   check "[$plugin_name] context entries are well-formed (if present)" \
     "python3 -c '
-import json, os, sys
+import json, os, re, sys
 manifest = \"$manifest\"
 plugin_dir = \"$plugin_dir\"
 plugin_name = \"$plugin_name\"
 p = json.load(open(manifest))
+valid_surfaces = {\"claude-code\", \"cowork\", \"codex\", \"chat\"}
+plugin_surfaces = p.get(\"surfaces\") or [\"claude-code\"]
 ctx = p.get(\"context\")
 if ctx is None: sys.exit(0)
 assert isinstance(ctx, list), \"context must be a list\"
@@ -1303,17 +1358,30 @@ for entry in ctx:
     assert isinstance(entry, dict), \"context entry must be an object\"
     for required in (\"id\", \"path\", \"title\"):
         assert entry.get(required), f\"context entry missing required field: {required}\"
+        assert isinstance(entry.get(required), str), f\"context field {required} must be a string\"
     cid = entry[\"id\"]
-    assert \"/\" in cid, f\"context id must be <plugin>/<bundle>: {cid}\"
+    assert cid.count(\"/\") == 1, f\"context id must be <plugin>/<bundle>: {cid}\"
     pseg, bseg = cid.split(\"/\", 1)
     assert pseg == plugin_name, f\"context id plugin segment {pseg!r} must match containing plugin {plugin_name!r}\"
-    assert bseg, f\"context id bundle segment empty: {cid}\"
+    assert re.fullmatch(r\"[a-z0-9]+(-[a-z0-9]+)*\", bseg), f\"context id bundle segment must be kebab-case: {cid}\"
     assert cid not in seen, f\"duplicate context id: {cid}\"
     seen.add(cid)
     rel = entry[\"path\"]
     assert not rel.startswith(\"/\") and \"..\" not in rel.split(\"/\"), f\"context path must be relative without ..: {rel}\"
+    assert rel.startswith(\"context/\"), f\"context path must live under context/: {rel}\"
     full = os.path.join(plugin_dir, rel)
     assert os.path.exists(full), f\"context path does not exist: {full}\"
+    if \"description\" in entry:
+        assert isinstance(entry[\"description\"], str), \"context description must be a string\"
+    if \"allow-large-context\" in entry:
+        assert isinstance(entry[\"allow-large-context\"], bool), \"allow-large-context must be boolean\"
+    surfaces = entry.get(\"surfaces\")
+    if surfaces is not None:
+        assert isinstance(surfaces, list), \"context surfaces must be a list\"
+        assert len(surfaces) > 0, \"context surfaces must be non-empty\"
+        for s in surfaces:
+            assert s in valid_surfaces, f\"invalid context surface: {s}\"
+        assert set(surfaces).issubset(set(plugin_surfaces)), \"context surfaces must be a subset of plugin surfaces\"
 '"
 
   check "[$plugin_name] context files respect size limits" \
@@ -1334,6 +1402,8 @@ for entry in ctx:
     full = os.path.join(plugin_dir, entry[\"path\"])
     allow_large = bool(entry.get(\"allow-large-context\"))
     for f in files_under(full):
+        if not f.endswith(\".md\"):
+            sys.exit(f\"{f} is inside a context bundle but is not markdown\")
         size = os.path.getsize(f)
         if size > FAIL and not allow_large:
             sys.exit(f\"{f} exceeds 100KB ({size} bytes); set allow-large-context: true on the entry to permit\")
@@ -1359,7 +1429,7 @@ check "competitive-intelligence positioning context file exists" \
 check "competitive-analysis declares requires-context: positioning" \
   "grep -q 'competitive-intelligence/positioning' '$REPO_ROOT/plugins/competitive-intelligence/skills/competitive-analysis/SKILL.md'"
 
-# Negative-case fixtures: validator catches drift, missing IDs, surface mismatch
+# Negative-case fixtures: validator catches drift, missing IDs, and missing extension targets
 LAYER14_FIXTURES="$(mktemp -d)"
 TMPDIRS_TO_CLEAN+=("$LAYER14_FIXTURES")
 mkdir -p "$LAYER14_FIXTURES/plugins/demo/.claude-plugin" \
@@ -1410,6 +1480,26 @@ check "[fixture] validator rejects frontmatter/body drift" \
 cd '$LAYER14_FIXTURES' && \
   ! python3 '$REPO_ROOT/tests/lib/check_requires_context.py' \
       'plugins/demo/skills/skill_b/SKILL.md' \
+      'plugins/demo/' \
+      'demo' >/dev/null 2>&1
+"
+
+# Case C: context extension targets an unknown ID
+mkdir -p "$LAYER14_FIXTURES/plugins/demo/skills/skill_c"
+cat > "$LAYER14_FIXTURES/plugins/demo/skills/skill_c/SKILL.md" <<'EOF'
+---
+name: skill_c
+description: bad extension target
+extends-context: demo/missing
+---
+This extends a missing context bundle.
+EOF
+
+check "[fixture] validator rejects unknown extends-context target" \
+  "
+cd '$LAYER14_FIXTURES' && \
+  ! python3 '$REPO_ROOT/tests/lib/check_requires_context.py' \
+      'plugins/demo/skills/skill_c/SKILL.md' \
       'plugins/demo/' \
       'demo' >/dev/null 2>&1
 "

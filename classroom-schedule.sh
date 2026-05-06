@@ -31,12 +31,26 @@ DRY_RUN=0
 
 CLAUDE_BIN="$(command -v claude 2>/dev/null || echo "/usr/local/bin/claude")"
 LOG_DIR="$HOME/classroom-logs"
+SCHEDULED_DIR="$HOME/.claude/classroom-scheduled"
 LABEL_PREFIX="com.classroom"
+CLASSROOM_PLATFORM="${CLASSROOM_PLATFORM:-}"
 
 # ---- Helpers ----------------------------------------------------------------
 die()  { printf "\033[1;31m✗\033[0m %s\n" "$*" >&2; exit 1; }
 say()  { printf "\033[1;36m▸\033[0m %s\n" "$*"; }
 note() { printf "  %s\n" "$*"; }
+xml_escape() {
+  local s="$1"
+  s="${s//&/&amp;}"
+  s="${s//</&lt;}"
+  s="${s//>/&gt;}"
+  s="${s//\"/&quot;}"
+  s="${s//\'/&apos;}"
+  printf "%s" "$s"
+}
+shell_quote() {
+  printf "%q" "$1"
+}
 
 # ---- Argument parsing -------------------------------------------------------
 while [[ $# -gt 0 ]]; do
@@ -62,12 +76,22 @@ fi
 LABEL="${LABEL_PREFIX}.${SKILL}"
 
 # ---- Platform detection -----------------------------------------------------
-if [[ "$(uname)" == "Darwin" ]]; then
+if [[ -z "$CLASSROOM_PLATFORM" ]]; then
+  if [[ "$(uname)" == "Darwin" ]]; then
+    CLASSROOM_PLATFORM=macos
+  else
+    CLASSROOM_PLATFORM=linux
+  fi
+fi
+
+if [[ "$CLASSROOM_PLATFORM" == "macos" ]]; then
   PLATFORM=macos
   PLIST_DIR="$HOME/Library/LaunchAgents"
   PLIST_FILE="$PLIST_DIR/${LABEL}.plist"
-else
+elif [[ "$CLASSROOM_PLATFORM" == "linux" ]]; then
   PLATFORM=linux
+else
+  die "CLASSROOM_PLATFORM must be macos or linux (got: $CLASSROOM_PLATFORM)"
 fi
 
 # ---- Remove path ------------------------------------------------------------
@@ -86,13 +110,16 @@ if [[ "$REMOVE" -eq 1 ]]; then
     fi
   else
     # Linux: remove the crontab line
-    CRON_MARKER="classroom-logs/${SKILL}.log"
+    CRON_MARKER="# classroom:${SKILL}"
+    WRAPPER_SCRIPT="$SCHEDULED_DIR/${SKILL}.sh"
     existing="$(crontab -l 2>/dev/null || true)"
-    if echo "$existing" | grep -q "$CRON_MARKER"; then
+    if echo "$existing" | grep -qF "$CRON_MARKER"; then
       if [[ "$DRY_RUN" -eq 1 ]]; then
         say "[dry-run] Would remove crontab line containing: $CRON_MARKER"
+        say "[dry-run] Would remove wrapper: $WRAPPER_SCRIPT"
       else
-        echo "$existing" | grep -v "$CRON_MARKER" | crontab -
+        echo "$existing" | grep -vF "$CRON_MARKER" | crontab -
+        rm -f "$WRAPPER_SCRIPT"
         say "Removed scheduled job for $SKILL from crontab"
       fi
     else
@@ -138,7 +165,7 @@ fi
 PROMPT_TEXT="${PROMPT_TEXT} (scheduled run, $(date +%Y-%m-%d))"
 
 LOG_FILE="${LOG_DIR}/${SKILL}.log"
-CLAUDE_CMD="${CLAUDE_BIN} --print \"${PROMPT_TEXT}\" >> ${LOG_FILE} 2>&1"
+ERR_LOG_FILE="${LOG_DIR}/${SKILL}.err.log"
 
 # ---- macOS: write launchd plist ---------------------------------------------
 if [[ "$PLATFORM" == "macos" ]]; then
@@ -165,28 +192,35 @@ if [[ "$PLATFORM" == "macos" ]]; then
     </dict>"
   fi
 
+  LABEL_XML="$(xml_escape "$LABEL")"
+  CLAUDE_BIN_XML="$(xml_escape "$CLAUDE_BIN")"
+  PROMPT_TEXT_XML="$(xml_escape "$PROMPT_TEXT")"
+  API_KEY_XML="$(xml_escape "$API_KEY")"
+  LOG_FILE_XML="$(xml_escape "$LOG_FILE")"
+  ERR_LOG_FILE_XML="$(xml_escape "$ERR_LOG_FILE")"
+
   PLIST_CONTENT="<?xml version=\"1.0\" encoding=\"UTF-8\"?>
 <!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">
 <plist version=\"1.0\">
 <dict>
   <key>Label</key>
-  <string>${LABEL}</string>
+  <string>${LABEL_XML}</string>
   <key>ProgramArguments</key>
   <array>
-    <string>/bin/bash</string>
-    <string>-c</string>
-    <string>${CLAUDE_CMD}</string>
+    <string>${CLAUDE_BIN_XML}</string>
+    <string>--print</string>
+    <string>${PROMPT_TEXT_XML}</string>
   </array>
   ${CALENDAR_INTERVAL}
   <key>EnvironmentVariables</key>
   <dict>
     <key>ANTHROPIC_API_KEY</key>
-    <string>${API_KEY}</string>
+    <string>${API_KEY_XML}</string>
   </dict>
   <key>StandardOutPath</key>
-  <string>/tmp/${LABEL}.out</string>
+  <string>${LOG_FILE_XML}</string>
   <key>StandardErrorPath</key>
-  <string>/tmp/${LABEL}.err</string>
+  <string>${ERR_LOG_FILE_XML}</string>
 </dict>
 </plist>"
 
@@ -227,9 +261,27 @@ else
     CRON_SCHEDULE="${MINUTE_N} ${HOUR_N} * * ${DAY_OF_WEEK}"
   fi
 
-  CRON_LINE="ANTHROPIC_API_KEY=${API_KEY} ${CRON_SCHEDULE} ${CLAUDE_CMD} # classroom:${SKILL}"
+  WRAPPER_SCRIPT="${SCHEDULED_DIR}/${SKILL}.sh"
+  API_KEY_Q="$(shell_quote "$API_KEY")"
+  LOG_DIR_Q="$(shell_quote "$LOG_DIR")"
+  CLAUDE_BIN_Q="$(shell_quote "$CLAUDE_BIN")"
+  PROMPT_TEXT_Q="$(shell_quote "$PROMPT_TEXT")"
+  LOG_FILE_Q="$(shell_quote "$LOG_FILE")"
+
+  WRAPPER_CONTENT="#!/usr/bin/env bash
+set -euo pipefail
+export ANTHROPIC_API_KEY=${API_KEY_Q}
+mkdir -p ${LOG_DIR_Q}
+exec ${CLAUDE_BIN_Q} --print ${PROMPT_TEXT_Q} >> ${LOG_FILE_Q} 2>&1"
+
+  WRAPPER_SCRIPT_Q="$(shell_quote "$WRAPPER_SCRIPT")"
+  CRON_LINE="${CRON_SCHEDULE} ${WRAPPER_SCRIPT_Q} # classroom:${SKILL}"
 
   if [[ "$DRY_RUN" -eq 1 ]]; then
+    say "[dry-run] Would write wrapper to: $WRAPPER_SCRIPT"
+    echo "---"
+    echo "$WRAPPER_CONTENT"
+    echo "---"
     say "[dry-run] Would add crontab line:"
     echo "  $CRON_LINE"
     say "[dry-run] Log output would go to: $LOG_FILE"
@@ -237,6 +289,9 @@ else
   fi
 
   mkdir -p "$LOG_DIR"
+  mkdir -p "$SCHEDULED_DIR"
+  printf "%s\n" "$WRAPPER_CONTENT" > "$WRAPPER_SCRIPT"
+  chmod 700 "$WRAPPER_SCRIPT"
 
   existing="$(crontab -l 2>/dev/null || true)"
   # Remove any existing entry for this skill first (idempotent)

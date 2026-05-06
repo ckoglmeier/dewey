@@ -48,7 +48,7 @@ Type `/classroom` and it walks you through discovery, installation, and extendin
 curl -fsSL https://raw.githubusercontent.com/ckoglmeier/classroom/main/install.sh | bash
 ```
 
-**No git required.** macOS and Linux only for now. The installer needs only `curl` and `tar`, which are standard.
+**No git required.** macOS and Linux only for now. The installer needs `curl`, `tar`, and `python3`, which are standard on most developer machines.
 
 This:
 1. Downloads a snapshot of the Classroom reference repo to `~/.claude/classroom` (atomic swap — readers never see a half-written cache)

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate a single SKILL.md's requires-context: declarations.
+"""Validate a single SKILL.md's context declarations.
 
 Usage: check_requires_context.py <skill_md> <plugin_dir> <plugin_name>
 
@@ -11,10 +11,11 @@ Validates:
   plugin's plugin.json
 - Every declared id also appears as a literal string in the skill body
   (catches frontmatter/body drift)
+- Every extends-context target resolves
 - The skill's surfaces are a subset of each required context's surfaces
 - Total declared context size is within bounds (300KB hard limit unless
   every involved entry is allow-large-context: true; 80KB warn threshold
-  is informational only here)
+  prints a warning)
 """
 from __future__ import annotations
 import json
@@ -22,6 +23,7 @@ import os
 import re
 import sys
 import glob
+from typing import Optional
 
 WARN = 80 * 1024
 FAIL = 300 * 1024
@@ -52,6 +54,22 @@ def parse_requires_context(fm_text: str, skill_md: str) -> list[str]:
             elif line and not line.startswith((" ", "\t", "-")):
                 in_block = False
     return required
+
+
+def parse_extends_context(fm_text: str, skill_md: str) -> Optional[str]:
+    """Extract a single extends-context: value from frontmatter."""
+    found: Optional[str] = None
+    for line in fm_text.splitlines():
+        m = re.match(r"^extends-context\s*:\s*(.+?)\s*$", line)
+        if not m:
+            continue
+        value = m.group(1).strip().strip("\"'")
+        if not value:
+            sys.exit(f"{skill_md}: extends-context must name a context id")
+        if found is not None:
+            sys.exit(f"{skill_md}: extends-context declared more than once")
+        found = value
+    return found
 
 
 def collect_context_index() -> dict[str, dict]:
@@ -96,7 +114,8 @@ def main() -> int:
 
     fm_text, body = m.group(1), m.group(2)
     required = parse_requires_context(fm_text, skill_md)
-    if not required:
+    extends_context = parse_extends_context(fm_text, skill_md)
+    if not required and not extends_context:
         return 0
 
     index = collect_context_index()
@@ -107,6 +126,17 @@ def main() -> int:
 
     total_size = 0
     all_allow_large = True
+
+    if extends_context:
+        if extends_context not in index:
+            sys.exit(f"{skill_md}: extends-context id does not resolve: {extends_context}")
+        ctx_surfaces = set(index[extends_context]["surfaces"])
+        if not skill_surfaces.issubset(ctx_surfaces):
+            missing = skill_surfaces - ctx_surfaces
+            sys.exit(
+                f"{skill_md}: extends {extends_context} but its surfaces "
+                f"{sorted(ctx_surfaces)} do not cover skill surfaces {sorted(missing)}"
+            )
 
     for cid in required:
         if cid not in index:
@@ -133,6 +163,12 @@ def main() -> int:
         sys.exit(
             f"{skill_md}: total declared context size {total_size} exceeds "
             f"300KB; mark all entries allow-large-context: true to permit"
+        )
+    if total_size > WARN:
+        print(
+            f"{skill_md}: warning: total declared context size {total_size} "
+            f"exceeds 80KB; consider splitting or narrowing loaded context",
+            file=sys.stderr,
         )
 
     return 0

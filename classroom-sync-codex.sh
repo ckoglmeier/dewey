@@ -16,6 +16,7 @@
 # Env vars honoured:
 #   CLASSROOM_DIR    Where the Classroom cache lives (default: ~/.claude/classroom)
 #   CODEX_HOME       Where Codex stores its config (default: ~/.codex)
+#   CLASSROOM_CODEX_DETECTED  Test override: auto | 1 | 0 (default: auto)
 #
 # Requires: bash 3.2+, find, ln, mkdir, python3 (for --agents-md only)
 
@@ -25,6 +26,7 @@ CLASSROOM_DIR="${CLASSROOM_DIR:-$HOME/.claude/classroom}"
 CODEX_HOME="${CODEX_HOME:-$HOME/.codex}"
 CODEX_SKILLS_DIR="$CODEX_HOME/skills"
 CODEX_CONTEXT_DIR="$CODEX_HOME/context"
+CLASSROOM_CODEX_DETECTED="${CLASSROOM_CODEX_DETECTED:-auto}"
 
 DRY_RUN=0
 STATUS_ONLY=0
@@ -57,7 +59,21 @@ if [[ ! -d "$CLASSROOM_DIR" ]]; then
   exit 1
 fi
 
-if [[ ! -d "$CODEX_HOME" ]] && ! command -v codex >/dev/null 2>&1; then
+case "$CLASSROOM_CODEX_DETECTED" in
+  auto)
+    CODEX_DETECTED=0
+    [[ -d "$CODEX_HOME" ]] && CODEX_DETECTED=1
+    command -v codex >/dev/null 2>&1 && CODEX_DETECTED=1
+    ;;
+  1) CODEX_DETECTED=1 ;;
+  0) CODEX_DETECTED=0 ;;
+  *)
+    printf "CLASSROOM_CODEX_DETECTED must be auto, 1, or 0 (got: %s)\n" "$CLASSROOM_CODEX_DETECTED" >&2
+    exit 1
+    ;;
+esac
+
+if [[ "$CODEX_DETECTED" -eq 0 ]]; then
   printf "Codex not detected (~/.codex/ missing, 'codex' not on PATH).\n" >&2
   printf "Install Codex first: https://github.com/openai/codex\n" >&2
   exit 1
