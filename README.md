@@ -1,8 +1,8 @@
 # Classroom
 
-**A plugin marketplace for Claude Code and Codex (working on Cowork!)**
+**A plugin marketplace for Claude Code, Cowork, and OpenAI Codex.**
 
-Skills are authored once in standard `SKILL.md` format and run in either agent. When both are installed, Classroom mirrors its skills into Codex automatically — see [docs/codex-sync.md](docs/codex-sync.md).
+Skills are authored once in standard `SKILL.md` format and run in any of the three. Cowork shares Claude Code's `~/.claude/` directory — same install, no extra step. When Codex is also installed, Classroom mirrors its skills into `~/.codex/skills/` as symlinks — see [docs/codex-sync.md](docs/codex-sync.md).
 
 ## Why this exists
 
