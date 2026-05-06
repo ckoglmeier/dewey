@@ -1,6 +1,6 @@
 # Classroom
 
-**A plugin marketplace for Claude Code.**
+**A plugin marketplace for Claude Code and Codex (working on Cowork!)**
 
 ## Why this exists
 
