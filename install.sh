@@ -7,9 +7,10 @@
 #   3. Registers the Classroom marketplace in ~/.claude/plugins/known_marketplaces.json
 #   4. Installs the schedule helper to ~/.claude/classroom-schedule.sh
 #   5. Installs the Codex sync helper to ~/.claude/classroom-sync-codex.sh
-#   6. If Codex is detected (~/.codex/ or codex on PATH), mirrors skills to ~/.codex/skills/
-#   7. Initializes the analytics log at ~/.claude/classroom-analytics.log
-#   8. Installs a refresh + first-run hook on Claude Code SessionStart
+#   6. Installs the telemetry helper to ~/.claude/classroom-telemetry.sh
+#   7. If Codex is detected (~/.codex/ or codex on PATH), mirrors skills to ~/.codex/skills/
+#   8. Initializes the analytics log at ~/.claude/classroom-analytics.log
+#   9. Installs a refresh + first-run hook on Claude Code SessionStart
 #
 # Safe to re-run. Atomic swap means readers never observe a half-written cache.
 #
@@ -44,6 +45,7 @@ HOOK_SCRIPT="$HOME/.claude/classroom-first-run.sh"
 REFRESH_SCRIPT="$HOME/.claude/classroom-refresh.sh"
 SCHEDULE_SCRIPT="$HOME/.claude/classroom-schedule.sh"
 SYNC_CODEX_SCRIPT="$HOME/.claude/classroom-sync-codex.sh"
+TELEMETRY_SCRIPT="$HOME/.claude/classroom-telemetry.sh"
 ANALYTICS_LOG="$HOME/.claude/classroom-analytics.log"
 FIRST_RUN_MARKER="$HOME/.claude/classroom-onboarded"
 
@@ -302,6 +304,16 @@ else
   warn "classroom-sync-codex.sh not found in snapshot — skipping Codex sync helper install"
 fi
 
+# ---- Step 4b2: install the telemetry helper ---------------------------------
+TELEMETRY_SOURCE="$CLASSROOM_DIR/classroom-telemetry.sh"
+if [ -f "$TELEMETRY_SOURCE" ]; then
+  say "Installing telemetry helper to $TELEMETRY_SCRIPT"
+  cp "$TELEMETRY_SOURCE" "$TELEMETRY_SCRIPT"
+  chmod +x "$TELEMETRY_SCRIPT"
+else
+  warn "classroom-telemetry.sh not found in snapshot — skipping telemetry helper install"
+fi
+
 # ---- Step 4c: run initial Codex sync if Codex is detected -------------------
 _codex_detected=0
 if [ -d "$HOME/.codex" ] || command -v codex >/dev/null 2>&1; then
@@ -515,6 +527,7 @@ echo "  Settings:         $SETTINGS_FILE"
 echo "  Refresh script:   $REFRESH_SCRIPT"
 echo "  Schedule helper:  $SCHEDULE_SCRIPT"
 echo "  Codex sync:       $SYNC_CODEX_SCRIPT"
+echo "  Telemetry helper: $TELEMETRY_SCRIPT"
 echo "  First-run hook:   $HOOK_SCRIPT"
 echo "  Analytics log:    $ANALYTICS_LOG"
 echo

@@ -123,6 +123,7 @@ Run `bash tests/run.sh` from the repo root to validate any change.
 - [docs/scheduled-runs.md](docs/scheduled-runs.md) — headless/recurring skill runs
 - [docs/codex-sync.md](docs/codex-sync.md) — syncing Classroom skills to OpenAI Codex
 - [docs/surfaces.md](docs/surfaces.md) — declaring which surfaces (Claude Code / Cowork / Codex / Chat) a plugin supports
+- [docs/extension-telemetry.md](docs/extension-telemetry.md) — the central learning loop: how local extensions feed canonical evolution
 
 ## Repo layout
 
@@ -134,6 +135,7 @@ classroom/
 ├── install-dev.sh                # contributor variant (git checkout)
 ├── classroom-schedule.sh         # scheduler helper (installed to ~/.claude/ by install.sh)
 ├── classroom-sync-codex.sh       # Codex sync helper (installed to ~/.claude/ by install.sh)
+├── classroom-telemetry.sh        # Telemetry emit + strip-bodies helper (installed to ~/.claude/ by install.sh)
 ├── guide/SKILL.md                # the Guide skill (copied to ~/.claude/skills/classroom/ on install)
 ├── .claude-plugin/marketplace.json   # plugin catalog (Claude Code marketplace)
 ├── plugins/                      # in-tree problem-domain plugins

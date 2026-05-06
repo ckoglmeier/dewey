@@ -14,7 +14,7 @@ Events are appended to `~/.claude/classroom-analytics.log` as JSONL (one JSON ob
 | `guide_recommend` | Guide completed a path recommendation |
 | `skill_install` | You confirmed installing a plugin |
 | `skill_invoke` | Guide routed you to a specific skill |
-| `extension_created` | You created a local skill extension via `/classroom extend` |
+| `extension_created` | You created a local skill extension via `/classroom extend`. Carries enriched fields (`parent`, `parent_plugin`, `additions`, `tools_added`, `user_intent`) that feed the central learning loop — see [extension-telemetry.md](extension-telemetry.md) |
 | `schedule_created` | You scheduled a skill via `/classroom schedule` |
 
 Example log entries:
@@ -57,13 +57,21 @@ If your company runs a Classroom instance and wants aggregated analytics, set:
 export CLASSROOM_TELEMETRY_ENDPOINT=https://your-internal-analytics.example.com/classroom
 ```
 
-When set, the Guide will POST the contents of the local log to that endpoint on session end, then truncate the local log. The endpoint receives the raw JSONL payload. No analytics are forwarded unless this variable is set.
+When set, the Guide will POST the contents of the local log to that endpoint on session end, then truncate the local log. Before sending, the log is filtered through `~/.claude/classroom-telemetry.sh strip-bodies` which removes the prose fields (`additions`, `user_intent`) from `extension_created` events unless `CLASSROOM_TELEMETRY_FORWARD_BODIES=1` is also set. See [extension-telemetry.md](extension-telemetry.md) for the full privacy model.
 
 This is intentionally simple — no SDK, no vendor dependency. Your endpoint is responsible for ingestion, deduplication, and storage.
 
 ## Privacy
 
-- No personally identifiable information is logged. Events contain skill names and paths, not user content.
-- The log is local by default. It lives at `~/.claude/classroom-analytics.log` and is only readable by you.
-- Forwarding to a central endpoint requires an explicit opt-in env var that you (or your IT team) set.
+Three layers, evaluated in order:
+
+1. **Global opt-out** — `CLASSROOM_TELEMETRY=0` suppresses everything; the log file isn't even created.
+2. **Per-plugin / per-skill opt-out** — `telemetry: false` in `plugin.json` or SKILL.md frontmatter suppresses all events for that scope at capture time.
+3. **Body-forwarding opt-in** — `CLASSROOM_TELEMETRY_FORWARD_BODIES=1` allows the user-authored prose in `extension_created` events to leave the machine. Off by default.
+
+Other notes:
+
+- No personally identifiable information is logged by default. Events contain skill names, paths, and (with body forwarding) user-authored extension content.
+- The log is local. It lives at `~/.claude/classroom-analytics.log` and is only readable by you.
+- Forwarding requires the explicit `CLASSROOM_TELEMETRY_ENDPOINT` env var.
 - To delete all local analytics: `rm ~/.claude/classroom-analytics.log`

@@ -96,13 +96,13 @@ Goal: figure out the user's team and role, then recommend the 3–5 most relevan
 5. **Path found?** Read the path file. It will list 3–5 plugins with one-line "why this matters." For each, read its `plugin.json` and check `surfaces`. Drop any whose `surfaces` doesn't include the current surface, and tell the user which ones were dropped and why. Present the remaining plugins as a numbered list with the *why* preserved verbatim.
 6. **Ask for confirmation:** *"Want me to install these for you?"* If yes, route to §2 with the list pre-filled. If they want to pick a subset, let them say "1, 3" and only install those.
 
-6. **Emit analytics** after you present the recommendation (regardless of whether they say yes):
+6. **Emit analytics** after you present the recommendation (regardless of whether they say yes), via the telemetry helper:
 
    ```bash
-   bash -c 'if [ "${CLASSROOM_TELEMETRY:-1}" != "0" ]; then printf "{\"ts\":\"%s\",\"event\":\"guide_recommend\",\"path\":\"%s\",\"plugins\":[%s]}\n" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "PATH_NAME" "\"plugin1\",\"plugin2\"" >> ~/.claude/classroom-analytics.log 2>/dev/null; fi'
+   bash ~/.claude/classroom-telemetry.sh emit event=guide_recommend path=PATH_NAME plugins=plugin1,plugin2
    ```
 
-   Replace `PATH_NAME` with the path file name (e.g. `sales-ae`) and the plugins array with the actual recommended plugin names as quoted strings.
+   Replace `PATH_NAME` with the path file name (e.g. `sales-ae`) and `plugins=` with a comma-separated list of recommended plugin names. The helper handles the JSON, timestamping, opt-out gates, and per-plugin/per-skill telemetry flags. See [docs/extension-telemetry.md](https://github.com/ckoglmeier/classroom/blob/main/docs/extension-telemetry.md) for the privacy model.
 
 Important: do not list every plugin in the marketplace. The whole point of the path file is curation. If the path lists 4 plugins, you recommend exactly those 4.
 
@@ -124,13 +124,13 @@ Goal: install one or more plugins from the marketplace. Always confirm before ru
    Run each as a separate Bash call so the user sees output for each one. If a plugin fails to install, stop and surface the error — don't silently continue.
 5. **Confirm success** by listing what was installed and one example slash command per plugin. Encourage the user to try one immediately so they get a "wow" before the conversation ends. Per the Ramp finding, the moment a non-technical user runs their first installed skill on real data is when Classroom becomes real to them.
 
-6. **Emit analytics** (after each successful install, if telemetry is not disabled):
+6. **Emit analytics** after each successful install, via the telemetry helper:
 
    ```bash
-   bash -c 'if [ "${CLASSROOM_TELEMETRY:-1}" != "0" ]; then printf "{\"ts\":\"%s\",\"event\":\"skill_install\",\"skill\":\"%s\",\"via\":\"%s\"}\n" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "PLUGIN_NAME" "VIA" >> ~/.claude/classroom-analytics.log 2>/dev/null; fi'
+   bash ~/.claude/classroom-telemetry.sh emit event=skill_install plugin=PLUGIN_NAME via=VIA
    ```
 
-   Replace `PLUGIN_NAME` with the actual plugin name and `VIA` with `"recommend"` (if they arrived from §1) or `"browse"` (if they browsed the catalog directly).
+   Replace `PLUGIN_NAME` with the actual plugin name and `VIA` with `recommend` (if they arrived from §1) or `browse` (if they browsed the catalog directly). The helper checks the global opt-out and the plugin's `telemetry: false` flag in its `plugin.json` before writing.
 
 ---
 
@@ -139,8 +139,8 @@ Goal: install one or more plugins from the marketplace. Always confirm before ru
 Goal: let the user customize an existing Classroom skill *without forking it*. Generates a local extension SKILL.md that composes the parent by reference.
 
 1. **Identify the parent skill.** If `$1` is set (e.g., `/classroom extend competitive-analysis`), that's the parent. Otherwise ask: *"Which skill do you want to extend?"* and list installed skills they could pick from (read from `~/.claude/plugins/cache/` or list installed plugins via `claude plugin list` if available).
-2. **Read the parent skill** from `~/.claude/classroom/plugins/*/skills/<parent>/SKILL.md`. If you can't find it, tell the user and stop.
-3. **Show them the parent's description and ask:** *"What would you like to add or change when this skill runs?"* Take their answer in plain language.
+2. **Read the parent skill** from `~/.claude/classroom/plugins/<plugin>/skills/<parent>/SKILL.md`. **Note the plugin name** — you'll need it for the telemetry emission in step 7. If you can't find the parent under `~/.claude/classroom/plugins/`, tell the user the parent isn't a Classroom marketplace skill and stop (extending non-Classroom skills is fine but skip telemetry).
+3. **Show them the parent's description and ask:** *"What would you like to add or change when this skill runs?"* **Save their exact one-line answer** as `USER_INTENT` for the telemetry emission.
 4. **Draft the extension SKILL.md** in this format:
 
    ```markdown
@@ -158,9 +158,33 @@ Goal: let the user customize an existing Classroom skill *without forking it*. G
 
 5. **Show the draft** to the user as a code block. Ask: *"Save this to `~/classroom-extensions-<user>/skills/<name>/SKILL.md`?"*
 6. **On approval**, create the directory and write the file. Confirm the path so they can find it.
-7. **Important convention**: the `extends:` field is a Classroom convention, not a Claude Code runtime feature. The composition happens because the body of the extension explicitly says "load and follow the parent skill" — Claude reads that instruction and loads the parent. Don't omit that line.
+7. **Emit telemetry** for the extension. This is what feeds the central learning loop — when many users extend the same parent in similar ways, central maintainers get a signal that the canonical should evolve.
 
-Why this matters: central skills get updated by their maintainers. If the user forks `competitive-analysis`, they fall off the update path. By keeping the extension as a separate file that *references* the parent, central updates flow through and the user's customization stays intact.
+   ```bash
+   bash ~/.claude/classroom-telemetry.sh emit \
+     event=extension_created \
+     parent=PARENT_SKILL \
+     parent_plugin=PARENT_PLUGIN \
+     parent_marketplace=classroom \
+     extension=EXTENSION_NAME \
+     additions="LINES_AFTER_THEN_ADDITIONALLY" \
+     tools_added=COMMA_SEPARATED_TOOLS \
+     user_intent="USER_INTENT_FROM_STEP_3"
+   ```
+
+   - `PARENT_SKILL` and `PARENT_PLUGIN` come from step 2 (e.g. `competitive-analysis` and `competitive-intelligence`).
+   - `EXTENSION_NAME` is the `name:` field from the draft frontmatter.
+   - `LINES_AFTER_THEN_ADDITIONALLY` is the body content the user added — everything after the "Then additionally:" line, joined with `\n`.
+   - `COMMA_SEPARATED_TOOLS` lists any tools the user added in `allowed-tools` (e.g. `Bash(gong *),mcp:linear`). Empty string is fine.
+   - `USER_INTENT` is their plain-language answer from step 3.
+
+   The helper handles all opt-out gates: `CLASSROOM_TELEMETRY=0` globally, `telemetry: false` on the parent's plugin.json, and `telemetry: false` on the parent's SKILL.md. If any gate is set, no event is written.
+
+   Skip telemetry entirely if the parent isn't under `~/.claude/classroom/plugins/`.
+
+8. **Important convention**: the `extends:` field is a Classroom convention, not a Claude Code runtime feature. The composition happens because the body of the extension explicitly says "load and follow the parent skill" — Claude reads that instruction and loads the parent. Don't omit that line.
+
+Why this matters: central skills get updated by their maintainers. If the user forks `competitive-analysis`, they fall off the update path. By keeping the extension as a separate file that *references* the parent, central updates flow through and the user's customization stays intact. The telemetry in step 7 closes the loop the other direction — extensions become signal for canonical maintainers about what to absorb upstream.
 
 ---
 
