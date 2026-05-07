@@ -26,6 +26,15 @@ Work the user already flagged or that came up mid-session:
 6. **Ambient nudge hook** — "I notice you're doing X — there's a skill for that." Pre-skill-routing prompt watcher.
 7. **Memory/synthesis pipeline** — daily summary of recent sessions and connected tools to refresh user context.
 8. **Chat (claude.ai) distribution** — bundle export for manual upload at minimum; investigate API path for Team/Enterprise plans.
+9. **Smart admin onboarding flow.** Today's "Adopting Classroom for your company" section in the README is a 6-step engineer's checklist (fork repo, edit marketplace.json, replace seed skills, etc.). The audience for that work is rarely an engineer — it's the ops or RevOps lead who owns "what skills do my teams use" but doesn't want to clone a repo. Build a conversational flow specifically for first-time org admins:
+    - **Discover the org**: company name, industry, primary teams (e.g. Sales, CS, Ops, Eng), key roles per team
+    - **Seed the canonical context** the first wave will need (company-identity bundle, ICP, brand voice templates, top-of-funnel positioning) using interactive prompts; output goes through the propose flow
+    - **Draft initial path files** per role from a small library of starter templates, tuned by the discovery answers
+    - **Suggest external plugins** to pull in (research-assistant for analysts, etc.) and walk through registering them in the marketplace
+    - **Demonstrate the loop end-to-end**: install one skill against the seeded context, show the output, then have the admin invite their first 3 users
+    - **Optional**: hooks into the future hosted version for "publisher mode" (separate from this consumer Guide). On day one this is local; once hosted exists, the same flow can run there.
+    - First use case to demo: weekly status update for the team lead themselves — fast, concrete, no external integrations needed. Once that lands, suggest competitive-analysis next (uses the seeded positioning context — proves the canonical-context value).
+    - Open question: does this run as a Guide subcommand (`/classroom admin-setup`) or as its own skill the admin installs first? Subcommand keeps the entry point unified; separate skill keeps the consumer Guide simpler.
 
 ### Hosted Classroom bucket (separate product layer)
 Not a backlog for this repo per se, but the local data pipe is built to feed it:
