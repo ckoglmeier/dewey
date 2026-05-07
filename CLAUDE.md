@@ -1,57 +1,67 @@
 # Classroom — session notes
 
-## Current state (2026-04-12)
+## Current state (2026-05-06)
 
-Classroom is a Claude Code plugin marketplace convention. It ships 4 in-tree plugins.
+Classroom is a Claude Code / Cowork / OpenAI Codex plugin marketplace convention. It ships 4 in-tree plugins, the Guide skill, four shell helpers (schedule, sync-codex, telemetry, propose), and 14 test layers covering 213+ tests.
 
-All 127 tests pass.
+For the full status snapshot (Done / Partial / Deferred / Hosted bucket), the source of truth is now [`docs/roadmap.md`](docs/roadmap.md). This file holds session-level notes and open todos.
 
-### Changes made this session (demo prep)
+## Open todos for next session
 
-1. **`owner` → `author` in plugin.json.** Claude Code's plugin validator expects `"author"`, not `"owner"`. Fixed all 4 in-tree plugin.json files and matching Layer 5 tests.
+Work the user already flagged or that came up mid-session:
 
-2. **Removed 3 external `git-subdir` entries from marketplace.json.** Claude Code's `marketplace add` command validates the manifest and rejects `git-subdir` sources — even though the official marketplace (`claude-plugins-official`) uses them and they work at runtime. This is a Claude Code validator bug. The 3 external templates (exec-feedback, research-assistant, template-strategy-feedback) are still available via `@ck-skills`. Re-add once the validator supports `git-subdir`.
+### High priority
+1. **Verify scheduled execution end-to-end.** `classroom-schedule.sh` is built and unit-tested (Layer 8) but no test or manual run has confirmed a real scheduled job actually fires, has working `ANTHROPIC_API_KEY` in scope, and produces a usable log entry. Until verified, schedule is in the **Partial** column of the roadmap.
+2. **Re-add external plugin references** (still blocked on Claude Code). Once `marketplace add` accepts `git-subdir`, restore the 3 entries — Layer 3b is already written:
+   - `exec-feedback` → `ckoglmeier/skills/templates/exec-feedback`
+   - `research-assistant` → `ckoglmeier/skills/templates/research-assistant`
+   - `template-strategy-feedback` → `ckoglmeier/skills/templates/template-strategy-feedback`
+3. **Stale `AGENTS.md` in working tree.** A test run with `--agents-md` once produced `AGENTS.md` at repo root with content that mistakenly substituted "Codex" for "Claude Code" in CLAUDE.md-style notes. It's in `git status` as untracked. Decide: delete, or regenerate cleanly via `bash classroom-sync-codex.sh --agents-md .` (but that targets project-level use, not the Classroom repo itself — probably just delete).
 
-3. **Fixed install.sh marketplace registration.** The installer was writing to `extraKnownMarketplaces` in `settings.json`, but the real plugin marketplace registry is `~/.claude/plugins/known_marketplaces.json`. Updated to write a `"directory"` source entry there instead. Hook registration still goes to `settings.json` (correct location for hooks).
+### Medium — feature follow-ups
+4. **Layer 8 opt-in live validation** for external `git-subdir` entries. Gated by `CLASSROOM_VALIDATE_EXTERNAL=1`. Sparse-clone, confirm `plugin.json` exists at the target path, name matches. Plan: `~/.claude/plans/external-template-sources.md` ("Follow-ups" section).
+5. **Weekly drift-check GitHub Action** for Layer 8 — natural home once it exists.
+6. **Cowork plugin marketplace UI audit.** We confirmed Cowork shares `~/.claude/`; we haven't audited how the Cowork plugin browser surfaces Classroom skills (filters, badges, etc.).
+7. **Schedule observability.** A `/classroom schedule status` command that shows what's scheduled, last run, last failure. Today the user has to grep launchctl/crontab + log files manually.
 
-## What to pick up next
+### Strategic / design — discussed, parked
+8. **Headless beyond cron** — webhook/event-triggered runs, long-running agentic loops, output sinks beyond log files. Each needs its own design pass.
+9. **Ambient nudge hook** — "I notice you're doing X — there's a skill for that." Pre-skill-routing prompt watcher.
+10. **Memory/synthesis pipeline** — daily summary of recent sessions and connected tools to refresh user context.
+11. **Chat (claude.ai) distribution** — bundle export for manual upload at minimum; investigate API path for Team/Enterprise plans.
 
-### 1. Re-add external plugin references (blocked on Claude Code)
+### Hosted Classroom bucket (separate product layer)
+Not a backlog for this repo per se, but the local data pipe is built to feed it:
+- Aggregator + analyzer for forwarded telemetry
+- MCP for native push (`propose_skill`, etc.)
+- Publisher mode (embedded Claude API conversation for skill/context owners — separate from the consumer Guide)
+- Marketplace UI for non-technical authors
+- Staged rollouts (canary → global)
+- Multi-owner governance / deprecation flows
+- Chat distribution backend
 
-Once Claude Code's `plugin validate` / `marketplace add` commands support the `git-subdir` source type properly, restore the 3 external entries in `marketplace.json`:
-- `exec-feedback` → `ckoglmeier/skills/templates/exec-feedback`
-- `research-assistant` → `ckoglmeier/skills/templates/research-assistant`
-- `template-strategy-feedback` → `ckoglmeier/skills/templates/template-strategy-feedback`
+## Major decisions / context (current)
 
-The Layer 3b tests are already written to validate these schemas — they'll light up as soon as the entries come back.
-
-### 2. Layer 8 — opt-in live validation (deferred)
-
-Add an opt-in test layer gated by `CLASSROOM_VALIDATE_EXTERNAL=1` to `tests/run.sh`. For each object-source entry:
-- `git ls-remote` the URL to confirm repo is reachable and ref resolves
-- Sparse-clone, then assert `plugin.json` exists at the target path and its `name` field matches the marketplace entry
-
-Plan file with full details: `/Users/ck/.claude/plans/external-template-sources.md` (see "Follow-ups" section).
-
-### 3. Weekly drift-check GitHub Action (deferred)
-
-Natural home for Layer 8 once it exists: cron runs it against `main`, files an issue on drift between classroom's marketplace entries and the upstream skill content.
-
-### 4. SHA pinning + bump workflow (deferred, only if needed)
-
-Currently deferred. When external entries are restored, they'll use `"ref": "main"`. If upstream breakage becomes a real problem, move to SHA pinning with a bump script or Action that opens PRs when upstream templates update.
-
-## Key decisions
-
-- **External references over in-tree copies.** Templates live in `ckoglmeier/skills/templates/`, classroom points at them. Avoids drift, keeps classroom thin. (Temporarily removed due to validator bug.)
-- **`family-assistant` is personal.** Moved to `playbooks/` in the skills repo. Not referenced from classroom.
-- **`ref: main` pinning.** Accepted the simplicity-over-determinism tradeoff for now.
-- **Layer 3b ships now, Layer 8 deferred.** Offline schema validation is in the test suite; live sparse-clone validation comes later once we see rough edges.
-- **Original 4 plugins stay in-tree.** They're authored for classroom's audience. The skills repo is CK's personal library — different purpose, different audience.
-- **`author` not `owner`.** Claude Code's plugin.json schema uses `author` (with `name` + `contact`). Tests enforce this.
-- **Marketplace registry is `known_marketplaces.json`.** Not `extraKnownMarketplaces` in `settings.json`. install.sh writes a `"directory"` source entry there.
+- **Three-tier extension model.** Central canonical → company customization (`classroom-extensions-<team>`) → personal extension (`~/.claude/skills/`). Convention-based composition via `extends:` and `extends-context:`.
+- **Surfaces are first-class.** `surfaces:` field in `plugin.json` declares Claude Code / Cowork / Codex / Chat support. Lint enforces compatibility down the dependency graph. Layer 11.
+- **Canonical context is co-located in plugins.** `context: []` in `plugin.json` declares stable `<plugin>/<bundle>` IDs. Skills declare `requires-context:` and the Guide install flow resolves dependencies before confirming. Convention-based loading (skill body explicitly Reads), no runtime mediator. Three-tier privacy on telemetry. Spec: `docs/canonical-context-design.md`. v1 implementation: Layer 14.
+- **Local Classroom captures and forwards data only.** No analysis, no recommendations, no PRs from telemetry. Aggregation happens in the future hosted version. Three-tier opt-out (global env, plugin flag, skill flag) plus body-forwarding gate. Spec: `docs/extension-telemetry.md`.
+- **Cowork shares `~/.claude/` with Claude Code.** Verified in a live install. Zero extra work for Cowork support.
+- **Codex sync uses symlinks, not copies.** Cache refresh propagates automatically. Skills + canonical context both mirrored. `docs/codex-sync.md`.
+- **Propose flow is GitHub-backed.** `gh` does the PR; CODEOWNERS routes review. Auto-forks if no write access. Hosted version will layer richer governance on top — not in this repo.
+- **`ref: main` pinning** for external references. Simplicity over determinism. SHA pinning deferred unless we see breakage.
+- **`author` not `owner`** in `plugin.json`. Claude Code's schema requires it. Layer 5 enforces.
+- **Marketplace registry is `~/.claude/plugins/known_marketplaces.json`** with a `"directory"` source entry, not `extraKnownMarketplaces` in `settings.json`. `install.sh` writes both — settings.json is for hooks only.
 
 ## Repo topology
 
-- `ckoglmeier/classroom` — this repo. Marketplace manifest, guide skill, in-tree plugins, install pipeline, tests.
-- `ckoglmeier/skills` — CK's personal skill library. `templates/` (shareable, referenced from here), `playbooks/` (personal), `borrowed/` (third-party mirrors).
+- `ckoglmeier/classroom` — this repo. Marketplace manifest, Guide skill, in-tree plugins (4), four shell helpers, 14 test layers, convention docs.
+- `ckoglmeier/skills` — CK's personal skill library. `templates/` (shareable, referenced from here when validator unblocks), `playbooks/` (personal), `borrowed/` (third-party mirrors).
+
+## Quick orientation for a new session
+
+- "What's done?" → `docs/roadmap.md`
+- "How does X work?" → docs in `docs/<topic>.md`
+- "What's broken or unverified?" → "Open todos" above
+- "What changed recently?" → `git log --oneline -20`
+- "Tests pass?" → `bash tests/run.sh`

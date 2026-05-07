@@ -91,70 +91,82 @@ bash install-dev.sh
 
 Run `bash tests/run.sh` from the repo root to validate any change.
 
-## What's in v1
+## What's shipped
 
-**The Guide skill** — `/classroom`, with conversational subcommands:
-- `recommend` — ask team and role, surface curated path
-- `install` — browse marketplace, install with confirm-before-action
-- `extend` — draft a local extension of a central skill
-- `curate-path` — team-lead mode: draft a path file and open a PR
-- `owners` — look up the maintainer of any plugin
-- `update` — re-run the installer to update the Guide and force a cache refresh
-- `schedule` — set up a recurring (daily/weekly) headless skill run via cron or launchd
-- `analytics` — summary of which skills you've installed and actually used
-- `sync` — mirror Classroom skills to OpenAI Codex so both agents share the same library
-- `propose` — open a PR against canonical: add a new skill, update an existing one, promote a local extension, or do the same for canonical context bundles
+**The Guide skill** — `/classroom`, conversational subcommands:
+
+| Subcommand | What it does |
+|---|---|
+| `recommend` | Ask team and role, surface curated path |
+| `install` | Browse marketplace, confirm-before-action; resolves `requires-context:` deps and offers to install missing context plugins |
+| `extend` | Draft a local extension of a central skill |
+| `curate-path` | Team-lead mode: draft a path file and open a PR |
+| `owners` | Look up the maintainer of any plugin |
+| `update` | Re-run the installer to update the Guide and force a cache refresh |
+| `schedule` | Set up a recurring (daily/weekly) skill run via cron or launchd |
+| `analytics` | Summary of which skills you've installed and actually used |
+| `sync` | Mirror Classroom skills + canonical context to OpenAI Codex |
+| `propose` | Open a PR against canonical (six sub-flows: new-skill / update / promote, plus parallel new-context / update-context / promote-context-extension) |
+
+**Multi-agent reach.** Same install reaches Claude Code (native), Cowork (shares `~/.claude/`), and standalone Codex (mirrored via symlink). `surfaces:` field in `plugin.json` declares which agents a plugin supports; Guide filters recommendations to the current surface.
+
+**Canonical context.** Plugins ship reference content (battlecards, brand voice, strategy docs) alongside skills. Skills declare `requires-context:` to depend on stable IDs. Layer 14 lint enforces schema, ID resolution, frontmatter/body alignment, surface compatibility, and size limits. See [docs/canonical-context.md](docs/canonical-context.md).
+
+**Extension telemetry.** When users extend canonical skills locally, Classroom captures the extension content (with three-tier opt-out: global / per-plugin / per-skill, plus a body-forwarding gate). This feeds a future hosted aggregator that will surface "12 users added the same step — absorb it into canonical" patterns. See [docs/extension-telemetry.md](docs/extension-telemetry.md).
 
 **Five seed skills** across four problem-domain plugins:
-- `competitive-intelligence/` — `competitive-analysis`
+- `competitive-intelligence/` — `competitive-analysis` (with `competitive-intelligence/positioning` canonical context)
 - `customer-research/` — `customer-interview-prep`
 - `ops-essentials/` — `weekly-status-update`, `meeting-prep`
 - `sales-enablement/` — `stakeholder-followup`
 
-**Two role path files:**
-- `paths/sales-ae.md`
-- `paths/ops-analyst.md`
+**Two role path files:** `paths/sales-ae.md`, `paths/ops-analyst.md`.
 
-**Convention docs:**
-- [docs/extending-skills.md](docs/extending-skills.md) — the composition convention
-- [docs/path-files.md](docs/path-files.md) — how team leaders curate
-- [docs/pr-checklist.md](docs/pr-checklist.md) — central-repo PR review bar
-- [docs/npm-packs.md](docs/npm-packs.md) — publishing a plugin to npm
-- [docs/telemetry.md](docs/telemetry.md) — local analytics log, opt-out, forwarding
-- [docs/scheduled-runs.md](docs/scheduled-runs.md) — headless/recurring skill runs
-- [docs/codex-sync.md](docs/codex-sync.md) — syncing Classroom skills to OpenAI Codex
-- [docs/surfaces.md](docs/surfaces.md) — declaring which surfaces (Claude Code / Cowork / Codex / Chat) a plugin supports
-- [docs/extension-telemetry.md](docs/extension-telemetry.md) — the central learning loop: how local extensions feed canonical evolution
-- [docs/proposing-changes.md](docs/proposing-changes.md) — `/classroom propose` flow: opening PRs against canonical without leaving the conversation
-- [docs/canonical-context.md](docs/canonical-context.md) — author's reference for declaring and using canonical context bundles
-- [docs/canonical-context-design.md](docs/canonical-context-design.md) — full design spec for canonical context (v1)
+**Convention and reference docs** under `docs/`:
+- [extending-skills.md](docs/extending-skills.md) — the composition convention for skills
+- [canonical-context.md](docs/canonical-context.md) — author's reference for canonical context
+- [canonical-context-design.md](docs/canonical-context-design.md) — the design spec
+- [path-files.md](docs/path-files.md) — how team leaders curate
+- [proposing-changes.md](docs/proposing-changes.md) — the `/classroom propose` flow
+- [pr-checklist.md](docs/pr-checklist.md) — central-repo PR review bar
+- [surfaces.md](docs/surfaces.md) — surface compatibility model
+- [telemetry.md](docs/telemetry.md) — local analytics log, opt-out, forwarding
+- [extension-telemetry.md](docs/extension-telemetry.md) — the central learning loop
+- [scheduled-runs.md](docs/scheduled-runs.md) — recurring skill runs
+- [codex-sync.md](docs/codex-sync.md) — syncing skills + context to OpenAI Codex
+- [npm-packs.md](docs/npm-packs.md) — publishing a plugin to npm
+- [roadmap.md](docs/roadmap.md) — what's done, what's partial, what's deferred
 
 ## Repo layout
 
 ```
 classroom/
 ├── README.md                     # this file
+├── CLAUDE.md                     # session notes + open todos for the next session
 ├── CODEOWNERS                    # per-plugin maintainers (GitHub auto-review)
 ├── install.sh                    # one-line install bootstrap (no git required)
 ├── install-dev.sh                # contributor variant (git checkout)
 ├── classroom-schedule.sh         # scheduler helper (installed to ~/.claude/ by install.sh)
 ├── classroom-sync-codex.sh       # Codex sync helper (installed to ~/.claude/ by install.sh)
-├── classroom-telemetry.sh        # Telemetry emit + strip-bodies helper (installed to ~/.claude/ by install.sh)
-├── classroom-propose.sh          # Propose helper: opens PRs against canonical (installed to ~/.claude/ by install.sh)
+├── classroom-telemetry.sh        # telemetry emit + strip-bodies helper (installed to ~/.claude/ by install.sh)
+├── classroom-propose.sh          # propose helper: opens PRs against canonical (installed to ~/.claude/ by install.sh)
 ├── guide/SKILL.md                # the Guide skill (copied to ~/.claude/skills/classroom/ on install)
 ├── .claude-plugin/marketplace.json   # plugin catalog (Claude Code marketplace)
 ├── plugins/                      # in-tree problem-domain plugins
 │   ├── competitive-intelligence/
+│   │   ├── .claude-plugin/plugin.json
+│   │   ├── skills/competitive-analysis/SKILL.md
+│   │   └── context/positioning/positioning.md   # canonical context demonstrator
 │   ├── customer-research/
 │   ├── ops-essentials/
 │   └── sales-enablement/
 ├── paths/                        # curated bundles by role
 │   ├── sales-ae.md
 │   └── ops-analyst.md
-└── docs/                         # convention specs
-    ├── extending-skills.md
-    ├── path-files.md
-    └── pr-checklist.md
+├── docs/                         # convention + reference docs (see "What's shipped")
+└── tests/
+    ├── run.sh                    # full lint + integration suite (213+ tests across 14 layers)
+    └── lib/check_requires_context.py   # Python validator extracted from inline bash
 ```
 
 ## External plugins
@@ -166,13 +178,9 @@ Classroom's marketplace supports two kinds of plugin entries in `.claude-plugin/
 
 Adding an external plugin is a one-line PR: append an entry to the `plugins` array. The `tests/run.sh` suite validates the source schema (correct type, required fields, ref pinning) offline.
 
-## What's deferred to v1.1+
+## Roadmap
 
-- **Cowork/Chat sync.** Cross-harness portability so the same skill set works in both Claude Code and claude.ai. High-value for adoption, but defers cleanly. Will require a portability contract (declared `harness:` field, no unguarded Bash) and a sync mechanism.
-- **Ambient nudge hook.** "I notice you're doing X — there's a skill for that" surfaced inline during real work.
-- **Memory/synthesis pipeline.** Daily summary of recent sessions and connected tools to refresh user context.
-- **Scheduled / headless execution.** Long-running and cron-based skill runs.
-- **Telemetry.** Which skills get installed, used, abandoned. The signal that tells central maintainers what to invest in.
+A full status snapshot — what's done, what's partial (built but not validated end-to-end, like scheduled execution), what's deferred (ambient nudges, memory/synthesis, Chat distribution, broader headless patterns), and the separate **Hosted Classroom** bucket — lives in [docs/roadmap.md](docs/roadmap.md). It's the source of truth for "is X built?"
 
 ## Adopting Classroom for your company
 
