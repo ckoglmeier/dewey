@@ -29,6 +29,12 @@ Work the user already flagged or that came up mid-session:
 9. **Ambient nudge hook** — "I notice you're doing X — there's a skill for that." Pre-skill-routing prompt watcher.
 10. **Memory/synthesis pipeline** — daily summary of recent sessions and connected tools to refresh user context.
 11. **Chat (claude.ai) distribution** — bundle export for manual upload at minimum; investigate API path for Team/Enterprise plans.
+12. **Global context model — without putting context everywhere.** v1 canonical context is explicit per-skill (`requires-context:`). That's right for skill-specific dependencies but wrong for facts that should be true *everywhere* — company name, industry, fiscal year, top-level brand voice. Forcing every skill to declare them is repetitive; pasting them into every prompt is the single-player problem we're trying to solve. Options to think through:
+    - **Always-loaded bundle** declared at the marketplace or path-file level (e.g. `paths/sales-ae.md` lists "always-load: company/identity"). Loaded once per session.
+    - **A SessionStart hook** that injects a small global-context block ahead of any skill, sourced from a designated plugin (e.g. `company-truth/global`).
+    - **Implicit dependency**: skills that don't declare `requires-context:` automatically inherit a configured global bundle. Risk: surprising and hard to debug.
+    - **Trade-off to manage**: every byte loaded globally is loaded for every conversation. Need a small, opinionated default and a way for users to opt OUT for narrow tasks. The 80/300KB lint thresholds we have for declared context don't apply to what's always-loaded — needs its own size discipline.
+    - Open questions: who curates the global bundle (org admin? team lead? Guide on first run?); does it compose three-tier the same way (central global → team global overlay → personal); does it count against the same telemetry events.
 
 ### Hosted Classroom bucket (separate product layer)
 Not a backlog for this repo per se, but the local data pipe is built to feed it:
