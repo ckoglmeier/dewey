@@ -15,10 +15,12 @@ plugins/<plugin>/
 │   └── <skill>/SKILL.md
 └── context/                           # optional
     └── <bundle>/                      # one bundle = one or more files
-        └── <bundle>.md
+        └── context.md                 # primary entry point (convention)
 ```
 
 A "bundle" is a logical unit of canonical context — usually a single markdown file, occasionally a directory of related files (e.g. `battlecards/` containing one file per competitor).
+
+**Naming convention:** the primary file in each bundle is named `context.md`. This is what `/classroom load` will read by default and what skills should reference. A bundle can ship additional supporting files in the same directory (e.g. `examples.md`, `appendix.md`), but `context.md` is the canonical entry point. The lint warns (doesn't fail) if a bundle's primary `path:` doesn't end in `context.md` — older bundles may use other names; the resolver always uses the `path:` from `plugin.json` rather than guessing.
 
 ## Declaring a context bundle in plugin.json
 
@@ -113,6 +115,24 @@ If the corpus is genuinely large reference material that's *only* loaded on dema
 ## Surface compatibility
 
 The lint enforces that a skill's surfaces ⊆ each required context's surfaces. So if your skill claims `chat` support, every context bundle it requires must also support `chat`. Practically this means context bundles should default to all four surfaces (Markdown is universal); the only reason to scope context narrower is if it ships data only meaningful in a specific runtime.
+
+## Loading context on demand
+
+For ad-hoc reference work — the user wants the brand voice doc available because they're about to draft a one-off message — the Guide has a load-on-demand subcommand:
+
+```
+/classroom load [topic]
+```
+
+- No topic → Guide lists every installed context bundle, grouped by plugin, asks which to load.
+- Topic matches one bundle's `id` or `title` → Guide confirms and loads.
+- Topic matches multiple → Guide narrows to the matches and asks.
+
+Loading reads the bundle's `context.md` into the conversation literally (no summarization), so the content is available verbatim for the rest of the session.
+
+**This is only for ad-hoc loads.** When a skill needs context as part of its procedure, it declares `requires-context:` and loads the file in its body — the user doesn't need to think about it. `/classroom load` exists for the cases where no skill is involved or the user wants reference material outside any specific skill flow.
+
+**Nothing about Classroom is auto-loaded for every conversation.** Context only enters a session through one of these two paths.
 
 ## Proposing context changes
 

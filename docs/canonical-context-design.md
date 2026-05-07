@@ -226,6 +226,9 @@ Context files are markdown, but they are still prompt material. Battlecards, cus
 6. **Size and chunking** — v1 does not implement chunking or retrieval. Lint warns when a single context file exceeds 20 KB or when a skill's total declared context exceeds 80 KB. Lint fails when a single context file exceeds 100 KB or total declared context exceeds 300 KB unless the context entry explicitly sets `allow-large-context: true`.
 7. **Context for Codex** — yes, Codex sync mirrors `context/` alongside skills. Codex users should be able to load the same canonical context.
 8. **Metadata location** — v1 stores context bundle metadata in `plugin.json` only. Do not add per-context manifests yet.
+9. **Global / always-loaded context — REJECTED.** Nothing about Classroom is auto-loaded for every conversation. The bytes-per-conversation tax is wrong, and an always-on bundle makes context invisible to the user. Context only enters a session through one of two paths: a skill's `requires-context:` (procedural) or an explicit `/classroom load [topic]` (ad-hoc).
+10. **`/classroom load [topic]` — Guide-mediated, on-demand.** New subcommand. Empty topic → lists all bundles, asks. Ambiguous topic → lists matches, asks. Single match → confirms and loads. "Load" reads the resolved primary file literally into the conversation; no summarization. No telemetry in v1 (load is convention-based and can't be reliably observed; user might load and never reference it).
+11. **Naming convention: `context.md`** is the primary file in each bundle. Lint warns (doesn't fail) if a bundle's `path:` doesn't end in `context.md` — older bundles may use other names; the resolver always uses the `path:` from `plugin.json` rather than guessing.
 
 ## Implementation plan
 

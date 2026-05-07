@@ -938,8 +938,8 @@ test -L '$LIVE_SYNC_SANDBOX/.codex/context/competitive-intelligence' && \
   echo \"\$target\" | grep -q 'plugins/competitive-intelligence/context'
 "
 
-check "context symlink resolves to a real directory containing positioning.md" \
-  "test -f '$LIVE_SYNC_SANDBOX/.codex/context/competitive-intelligence/positioning/positioning.md'"
+check "context symlink resolves to a real directory containing context.md" \
+  "test -f '$LIVE_SYNC_SANDBOX/.codex/context/competitive-intelligence/positioning/context.md'"
 
 # --remove: removes symlinks
 check "sync --remove removes only Classroom symlinks" \
@@ -1424,7 +1424,7 @@ done
 
 # Demonstrator content exists end-to-end
 check "competitive-intelligence positioning context file exists" \
-  "test -f '$REPO_ROOT/plugins/competitive-intelligence/context/positioning/positioning.md'"
+  "test -f '$REPO_ROOT/plugins/competitive-intelligence/context/positioning/context.md'"
 
 check "competitive-analysis declares requires-context: positioning" \
   "grep -q 'competitive-intelligence/positioning' '$REPO_ROOT/plugins/competitive-intelligence/skills/competitive-analysis/SKILL.md'"
@@ -1503,6 +1503,24 @@ cd '$LAYER14_FIXTURES' && \
       'plugins/demo/' \
       'demo' >/dev/null 2>&1
 "
+
+# Naming convention: every in-tree context entry's primary path ends in context.md
+for plugin_dir in plugins/*/; do
+  plugin_name=$(basename "$plugin_dir")
+
+  check "[$plugin_name] context entries use the context.md primary-file convention" \
+    "python3 '$REPO_ROOT/tests/lib/check_context_naming.py' '$plugin_dir'"
+done
+
+# Guide §11 Load: section exists and references the load mechanic
+check "guide/SKILL.md §11 Load is present and documents the load flow" \
+  "grep -q '## §11 Load' '$REPO_ROOT/guide/SKILL.md' &&
+   grep -q '/classroom load' '$REPO_ROOT/guide/SKILL.md' &&
+   grep -q 'context.md' '$REPO_ROOT/guide/SKILL.md'"
+
+check "guide argument-hint includes load" \
+  "grep -q 'load' '$REPO_ROOT/guide/SKILL.md' &&
+   head -20 '$REPO_ROOT/guide/SKILL.md' | grep -q 'argument-hint.*load'"
 
 # ============================================================================
 # RESULTS

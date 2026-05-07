@@ -1,7 +1,7 @@
 ---
 name: classroom
 description: Classroom Guide. Helps the user discover, install, extend, schedule, and find owners of skills from their company's Classroom marketplace. Use when the user mentions Classroom, asks what skills exist for their role, or runs /classroom.
-argument-hint: "[recommend|install|extend|curate-path|owners|update|schedule|analytics|sync|propose|propose-context]"
+argument-hint: "[recommend|install|extend|curate-path|owners|update|schedule|analytics|sync|propose|propose-context|load]"
 allowed-tools: Bash(claude *) Bash(cat *) Bash(ls *) Bash(mkdir *) Bash(git *) Bash(bash *) Bash(gh *) Bash(launchctl *) Bash(crontab *) Bash(python3 *) Read Write Edit Glob Grep
 ---
 
@@ -64,6 +64,7 @@ Look at `$ARGUMENTS`. The first word (`$0`) is the subcommand. If empty, show th
 - `analytics` → §8 Analytics (usage summary from local log)
 - `sync` → §9 Sync (mirror skills to Codex, show sync status)
 - `propose` → §10 Propose (open a PR to add or update a canonical skill)
+- `load` → §11 Load (load a canonical context bundle into the conversation on demand; `$1` = topic, optional)
 - empty / anything else → show the menu below
 
 ### Menu (when no subcommand)
@@ -80,8 +81,9 @@ Look at `$ARGUMENTS`. The first word (`$0`) is the subcommand. If empty, show th
 > 8. **View your usage analytics** — See which skills you use most and which are gathering dust.
 > 9. **Sync with Codex** — Mirror Classroom skills to OpenAI Codex so both agents share the same library.
 > 10. **Propose a canonical skill change** — Open a PR to add a new skill, update one you own, or promote a local extension upstream.
+> 11. **Load a context bundle** — Pull a canonical reference (battlecard, brand voice, strategy doc) into this conversation on demand.
 >
-> Reply with `1`–`10`.
+> Reply with `1`–`11`.
 
 Then route based on their choice.
 
@@ -588,6 +590,50 @@ If the helper exits non-zero, surface its stderr and stop. Common failures:
 ### Where canonical lives
 
 The propose helper writes to a working clone at `~/.claude/classroom-author/` (separate from the read-only reference cache at `~/.claude/classroom/`). Don't confuse these — the cache is what skills actually load from at runtime; the working clone is only used during a propose flow.
+
+---
+
+## §11 Load
+
+Goal: pull a canonical context bundle (battlecard, brand voice, strategy doc, etc.) into the current conversation on demand. Nothing about Classroom is auto-loaded for every conversation — context only enters a session when the user asks for it (here) or when a skill that declares `requires-context:` runs.
+
+The user invokes this with `/classroom load [topic]`. The topic is optional.
+
+### Step-by-step
+
+1. **Discover available bundles.** Walk `~/.claude/classroom/plugins/*/.claude-plugin/plugin.json`. For each, collect the `context: []` entries' `id`, `title`, and `description`. Also resolve each entry's on-disk `path` so you know what file to read.
+
+2. **Match `$1` against the discovered bundles.**
+   - **No `$1`** (user just typed `/classroom load`): show the full list grouped by plugin, e.g.:
+     > Available context bundles:
+     >
+     > **competitive-intelligence**
+     > 1. `competitive-intelligence/positioning` — *Canonical positioning, differentiators, non-fit segments, banned phrases.*
+     >
+     > Reply with the number or the ID.
+   - **`$1` matches exactly one** (case-insensitive substring against `id` or `title`): proceed straight to step 3 with that bundle.
+   - **`$1` matches multiple**: show only the matching subset and ask which.
+   - **No matches**: tell the user, and offer to show the full list.
+
+3. **Confirm and load.** Tell the user which bundle you're about to load, then Read the resolved `context.md` (or whatever the entry's `path` points to). Keep the read literal — don't summarize, paraphrase, or re-format the content. Once read, briefly tell the user:
+   > Loaded `<id>` (~N tokens). The content is now available for the rest of this conversation.
+
+4. **Honor the naming convention.** v1 standardizes on `context.md` as the primary file inside each bundle. Older bundles may use a different filename (e.g. `positioning.md`); resolve by reading the `path:` from `plugin.json` rather than guessing.
+
+5. **Skip telemetry for v1.** Loading is convention-based and can't be reliably observed (the user might load and never reference it). No event is emitted today; revisit when there's a runtime loader.
+
+### When to use this vs. when a skill loads context automatically
+
+- **`/classroom load`** is for ad-hoc reference: the user wants the brand voice doc available because they're about to draft a one-off message that no skill covers.
+- **`requires-context:` on a skill** is for procedural dependencies: when `competitive-analysis` runs, it always needs `competitive-intelligence/positioning` — that's the skill's job to know, not the user's.
+
+If the user runs a skill that already declares `requires-context:`, don't also push them to `/classroom load` for the same bundle. The skill takes care of it.
+
+### Things to refuse
+
+- **Don't auto-load a bundle the user didn't pick** based on the chat topic alone. The whole point of this flow is explicit invocation.
+- **Don't load multiple bundles at once** unless the user explicitly asks. Pick one at a time so the user can see what entered the context window.
+- **Don't load a bundle larger than 100KB** without warning the user about the token cost first.
 
 ---
 
