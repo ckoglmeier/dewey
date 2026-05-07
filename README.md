@@ -66,7 +66,7 @@ Then open Claude Code (or Codex) and type `/classroom`.
 | Env var | Default | Purpose |
 |---|---|---|
 | `CLASSROOM_REPO` | placeholder GitHub URL | Repo to fetch from. Used to derive the tarball URL. |
-| `CLASSROOM_REF` | `main` | Branch *or tag* to install. Set to a tag (e.g. `v0.1.0`) to pin. |
+| `CLASSROOM_REF` | `main` | Branch *or tag* to install. Set to a tag (e.g. `v1.1.0`) to pin. |
 | `CLASSROOM_TARBALL` | derived from REPO+REF | Full tarball URL override for non-GitHub hosts. |
 | `CLASSROOM_TARBALL_SHA256` | unset | If set, the downloaded tarball must match this SHA-256. Recommended for secure environments. |
 | `CLASSROOM_REFRESH_INTERVAL` | `24` | Hours between background cache refreshes. `0` = every session. `-1` = disable. |
