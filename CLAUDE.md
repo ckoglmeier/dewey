@@ -29,12 +29,28 @@ Work the user already flagged or that came up mid-session:
 9. **Ambient nudge hook** — "I notice you're doing X — there's a skill for that." Pre-skill-routing prompt watcher.
 10. **Memory/synthesis pipeline** — daily summary of recent sessions and connected tools to refresh user context.
 11. **Chat (claude.ai) distribution** — bundle export for manual upload at minimum; investigate API path for Team/Enterprise plans.
-12. **Global context model — without putting context everywhere.** v1 canonical context is explicit per-skill (`requires-context:`). That's right for skill-specific dependencies but wrong for facts that should be true *everywhere* — company name, industry, fiscal year, top-level brand voice. Forcing every skill to declare them is repetitive; pasting them into every prompt is the single-player problem we're trying to solve. Options to think through:
-    - **Always-loaded bundle** declared at the marketplace or path-file level (e.g. `paths/sales-ae.md` lists "always-load: company/identity"). Loaded once per session.
-    - **A SessionStart hook** that injects a small global-context block ahead of any skill, sourced from a designated plugin (e.g. `company-truth/global`).
-    - **Implicit dependency**: skills that don't declare `requires-context:` automatically inherit a configured global bundle. Risk: surprising and hard to debug.
-    - **Trade-off to manage**: every byte loaded globally is loaded for every conversation. Need a small, opinionated default and a way for users to opt OUT for narrow tasks. The 80/300KB lint thresholds we have for declared context don't apply to what's always-loaded — needs its own size discipline.
-    - Open questions: who curates the global bundle (org admin? team lead? Guide on first run?); does it compose three-tier the same way (central global → team global overlay → personal); does it count against the same telemetry events.
+12. **Context-on-demand via `/classroom load` — RESOLVED, ready to build.**
+
+    Decisions (CK, 2026-05-06):
+    - **No always-loaded / global context.** Nothing should load for every conversation. The bytes-per-conversation tax is wrong, and it makes context invisible to the user.
+    - **Load on demand via the Guide.** New subcommand `/classroom load [topic]`. The Guide reads the user's topic, scans installed context bundles' titles/descriptions, and either loads the match or — if ambiguous or empty — lists candidates and asks.
+    - **Naming convention: each bundle's primary file is `context.md`.** Standardize so the Guide always knows what to read. The existing demonstrator (`plugins/competitive-intelligence/context/positioning/positioning.md`) gets renamed to `plugins/competitive-intelligence/context/positioning/context.md`. The `path:` entry in `plugin.json` is updated accordingly. A bundle can still ship additional supporting files in the same dir, but `context.md` is the canonical entry point.
+
+    Implementation sketch (next session):
+    - **Convention update**: rename `positioning.md` → `context.md`; update `plugin.json` path; update the in-skill load instructions in `competitive-analysis/SKILL.md` (both Claude Code/Cowork and Codex paths).
+    - **Lint update** in `tests/lib/check_requires_context.py` and Layer 14: warn (not fail) if a bundle's primary file isn't named `context.md`. Don't break existing v1 bundles in the wild that may use other names.
+    - **New Guide §11 Load**:
+      1. Parse `$1` as topic (optional).
+      2. Walk `~/.claude/classroom/plugins/*/.claude-plugin/plugin.json`, collect every `context: []` entry's `id`, `title`, `description`.
+      3. If `$1` is empty: present the full list grouped by plugin, ask which to load.
+      4. If `$1` matches exactly one bundle's `id` or `title` (case-insensitive substring): confirm and load.
+      5. If `$1` matches multiple: list the matches, ask which.
+      6. "Load" means: Read the resolved `context.md` into the conversation. The Guide can then summarize what it loaded and tell the user the content is now available for the rest of the conversation.
+    - **Routing**: add `load` to argument-hint, the routing table, and the menu.
+    - **Docs**: update `docs/canonical-context.md` with the load-on-demand pattern and the `context.md` naming convention. Update `docs/canonical-context-design.md`'s "v1 decisions" with the resolution.
+    - **Tests**: Layer 14 — bundle's primary file is `context.md` (warn); Guide §11 references the helper / load mechanic.
+
+    Why this is the right answer: it keeps context invisible-when-not-needed and explicit-when-it-is, avoids the always-loaded tax, and matches a real use case ("put the brand voice in this conversation right now"). It does NOT solve "every conversation should know our company name" — that's an explicit non-goal; if you want that, you say it once and it sticks for the rest of the session.
 
 ### Hosted Classroom bucket (separate product layer)
 Not a backlog for this repo per se, but the local data pipe is built to feed it:
