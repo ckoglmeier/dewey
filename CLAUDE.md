@@ -18,9 +18,8 @@ Work the user already flagged or that came up mid-session:
 
 ### Strategic / design — discussed, parked
 1. **Skill-trigger validation tooling** *(replaces what was previously framed as "ambient nudge hook")*. Full plan stored at [`docs/plans/skill-trigger-validation.md`](docs/plans/skill-trigger-validation.md). Three phases (triggers schema + body lint, description quality lint, optional model-based eval) with sequencing, effort estimates, and four decision points to settle before building. Recommendation in the plan: ship Phases 1+2 in one chunk (~3.5h, no API credits), evaluate, then decide on Phase 3.
-2. **Memory/synthesis pipeline** — daily summary of recent sessions and connected tools to refresh user context.
-3. **Chat (claude.ai) distribution** — bundle export for manual upload at minimum; investigate API path for Team/Enterprise plans.
-4. **Smart admin onboarding flow.** Today's "Adopting Classroom for your company" section in the README is a 6-step engineer's checklist (fork repo, edit marketplace.json, replace seed skills, etc.). The audience for that work is rarely an engineer — it's the ops or RevOps lead who owns "what skills do my teams use" but doesn't want to clone a repo. Build a conversational flow specifically for first-time org admins:
+2. **Chat (claude.ai) distribution** — bundle export for manual upload at minimum; investigate API path for Team/Enterprise plans.
+3. **Smart admin onboarding flow.** Today's "Adopting Classroom for your company" section in the README is a 6-step engineer's checklist (fork repo, edit marketplace.json, replace seed skills, etc.). The audience for that work is rarely an engineer — it's the ops or RevOps lead who owns "what skills do my teams use" but doesn't want to clone a repo. Build a conversational flow specifically for first-time org admins:
     - **Discover the org**: company name, industry, primary teams (e.g. Sales, CS, Ops, Eng), key roles per team
     - **Seed the canonical context** the first wave will need (company-identity bundle, ICP, brand voice templates, top-of-funnel positioning) using interactive prompts; output goes through the propose flow
     - **Draft initial path files** per role from a small library of starter templates, tuned by the discovery answers
