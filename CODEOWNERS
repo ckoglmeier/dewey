@@ -14,6 +14,9 @@
 /plugins/customer-research/             @ck
 /plugins/ops-essentials/                @ck
 /plugins/sales-enablement/              @ck
+/plugins/exec-feedback/                 @ck
+/plugins/research-assistant/            @ck
+/plugins/template-strategy-feedback/    @ck
 
 # Guide skill — single maintainer for v1 (see decisions in docs/IMPLEMENTATION-PLAN.md)
 /guide/                                 @ck

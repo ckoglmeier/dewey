@@ -1,0 +1,15 @@
+{
+  "name": "template-strategy-feedback",
+  "version": "1.0.0",
+  "description": "Strategy pressure-testing toolkit. Two advisory councils, 14 strategy frameworks, competitive intel context, and a session orchestrator. Supports multiple company contexts.",
+  "author": {
+    "name": "Chandler Koglmeier",
+    "contact": "@ck"
+  },
+  "surfaces": [
+    "claude-code",
+    "cowork",
+    "codex",
+    "chat"
+  ]
+}

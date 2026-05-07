@@ -1,0 +1,15 @@
+{
+  "name": "research-assistant",
+  "version": "2.0.0",
+  "description": "Multi-agent research orchestrator with parallel web research agents, internal recon, and prose-first synthesis. Supports 12 research types: competitive analysis, industry trends, market sizing, analog mapping, build/buy/partner, company deep dives, company financials, technology landscape, regulatory landscape, due diligence, person profiles, and ecosystem mapping. Each type has structured frameworks that produce opinionated, decision-ready output. Supports multiple company contexts.",
+  "author": {
+    "name": "Chandler Koglmeier",
+    "contact": "@ck"
+  },
+  "surfaces": [
+    "claude-code",
+    "cowork",
+    "codex",
+    "chat"
+  ]
+}

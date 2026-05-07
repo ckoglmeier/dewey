@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "Reference implementation of the Classroom convention: a Claude-native skill marketplace organized by problem domain, with a Guide that helps non-technical users discover, install, and extend skills.",
-    "version": "1.2.0"
+    "version": "1.3.0"
   },
   "plugins": [
     {
@@ -14,28 +14,77 @@
       "source": "./plugins/competitive-intelligence",
       "description": "Skills for analyzing competitors, their messaging, pricing, and product moves.",
       "category": "research",
-      "tags": ["research", "competitive", "marketing"]
+      "tags": [
+        "research",
+        "competitive",
+        "marketing"
+      ]
     },
     {
       "name": "customer-research",
       "source": "./plugins/customer-research",
       "description": "Skills for preparing for customer interviews, synthesizing feedback, and building personas.",
       "category": "research",
-      "tags": ["research", "customer", "interviews"]
+      "tags": [
+        "research",
+        "customer",
+        "interviews"
+      ]
     },
     {
       "name": "ops-essentials",
       "source": "./plugins/ops-essentials",
       "description": "Skills every operator needs: weekly status updates, meeting prep, async standups.",
       "category": "operations",
-      "tags": ["ops", "communication", "weekly"]
+      "tags": [
+        "ops",
+        "communication",
+        "weekly"
+      ]
     },
     {
       "name": "sales-enablement",
       "source": "./plugins/sales-enablement",
       "description": "Skills for sales: stakeholder follow-ups, deal reviews, account research.",
       "category": "sales",
-      "tags": ["sales", "stakeholders", "followup"]
+      "tags": [
+        "sales",
+        "stakeholders",
+        "followup"
+      ]
+    },
+    {
+      "name": "exec-feedback",
+      "source": "./plugins/exec-feedback",
+      "description": "First-pass document feedback in any executive's voice \u2014 configurable for any leader.",
+      "category": "writing",
+      "tags": [
+        "feedback",
+        "review",
+        "writing"
+      ]
+    },
+    {
+      "name": "research-assistant",
+      "source": "./plugins/research-assistant",
+      "description": "Multi-agent research orchestrator with frameworks for industry trends, market sizing, due diligence, competitive landscape, and more.",
+      "category": "research",
+      "tags": [
+        "research",
+        "synthesis",
+        "orchestrator"
+      ]
+    },
+    {
+      "name": "template-strategy-feedback",
+      "source": "./plugins/template-strategy-feedback",
+      "description": "Strategy pressure-testing toolkit: advisory councils, strategy frameworks, and a session orchestrator.",
+      "category": "strategy",
+      "tags": [
+        "feedback",
+        "strategy",
+        "council"
+      ]
     }
   ]
 }

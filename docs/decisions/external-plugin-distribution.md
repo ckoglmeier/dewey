@@ -1,9 +1,29 @@
 # Decision: how to distribute external Classroom plugins
 
-**Status:** Open. Needs an engineering decision before further work on external plugin references.
-**Owner:** TBD (next engineer to pick this up)
+**Status:** **RESOLVED — Option C (inline)** chosen for the current set; A/B revisit when third-party publishing becomes a real need.
+**Owner:** CK
 **Last updated:** 2026-05-06
 **Verified against:** Claude Code v2.1.47
+
+## Resolution
+
+For the three templates (`exec-feedback`, `research-assistant`, `template-strategy-feedback`) and the rest of the canonical Classroom catalog: **Option C — inline as in-tree plugins.**
+
+**Why C for this case:**
+- CK is both the author of the templates AND the maintainer of Classroom — the "wrong attribution" downside is moot.
+- "Classroom is the canonical home for the canonical skills" is the actual product goal; the thin-pointer-to-upstream model was a preference, not a requirement.
+- Selectivity (the question that prompted this decision) is trivial when entries are in-tree.
+
+**When to revisit:**
+- If a third-party author wants their plugin in Classroom's marketplace without giving CK PR rights to their content → Option A (per-repo `github` source) or Option B (npm) becomes necessary.
+- If the in-tree plugin count grows past ~20 and PR maintenance fan-out becomes painful → Option A + per-repo CODEOWNERS scales better.
+
+**What landed with this resolution (v1.3.0):**
+- Three new in-tree plugins under `plugins/`
+- 21 new skills total (1 + 15 + 5)
+- Resolved name collision: research-assistant's `competitive-analysis` renamed to `research-competitive-analysis` to coexist with our existing `competitive-intelligence/competitive-analysis`
+- Layer 3b tightened to reject `git`/`git-subdir` source types (the validator-realignment item)
+- The `ckoglmeier/skills/templates/` upstream now has a stale fork; needs README pointer to Classroom or deletion (follow-up — not in v1.3.0)
 
 ## TL;DR
 

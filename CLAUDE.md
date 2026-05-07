@@ -2,7 +2,7 @@
 
 ## Current state (2026-05-06)
 
-Classroom is a Claude Code / Cowork / OpenAI Codex plugin marketplace convention. It ships 4 in-tree plugins, the Guide skill, four shell helpers (schedule, sync-codex, telemetry, propose), and 14 test layers covering 213+ tests.
+Classroom is a Claude Code / Cowork / OpenAI Codex plugin marketplace convention. As of v1.3.0 it ships 7 in-tree plugins (28 skills total), the Guide skill, three shell helpers (sync-codex, telemetry, propose), and 13 active test layers (Layer 8 slot is reserved for opt-in live validation) covering 370+ tests.
 
 For the full status snapshot (Done / Partial / Deferred / Hosted bucket), the source of truth is now [`docs/roadmap.md`](docs/roadmap.md). This file holds session-level notes and open todos.
 
@@ -11,32 +11,18 @@ For the full status snapshot (Done / Partial / Deferred / Hosted bucket), the so
 Work the user already flagged or that came up mid-session:
 
 ### High priority
-1. **Re-add external plugin references — still blocked, but the blocker is bigger than "git-subdir."** Verified against Claude Code v2.1.47 (2026-05-06):
+*(none — what was here is now done; see "Resolved this session" at the bottom)*
 
-   - **`marketplace add` schema acceptance** by source type:
-     - `url`, `github`, `npm` → accepted
-     - `git`, `git-subdir` → rejected with `Invalid input` (even using a literal copy of the official marketplace's working `git-subdir` semgrep entry, so this isn't about our shape — `git-subdir` was apparently grandfathered for `claude-plugins-official` and is no longer accepted for new marketplaces)
-   - **Sub-path support at install time:** `github` source schema accepts a `path:` (or `subdir:` / `directory:`) field, but the install fetcher *silently ignores it* and pulls the entire upstream repo. Confirmed by installing `{source: github, repo: ckoglmeier/skills, path: templates/exec-feedback}` — install reported success but the cache contained the whole `ckoglmeier/skills` tree, no `.claude-plugin/plugin.json` at the cache root.
-
-   So the real blocker isn't "wait for `git-subdir`" — it's that **no schema-accepted source type honors a sub-path at install time**. Three real paths forward:
-
-   - **(a) Promote each template to its own GitHub repo** — `ckoglmeier/skill-exec-feedback`, etc. Then `{source: github, repo: ckoglmeier/skill-exec-feedback}` works cleanly without sub-paths. Cleanest long-term; maintenance overhead of N repos.
-   - **(b) Publish each as an npm package** under `@ck-skills/<name>`. `npm` source is accepted and honored. One publish step per skill update; npm registry as the distribution mechanism.
-   - **(c) Inline the three templates into Classroom's `plugins/` directory.** Defeats the "Classroom is a thin pointer to upstream" goal but unblocks today.
-
-   Pick one before retrying. Layer 3b's offline schema validator should be updated to reject `git`/`git-subdir` source types since they no longer pass `marketplace add` — currently it accepts them and gives false confidence.
-
-   **Full architecture write-up for the next engineer:** [`docs/decisions/external-plugin-distribution.md`](docs/decisions/external-plugin-distribution.md) — verified findings, requirements, three options with pros/cons/migration cost, the seven architecture questions to answer before picking, recommended path (npm), and the change list per option after the call lands.
 ### Medium — feature follow-ups
-2. **Layer 8 opt-in live validation** for external `git-subdir` entries. Gated by `CLASSROOM_VALIDATE_EXTERNAL=1`. Sparse-clone, confirm `plugin.json` exists at the target path, name matches. Plan: `~/.claude/plans/external-template-sources.md` ("Follow-ups" section). Note: the old "Layer 8" was the schedule helper (now removed); this slot is free for the live-validation layer when we build it.
-3. **Weekly drift-check GitHub Action** for the live-validation layer — natural home once it exists.
-4. **Cowork plugin marketplace UI audit.** We confirmed Cowork shares `~/.claude/`; we haven't audited how the Cowork plugin browser surfaces Classroom skills (filters, badges, etc.).
+1. **Layer 8 opt-in live validation** for external `git-subdir` entries. Gated by `CLASSROOM_VALIDATE_EXTERNAL=1`. Sparse-clone, confirm `plugin.json` exists at the target path, name matches. Plan: `~/.claude/plans/external-template-sources.md` ("Follow-ups" section). Note: the old "Layer 8" was the schedule helper (now removed); this slot is free for the live-validation layer when we build it.
+2. **Weekly drift-check GitHub Action** for the live-validation layer — natural home once it exists.
+3. **Cowork plugin marketplace UI audit.** We confirmed Cowork shares `~/.claude/`; we haven't audited how the Cowork plugin browser surfaces Classroom skills (filters, badges, etc.).
 
 ### Strategic / design — discussed, parked
-5. **Ambient nudge hook** — "I notice you're doing X — there's a skill for that." Pre-skill-routing prompt watcher.
-6. **Memory/synthesis pipeline** — daily summary of recent sessions and connected tools to refresh user context.
-7. **Chat (claude.ai) distribution** — bundle export for manual upload at minimum; investigate API path for Team/Enterprise plans.
-8. **Smart admin onboarding flow.** Today's "Adopting Classroom for your company" section in the README is a 6-step engineer's checklist (fork repo, edit marketplace.json, replace seed skills, etc.). The audience for that work is rarely an engineer — it's the ops or RevOps lead who owns "what skills do my teams use" but doesn't want to clone a repo. Build a conversational flow specifically for first-time org admins:
+4. **Ambient nudge hook** — "I notice you're doing X — there's a skill for that." Pre-skill-routing prompt watcher.
+5. **Memory/synthesis pipeline** — daily summary of recent sessions and connected tools to refresh user context.
+6. **Chat (claude.ai) distribution** — bundle export for manual upload at minimum; investigate API path for Team/Enterprise plans.
+7. **Smart admin onboarding flow.** Today's "Adopting Classroom for your company" section in the README is a 6-step engineer's checklist (fork repo, edit marketplace.json, replace seed skills, etc.). The audience for that work is rarely an engineer — it's the ops or RevOps lead who owns "what skills do my teams use" but doesn't want to clone a repo. Build a conversational flow specifically for first-time org admins:
     - **Discover the org**: company name, industry, primary teams (e.g. Sales, CS, Ops, Eng), key roles per team
     - **Seed the canonical context** the first wave will need (company-identity bundle, ICP, brand voice templates, top-of-funnel positioning) using interactive prompts; output goes through the propose flow
     - **Draft initial path files** per role from a small library of starter templates, tuned by the discovery answers
@@ -69,10 +55,17 @@ Not a backlog for this repo per se, but the local data pipe is built to feed it:
 - **`author` not `owner`** in `plugin.json`. Claude Code's schema requires it. Layer 5 enforces.
 - **Marketplace registry is `~/.claude/plugins/known_marketplaces.json`** with a `"directory"` source entry, not `extraKnownMarketplaces` in `settings.json`. `install.sh` writes both — settings.json is for hooks only.
 
+## Resolved this session
+
+- **Inlined `exec-feedback`, `research-assistant`, `template-strategy-feedback`** as in-tree plugins (Option C in `docs/decisions/external-plugin-distribution.md`). 21 new skills landed; one collision resolved (research-assistant's `competitive-analysis` renamed to `research-competitive-analysis`).
+- **Layer 3b tightened** to reject `git`/`git-subdir` source types (validator-realignment item).
+- **Decision doc marked RESOLVED** with rationale + revisit conditions for if/when third-party publishing becomes a real need.
+- v1.3.0 tagged.
+
 ## Repo topology
 
-- `ckoglmeier/classroom` — this repo. Marketplace manifest, Guide skill, in-tree plugins (4), four shell helpers, 14 test layers, convention docs.
-- `ckoglmeier/skills` — CK's personal skill library. `templates/` (shareable, referenced from here when validator unblocks), `playbooks/` (personal), `borrowed/` (third-party mirrors).
+- `ckoglmeier/classroom` — this repo. Marketplace manifest, Guide skill, **7 in-tree plugins (28 skills total)**, three shell helpers (sync-codex, telemetry, propose), 13 active test layers, convention + decision docs.
+- `ckoglmeier/skills` — CK's personal skill library. `templates/exec-feedback`, `templates/research-assistant`, `templates/template-strategy-feedback` are now stale forks of what's canonical in Classroom — needs a README pointer or deletion (follow-up).
 
 ## Quick orientation for a new session
 
