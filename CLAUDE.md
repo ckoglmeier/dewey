@@ -25,6 +25,8 @@ Work the user already flagged or that came up mid-session:
    - **(c) Inline the three templates into Classroom's `plugins/` directory.** Defeats the "Classroom is a thin pointer to upstream" goal but unblocks today.
 
    Pick one before retrying. Layer 3b's offline schema validator should be updated to reject `git`/`git-subdir` source types since they no longer pass `marketplace add` — currently it accepts them and gives false confidence.
+
+   **Full architecture write-up for the next engineer:** [`docs/decisions/external-plugin-distribution.md`](docs/decisions/external-plugin-distribution.md) — verified findings, requirements, three options with pros/cons/migration cost, the seven architecture questions to answer before picking, recommended path (npm), and the change list per option after the call lands.
 2. **Stale `AGENTS.md` in working tree.** A test run with `--agents-md` once produced `AGENTS.md` at repo root with content that mistakenly substituted "Codex" for "Claude Code" in CLAUDE.md-style notes. It's in `git status` as untracked. Decide: delete, or regenerate cleanly via `bash classroom-sync-codex.sh --agents-md .` (but that targets project-level use, not the Classroom repo itself — probably just delete).
 
 ### Medium — feature follow-ups
