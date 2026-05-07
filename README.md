@@ -1,46 +1,48 @@
 # Classroom
 
-**A plugin marketplace for Claude Code, Cowork, and OpenAI Codex.**
+**A plugin marketplace for skills and context — for Claude Code, Cowork, and OpenAI Codex.**
 
-Skills are authored once in standard `SKILL.md` format and run in any of the three. Cowork shares Claude Code's `~/.claude/` directory — same install, no extra step. When Codex is also installed, Classroom mirrors its skills into `~/.codex/skills/` as symlinks — see [docs/codex-sync.md](docs/codex-sync.md).
+Classroom distributes two things teams share with their agents: **skills** (procedures — how to do something) and **canonical context** (reference content — battlecards, brand voice, ICP definitions, strategy docs). Both are authored once in standard markdown and run in any of the three agents. Cowork shares Claude Code's `~/.claude/` directory — same install, no extra step. When Codex is also installed, Classroom mirrors its skills and context into `~/.codex/` as symlinks — see [docs/codex-sync.md](docs/codex-sync.md).
 
 ## Why this exists
 
-Everyone builds their own Claude Code skills right now, on their local machine. The entire system is living in single-player mode — we don't learn, we don't collaborate, and we have constant errors from binaries shared in Slack, email, and everywhere else. Skills end up siloed with whoever wrote them, duplicated across teams, with no one accountable for quality. Essentially we're setting up an org where everyone trains and enables themselves with no context.
+Everyone builds their own Claude Code skills right now, on their local machine — and everyone copy-pastes the same battlecards, brand voice notes, and strategy docs into prompts when they need them. The entire system is living in single-player mode: we don't learn, we don't collaborate, and we have constant errors from binaries and content shared in Slack, email, and everywhere else. Skills *and* the reference content they depend on end up siloed with whoever wrote them, duplicated across teams, with no one accountable for quality. Essentially we're setting up an org where everyone trains and enables themselves with no context.
 
 Skills and context for Claude are just like skills and context for people — the more shared, the faster we can move together. Inspired by Ramp's [Skills Dojo](https://engineering.ramp.com/), Classroom is an open convention any company can adopt.
 
 ### What Classroom solves
 
-**A shared marketplace with clear canonical skill ownership** — so we can publish once, access anywhere.
+**A shared marketplace with clear canonical ownership** — so we can publish once, access anywhere.
 
-Every skill has an owner — someone accountable for keeping it sharp. Publish once, anyone on the team installs with `claude plugin install <name>@classroom`. No copying files around, no "ask Sarah for her prompt," no three teams maintaining their own version of meeting prep.
+Every skill and every context bundle has an owner — someone accountable for keeping it sharp. Publish once, anyone on the team installs with `claude plugin install <name>@classroom`. No copying files around, no "ask Sarah for her prompt," no three teams maintaining their own version of meeting prep, no four sales reps each pasting a different version of the Acme battlecard into chat.
+
+**Skills and context, not just skills.** Skills tell Claude *how to do something*; context tells it *what your company believes*. A `competitive-analysis` skill can declare `requires-context: competitive-intelligence/positioning` so every brief reflects current company truth, not whatever the model guesses. Updates to the canonical positioning flow through every brief automatically. See [docs/canonical-context.md](docs/canonical-context.md).
 
 **Dynamic pathways, not org charts** — so we can suggest things to leverage for your role, project, or growth areas.
 
-Skills and plugins (a set of skills + connectors) are published by job-to-be-done, not by department, because they should reflect a problem to solve or a workflow. But we still have a gap where we want to push skills to people — like enabling Claude. So this does that. A functional lead bundles ABC for their team; a project lead bundles AYZ for theirs — and the overlap is fine, because it's the same underlying skills. Pathways are just lightweight groupings (a markdown file) that point at shared plugins. You can serve every leader's view of "what my people need" without accidentally shipping the org chart or fragmenting skill ownership.
+Skills and plugins (a set of skills + connectors + context) are published by job-to-be-done, not by department, because they should reflect a problem to solve or a workflow. But we still have a gap where we want to push the right skills and reference material to people — like enabling Claude. So this does that. A functional lead bundles ABC for their team; a project lead bundles AYZ for theirs — and the overlap is fine, because it's the same underlying plugins. Pathways are just lightweight groupings (a markdown file) that point at shared plugins. You can serve every leader's view of "what my people need" without accidentally shipping the org chart or fragmenting ownership.
 
 **Extend without forking** — so I can adapt what I learned in that "training" to my needs and problems.
 
-Users customize a canonical skill by writing a local extension that references the parent — not by copying it. Central updates keep flowing; your customizations ride on top. No drift, no merge conflicts, no "which version is the real one."
+Users customize a canonical skill or a canonical context bundle by writing a local extension that references the parent — not by copying it. Central updates keep flowing; your customizations ride on top. No drift, no merge conflicts, no "which version is the real one." The same `extends:` (skills) and `extends-context:` (context) convention works for both.
 
 **A Guide that meets people where they are** — so you can explore and discover in the flow of work.
 
-Type `/classroom` and it walks you through discovery, installation, and extending existing skills — all conversational, all with confirmation before it does anything. Non-technical users never touch a config file.
+Type `/classroom` and it walks you through discovery, installation, extending, and proposing changes back — all conversational, all with confirmation before it does anything. Non-technical users never touch a config file.
 
 ## How it works
 
-**Three tiers:**
+**Three tiers, applied to both skills and context:**
 
 | Tier | What | Managed by | Example |
 |---|---|---|---|
-| **Central** | Shared skills organized by problem domain | Maintainers via PR | `ckoglmeier/classroom` (this repo) |
-| **Team** | Team-specific extensions and customizations | Team leader | `classroom-extensions-<team>` repo |
+| **Central** | Shared skills + canonical context, organized by problem domain | Maintainers via PR | `ckoglmeier/classroom` (this repo) |
+| **Team** | Team-specific extensions of skills or context, plus team-only bundles | Team leader | `classroom-extensions-<team>` repo |
 | **Personal** | Individual extensions that survive central updates | You | `~/.claude/skills/` local directory |
 
-**Discovery is Claude-native.** You install Classroom, type `/classroom`, tell the Guide your team and role, and it recommends 3–5 skills curated by your team lead via a path file. No web UI, no portal — Claude is the interface.
+**Discovery is Claude-native.** You install Classroom, type `/classroom`, tell the Guide your team and role, and it recommends 3–5 plugins curated by your team lead via a path file. No web UI, no portal — Claude is the interface.
 
-**Extensions compose, they don't fork.** When you want to customize a central skill, the Guide drafts a local extension that says "load and follow `<parent>`, then also do X, Y, Z." Central updates flow through automatically. See [docs/extending-skills.md](docs/extending-skills.md).
+**Composition, not forks.** When you want to customize a central skill or context bundle, the Guide drafts a local extension that loads the canonical first and then layers your additions. Central updates flow through automatically. See [docs/extending-skills.md](docs/extending-skills.md) for skills and [docs/canonical-context.md](docs/canonical-context.md) for context.
 
 ## Install
 
