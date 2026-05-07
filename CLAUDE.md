@@ -11,10 +11,20 @@ For the full status snapshot (Done / Partial / Deferred / Hosted bucket), the so
 Work the user already flagged or that came up mid-session:
 
 ### High priority
-1. **Re-add external plugin references** (still blocked on Claude Code). Once `marketplace add` accepts `git-subdir`, restore the 3 entries — Layer 3b is already written:
-   - `exec-feedback` → `ckoglmeier/skills/templates/exec-feedback`
-   - `research-assistant` → `ckoglmeier/skills/templates/research-assistant`
-   - `template-strategy-feedback` → `ckoglmeier/skills/templates/template-strategy-feedback`
+1. **Re-add external plugin references — still blocked, but the blocker is bigger than "git-subdir."** Verified against Claude Code v2.1.47 (2026-05-06):
+
+   - **`marketplace add` schema acceptance** by source type:
+     - `url`, `github`, `npm` → accepted
+     - `git`, `git-subdir` → rejected with `Invalid input` (even using a literal copy of the official marketplace's working `git-subdir` semgrep entry, so this isn't about our shape — `git-subdir` was apparently grandfathered for `claude-plugins-official` and is no longer accepted for new marketplaces)
+   - **Sub-path support at install time:** `github` source schema accepts a `path:` (or `subdir:` / `directory:`) field, but the install fetcher *silently ignores it* and pulls the entire upstream repo. Confirmed by installing `{source: github, repo: ckoglmeier/skills, path: templates/exec-feedback}` — install reported success but the cache contained the whole `ckoglmeier/skills` tree, no `.claude-plugin/plugin.json` at the cache root.
+
+   So the real blocker isn't "wait for `git-subdir`" — it's that **no schema-accepted source type honors a sub-path at install time**. Three real paths forward:
+
+   - **(a) Promote each template to its own GitHub repo** — `ckoglmeier/skill-exec-feedback`, etc. Then `{source: github, repo: ckoglmeier/skill-exec-feedback}` works cleanly without sub-paths. Cleanest long-term; maintenance overhead of N repos.
+   - **(b) Publish each as an npm package** under `@ck-skills/<name>`. `npm` source is accepted and honored. One publish step per skill update; npm registry as the distribution mechanism.
+   - **(c) Inline the three templates into Classroom's `plugins/` directory.** Defeats the "Classroom is a thin pointer to upstream" goal but unblocks today.
+
+   Pick one before retrying. Layer 3b's offline schema validator should be updated to reject `git`/`git-subdir` source types since they no longer pass `marketplace add` — currently it accepts them and gives false confidence.
 2. **Stale `AGENTS.md` in working tree.** A test run with `--agents-md` once produced `AGENTS.md` at repo root with content that mistakenly substituted "Codex" for "Claude Code" in CLAUDE.md-style notes. It's in `git status` as untracked. Decide: delete, or regenerate cleanly via `bash classroom-sync-codex.sh --agents-md .` (but that targets project-level use, not the Classroom repo itself — probably just delete).
 
 ### Medium — feature follow-ups
