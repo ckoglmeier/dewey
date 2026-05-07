@@ -23,7 +23,8 @@ For the three templates (`exec-feedback`, `research-assistant`, `template-strate
 - 21 new skills total (1 + 15 + 5)
 - Resolved name collision: research-assistant's `competitive-analysis` renamed to `research-competitive-analysis` to coexist with our existing `competitive-intelligence/competitive-analysis`
 - Layer 3b tightened to reject `git`/`git-subdir` source types (the validator-realignment item)
-- The `ckoglmeier/skills/templates/` upstream now has a stale fork; needs README pointer to Classroom or deletion (follow-up — not in v1.3.0)
+
+**Important framing:** Classroom's in-tree plugins are **seed skills** — starting examples that an adopting org forks and replaces. They're not "the canonical version of CK's personal templates." `ckoglmeier/skills/templates/` and Classroom's copies are independent from here on; both can evolve on their own tracks without that being a problem. Drift is expected.
 
 ## TL;DR
 

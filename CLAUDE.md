@@ -64,8 +64,8 @@ Not a backlog for this repo per se, but the local data pipe is built to feed it:
 
 ## Repo topology
 
-- `ckoglmeier/classroom` — this repo. Marketplace manifest, Guide skill, **7 in-tree plugins (28 skills total)**, three shell helpers (sync-codex, telemetry, propose), 13 active test layers, convention + decision docs.
-- `ckoglmeier/skills` — CK's personal skill library. `templates/exec-feedback`, `templates/research-assistant`, `templates/template-strategy-feedback` are now stale forks of what's canonical in Classroom — needs a README pointer or deletion (follow-up).
+- `ckoglmeier/classroom` — this repo. Marketplace manifest, Guide skill, **7 in-tree plugins (28 skills total)** — these are **seed skills**: starting examples that an adopting org forks and replaces with their own. Plus three shell helpers (sync-codex, telemetry, propose), 13 active test layers, convention + decision docs.
+- `ckoglmeier/skills` — CK's personal/active skill library. `templates/`, `playbooks/`, `borrowed/`. Independent from Classroom — they evolve on their own track. The three plugins inlined into Classroom in v1.3.0 (`exec-feedback`, `research-assistant`, `template-strategy-feedback`) were used as starting points for the seed copies; both versions can drift independently from here without that being a problem.
 
 ## Quick orientation for a new session
 
