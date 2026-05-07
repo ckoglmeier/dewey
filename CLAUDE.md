@@ -18,7 +18,24 @@ Work the user already flagged or that came up mid-session:
 
 ### Strategic / design — discussed, parked
 1. **Skill-trigger validation tooling** *(replaces what was previously framed as "ambient nudge hook")*. Full plan stored at [`docs/plans/skill-trigger-validation.md`](docs/plans/skill-trigger-validation.md). Three phases (triggers schema + body lint, description quality lint, optional model-based eval) with sequencing, effort estimates, and four decision points to settle before building. Recommendation in the plan: ship Phases 1+2 in one chunk (~3.5h, no API credits), evaluate, then decide on Phase 3.
-2. **Smart admin onboarding flow.** Today's "Adopting Classroom for your company" section in the README is a 6-step engineer's checklist (fork repo, edit marketplace.json, replace seed skills, etc.). The audience for that work is rarely an engineer — it's the ops or RevOps lead who owns "what skills do my teams use" but doesn't want to clone a repo. Build a conversational flow specifically for first-time org admins:
+2. **Multi-organization context — Classroom isn't built for it.** Today Classroom assumes one canonical org: one marketplace, one set of skills, one set of canonical context. Real users (CK in particular) operate across multiple contexts: personal/holdco, Task Engineering, consulting/board/investor work, possibly more. Each has its own positioning, brand voice, ICP, strategy docs, customer accounts. The same skill (e.g. `competitive-analysis`) needs to resolve to *different* canonical context depending on which org the user is acting on right now. Today there's no way to tell Classroom which org is active.
+
+    Possible shapes (none chosen yet):
+    - **Org-tagged plugins/context.** Each plugin or context entry declares `org: <id>`. Guide has an "active org" state and filters resolution to that org. Multiple orgs can coexist in one Classroom cache.
+    - **Multi-classroom installs.** Separate caches per org (`~/.claude/classroom-personal/`, `~/.claude/classroom-task/`). Guide knows about all of them and switches active source. Each install is its own marketplace registration.
+    - **Active-org as a context bundle.** A single "current org identity" loaded explicitly at session start (`/classroom switch task`). All canonical context resolution then reads from that org's bundle. Same Classroom install, different effective context per session.
+    - **Hybrid composition.** Personal Classroom is the base layer; org-specific Classrooms layer on top via the existing extension convention. Pull canonical from your personal layer; override with the active org's extensions.
+
+    Questions to answer before building:
+    - Is "active org" session-scoped (set once per `/classroom` invocation) or persistent (stored in user prefs)?
+    - Does multi-org change the install model (one Classroom or many) or just the resolution model (one Classroom, multiple address spaces)?
+    - How does this interact with team-level extensions (`classroom-extensions-<team>`)? Is "team" a sub-concept of "org" or orthogonal?
+    - For an enterprise admin running Classroom for their company, the multi-org problem doesn't exist (they're one org). This is more of a personal/consultant/portfolio-operator problem. Worth scoping who this is for before designing.
+    - Telemetry implications: extension events should know which org they came from, so the future hosted aggregator can keep org data segregated.
+
+    Bigger than a feature — closer to a v2 architectural question. Worth a design doc (`docs/decisions/multi-org-context.md`) before any code, in the pattern we used for canonical context.
+
+3. **Smart admin onboarding flow.** Today's "Adopting Classroom for your company" section in the README is a 6-step engineer's checklist (fork repo, edit marketplace.json, replace seed skills, etc.). The audience for that work is rarely an engineer — it's the ops or RevOps lead who owns "what skills do my teams use" but doesn't want to clone a repo. Build a conversational flow specifically for first-time org admins:
     - **Discover the org**: company name, industry, primary teams (e.g. Sales, CS, Ops, Eng), key roles per team
     - **Seed the canonical context** the first wave will need (company-identity bundle, ICP, brand voice templates, top-of-funnel positioning) using interactive prompts; output goes through the propose flow
     - **Draft initial path files** per role from a small library of starter templates, tuned by the discovery answers
