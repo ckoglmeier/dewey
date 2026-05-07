@@ -2,7 +2,7 @@
 
 ## Current state (2026-05-06)
 
-Classroom is a Claude Code / Cowork / OpenAI Codex plugin marketplace convention. As of v1.3.0 it ships 7 in-tree plugins (28 skills total), the Guide skill, three shell helpers (sync-codex, telemetry, propose), and 13 active test layers (Layer 8 slot is reserved for opt-in live validation) covering 370+ tests.
+Classroom is a Claude Code / Cowork / OpenAI Codex plugin marketplace convention. As of v1.3.0 it ships 7 in-tree plugins (28 skills total), the Guide skill, three shell helpers (sync-codex, telemetry, propose), and 14 active test layers (Layer 8 is now opt-in live validation of external entries — gated by `CLASSROOM_VALIDATE_EXTERNAL=1`) covering 370+ tests.
 
 For the full status snapshot (Done / Partial / Deferred / Hosted bucket), the source of truth is now [`docs/roadmap.md`](docs/roadmap.md). This file holds session-level notes and open todos.
 
@@ -14,15 +14,14 @@ Work the user already flagged or that came up mid-session:
 *(none — what was here is now done; see "Resolved this session" at the bottom)*
 
 ### Medium — feature follow-ups
-1. **Layer 8 opt-in live validation** for external `git-subdir` entries. Gated by `CLASSROOM_VALIDATE_EXTERNAL=1`. Sparse-clone, confirm `plugin.json` exists at the target path, name matches. Plan: `~/.claude/plans/external-template-sources.md` ("Follow-ups" section). Note: the old "Layer 8" was the schedule helper (now removed); this slot is free for the live-validation layer when we build it.
-2. **Weekly drift-check GitHub Action** for the live-validation layer — natural home once it exists.
-3. **Cowork plugin marketplace UI audit.** We confirmed Cowork shares `~/.claude/`; we haven't audited how the Cowork plugin browser surfaces Classroom skills (filters, badges, etc.).
+1. **Weekly drift-check GitHub Action** that runs `CLASSROOM_VALIDATE_EXTERNAL=1 bash tests/run.sh` on a cron and files an issue if any external entry's upstream has drifted (repo deleted, plugin renamed, marketplace.json removed). Layer 8 already does the underlying check live — this just schedules it in CI. Useful especially for adopters who add `github` / `npm` external entries.
+2. **Cowork plugin marketplace UI audit.** We confirmed Cowork shares `~/.claude/`; we haven't audited how the Cowork plugin browser surfaces Classroom skills (filters, badges, etc.).
 
 ### Strategic / design — discussed, parked
-4. **Ambient nudge hook** — "I notice you're doing X — there's a skill for that." Pre-skill-routing prompt watcher.
-5. **Memory/synthesis pipeline** — daily summary of recent sessions and connected tools to refresh user context.
-6. **Chat (claude.ai) distribution** — bundle export for manual upload at minimum; investigate API path for Team/Enterprise plans.
-7. **Smart admin onboarding flow.** Today's "Adopting Classroom for your company" section in the README is a 6-step engineer's checklist (fork repo, edit marketplace.json, replace seed skills, etc.). The audience for that work is rarely an engineer — it's the ops or RevOps lead who owns "what skills do my teams use" but doesn't want to clone a repo. Build a conversational flow specifically for first-time org admins:
+3. **Ambient nudge hook** — "I notice you're doing X — there's a skill for that." Pre-skill-routing prompt watcher.
+4. **Memory/synthesis pipeline** — daily summary of recent sessions and connected tools to refresh user context.
+5. **Chat (claude.ai) distribution** — bundle export for manual upload at minimum; investigate API path for Team/Enterprise plans.
+6. **Smart admin onboarding flow.** Today's "Adopting Classroom for your company" section in the README is a 6-step engineer's checklist (fork repo, edit marketplace.json, replace seed skills, etc.). The audience for that work is rarely an engineer — it's the ops or RevOps lead who owns "what skills do my teams use" but doesn't want to clone a repo. Build a conversational flow specifically for first-time org admins:
     - **Discover the org**: company name, industry, primary teams (e.g. Sales, CS, Ops, Eng), key roles per team
     - **Seed the canonical context** the first wave will need (company-identity bundle, ICP, brand voice templates, top-of-funnel positioning) using interactive prompts; output goes through the propose flow
     - **Draft initial path files** per role from a small library of starter templates, tuned by the discovery answers
@@ -61,6 +60,7 @@ Not a backlog for this repo per se, but the local data pipe is built to feed it:
 - **Layer 3b tightened** to reject `git`/`git-subdir` source types (validator-realignment item).
 - **Decision doc marked RESOLVED** with rationale + revisit conditions for if/when third-party publishing becomes a real need.
 - v1.3.0 tagged.
+- **Layer 8 live validation built** (`tests/lib/validate_external_entry.py`). Opt-in via `CLASSROOM_VALIDATE_EXTERNAL=1`. Per external entry: actually clones the upstream, confirms either single-plugin (`.claude-plugin/plugin.json` with matching name) or marketplace (`.claude-plugin/marketplace.json` with matching plugin entry) layout. Discovered through this work that `github` source type points at *child marketplaces*, not single plugins (e.g. `browserbase/agent-browse` → marketplace with `browse`/`functions`/etc.). Self-test against a deliberately-bad fixture proves the validator catches errors. Adopters who add external entries get the safety net automatically.
 
 ## Repo topology
 
