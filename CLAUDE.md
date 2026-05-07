@@ -15,13 +15,13 @@ Work the user already flagged or that came up mid-session:
 
 ### Medium — feature follow-ups
 1. **Weekly drift-check GitHub Action** that runs `CLASSROOM_VALIDATE_EXTERNAL=1 bash tests/run.sh` on a cron and files an issue if any external entry's upstream has drifted (repo deleted, plugin renamed, marketplace.json removed). Layer 8 already does the underlying check live — this just schedules it in CI. Useful especially for adopters who add `github` / `npm` external entries.
-2. **Cowork plugin marketplace UI audit.** We confirmed Cowork shares `~/.claude/`; we haven't audited how the Cowork plugin browser surfaces Classroom skills (filters, badges, etc.).
+*(former #2 Cowork audit — done; see `docs/cowork-audit.md`. One follow-up open: visual UI walkthrough by an actual person to verify how categories/tags/multi-skill-plugins/path-files render in Cowork's Browse Plugins panel.)*
 
 ### Strategic / design — discussed, parked
-3. **Ambient nudge hook** — "I notice you're doing X — there's a skill for that." Pre-skill-routing prompt watcher.
-4. **Memory/synthesis pipeline** — daily summary of recent sessions and connected tools to refresh user context.
-5. **Chat (claude.ai) distribution** — bundle export for manual upload at minimum; investigate API path for Team/Enterprise plans.
-6. **Smart admin onboarding flow.** Today's "Adopting Classroom for your company" section in the README is a 6-step engineer's checklist (fork repo, edit marketplace.json, replace seed skills, etc.). The audience for that work is rarely an engineer — it's the ops or RevOps lead who owns "what skills do my teams use" but doesn't want to clone a repo. Build a conversational flow specifically for first-time org admins:
+2. **Ambient nudge hook** — "I notice you're doing X — there's a skill for that." Pre-skill-routing prompt watcher.
+3. **Memory/synthesis pipeline** — daily summary of recent sessions and connected tools to refresh user context.
+4. **Chat (claude.ai) distribution** — bundle export for manual upload at minimum; investigate API path for Team/Enterprise plans.
+5. **Smart admin onboarding flow.** Today's "Adopting Classroom for your company" section in the README is a 6-step engineer's checklist (fork repo, edit marketplace.json, replace seed skills, etc.). The audience for that work is rarely an engineer — it's the ops or RevOps lead who owns "what skills do my teams use" but doesn't want to clone a repo. Build a conversational flow specifically for first-time org admins:
     - **Discover the org**: company name, industry, primary teams (e.g. Sales, CS, Ops, Eng), key roles per team
     - **Seed the canonical context** the first wave will need (company-identity bundle, ICP, brand voice templates, top-of-funnel positioning) using interactive prompts; output goes through the propose flow
     - **Draft initial path files** per role from a small library of starter templates, tuned by the discovery answers
@@ -61,6 +61,7 @@ Not a backlog for this repo per se, but the local data pipe is built to feed it:
 - **Decision doc marked RESOLVED** with rationale + revisit conditions for if/when third-party publishing becomes a real need.
 - v1.3.0 tagged.
 - **Layer 8 live validation built** (`tests/lib/validate_external_entry.py`). Opt-in via `CLASSROOM_VALIDATE_EXTERNAL=1`. Per external entry: actually clones the upstream, confirms either single-plugin (`.claude-plugin/plugin.json` with matching name) or marketplace (`.claude-plugin/marketplace.json` with matching plugin entry) layout. Discovered through this work that `github` source type points at *child marketplaces*, not single plugins (e.g. `browserbase/agent-browse` → marketplace with `browse`/`functions`/etc.). Self-test against a deliberately-bad fixture proves the validator catches errors. Adopters who add external entries get the safety net automatically.
+- **Cowork audit** (`docs/cowork-audit.md`). Filesystem-level findings: Cowork shares `~/.claude/plugins/` with Claude Code (no separate registration); has a parallel DXT-extension system that Classroom doesn't touch; ignores our `surfaces:` field in its UI; doesn't badge-source-of-marketplace; scheduled-tasks are themselves SKILL.md directories so wrapping a Classroom skill for Cowork's scheduler is trivial. Updated `docs/scheduling.md` with the Cowork wrapper pattern. One open follow-up: visual UI walkthrough to verify rendering of categories/tags/path-files/multi-skill-plugins.
 
 ## Repo topology
 

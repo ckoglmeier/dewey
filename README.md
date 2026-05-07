@@ -137,6 +137,7 @@ Run `bash tests/run.sh` from the repo root to validate any change.
 - [codex-sync.md](docs/codex-sync.md) — syncing skills + context to OpenAI Codex
 - [npm-packs.md](docs/npm-packs.md) — publishing a plugin to npm
 - [roadmap.md](docs/roadmap.md) — what's done, what's partial, what's deferred
+- [cowork-audit.md](docs/cowork-audit.md) — how Cowork actually surfaces and uses Classroom plugins (filesystem-level audit findings)
 
 ## Repo layout
 
