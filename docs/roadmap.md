@@ -24,7 +24,6 @@ A working snapshot of what's done, what's partial, and what's deferred. Updated 
 - `curate-path` — team-lead path-file authoring with PR drafting
 - `owners` — look up plugin maintainer
 - `update` — re-run installer to refresh Guide and cache
-- `schedule` — set up recurring skill runs (see Partial)
 - `analytics` — local usage summary
 - `sync` — Codex sync status / force / agents-md generation
 - `propose` — open PRs against canonical (six sub-flows: new-skill / update / promote, plus parallel new-context / update-context / promote-context-extension)
@@ -40,7 +39,7 @@ A working snapshot of what's done, what's partial, and what's deferred. Updated 
 
 ### Telemetry — capture and forwarding
 - Local JSONL log at `~/.claude/classroom-analytics.log`
-- Events: `first_run`, `refresh_success`, `refresh_failure`, `guide_recommend`, `skill_install`, `skill_invoke`, `extension_created` (enriched with parent_plugin, additions, tools_added, user_intent), `schedule_created`
+- Events: `first_run`, `refresh_success`, `refresh_failure`, `guide_recommend`, `skill_install`, `skill_invoke`, `extension_created` (enriched with parent_plugin, additions, tools_added, user_intent)
 - Three-tier opt-out: `CLASSROOM_TELEMETRY=0` global, plugin-level `telemetry: false`, skill-level `telemetry: false`
 - Body-forwarding gate: `CLASSROOM_TELEMETRY_FORWARD_BODIES=1` opt-in to forward `additions` and `user_intent`; default-strip via `classroom-telemetry.sh strip-bodies`
 - `CLASSROOM_TELEMETRY_ENDPOINT` contract for forwarding (no implementation; documented for future hosted aggregator to consume)
@@ -51,16 +50,15 @@ A working snapshot of what's done, what's partial, and what's deferred. Updated 
 - `--check`, `--prepare`, `--dry-run` modes
 
 ### Test suite
-- 213+ tests across 14 layers covering: marketplace schema, install pipeline (no-git tarball path with checksum), refresh script semantics, ownership, plugin packaging, surfaces, schedule helper, analytics log, Codex sync (skills + context), extension telemetry (helper + opt-out gates + body-strip), propose helper, canonical context (schema + lint + size + surface compat)
+- 220+ tests across 13 active layers (Layer 8 was scheduling and is removed): marketplace schema, install pipeline (no-git tarball path with checksum), refresh script semantics, ownership, plugin packaging, surfaces, analytics log, Codex sync (skills + context), extension telemetry (helper + opt-out gates + body-strip), propose helper, canonical context (schema + lint + size + surface compat + naming convention + load flow)
 
 ### Convention docs
-All under `docs/`: `extending-skills.md`, `path-files.md`, `pr-checklist.md`, `npm-packs.md`, `telemetry.md`, `extension-telemetry.md`, `scheduled-runs.md`, `codex-sync.md`, `surfaces.md`, `proposing-changes.md`, `canonical-context.md`, `canonical-context-design.md`, `roadmap.md` (this file).
+All under `docs/`: `extending-skills.md`, `path-files.md`, `pr-checklist.md`, `npm-packs.md`, `telemetry.md`, `extension-telemetry.md`, `scheduling.md`, `codex-sync.md`, `surfaces.md`, `proposing-changes.md`, `canonical-context.md`, `canonical-context-design.md`, `roadmap.md` (this file).
 
 ## Partial
 
-### Scheduled execution
-- **Done**: `classroom-schedule.sh` writes a launchd plist (macOS) or crontab line (Linux) wrapping `claude --print "/<skill>"`, validates inputs, sets up logging at `~/classroom-logs/<skill>.log`. Guide §7 collects parameters and invokes the helper. Layer 8 covers dry-run, syntax, helper install.
-- **Not validated**: end-to-end. No test or manual run has confirmed that a real scheduled job actually fires at the right time, has working `ANTHROPIC_API_KEY` in scope, and produces a usable log entry. Treat as best-effort until verified live.
+### Scheduled execution — REMOVED, deferred to host + hosted bucket
+Earlier versions shipped `classroom-schedule.sh` and a `/classroom schedule` Guide flow. We removed both because they reinvented what every host already provides: Claude Code has Routines (cloud-executed cron) and Cowork has the scheduled-tasks MCP (local). For individual scheduling, point the host's scheduler at `/<skill-name>`. See [scheduling.md](scheduling.md). Org-managed scheduled distribution (centrally-built newsletters, team-wide weekly digests with curated content) is still a real Classroom use case but lives in the hosted bucket — see below.
 
 ### External plugin references
 - **Done**: schema validation for `git-subdir`, `github`, `url`, `npm` source types in `marketplace.json`. Layer 3b enforces the schema offline.
@@ -76,7 +74,6 @@ All under `docs/`: `extending-skills.md`, `path-files.md`, `pr-checklist.md`, `n
 - **Webhook / event-triggered runs**: HTTP POST → run skill X. No infrastructure.
 - **Long-running agentic loops**: skill runs, evaluates output, decides next step, runs another. No primitive for this in shell.
 - **Output sinks beyond log files**: post to Slack, file a Linear issue, write to a dashboard. Skills can do this individually but there's no shared sink convention.
-- **Schedule observability**: a `/classroom schedule status` command that shows what's scheduled, last run, last failure. Today the user has to grep launchctl/crontab + log files.
 
 ### Ambient nudge hook
 "I notice you're doing X — there's a skill for that" surfaced inline during real work. Would need a hook that watches user prompts pre-skill-routing and inserts suggestions.
@@ -101,6 +98,7 @@ A separate hosted product layer that consumes the local data pipe. Not part of t
 - **Staged rollouts**: canary a new canonical to N% of installs before global. Today every refresh swaps the cache for everyone within 24h.
 - **Multi-owner governance**: required reviewers from multiple CODEOWNERS for high-impact changes; deprecation flows; version diffs across deployed users.
 - **Chat distribution** via the same backend.
+- **Org-managed scheduled distribution**: centrally-built outputs that land at a regular cadence — newsletters from a curated path, weekly competitor digests for everyone with the `sales-ae` path, monthly board-ready briefs assembled from canonical context. Different from individual scheduling (which the host already owns): this is *one team lead schedules, many users receive*. Output flows to a per-team channel (Slack, email, internal doc) defined by the path file or plugin metadata. Failures roll up to org-level visibility. The local helper we removed never solved this — it was per-user and machine-bound. The hosted version solves it because it runs server-side and already knows the org's user / path / channel topology.
 
 ## How decisions land here
 

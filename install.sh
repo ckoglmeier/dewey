@@ -5,13 +5,12 @@
 #   1. Downloads the Classroom reference snapshot to ~/.claude/classroom (tarball, no git required)
 #   2. Copies the Guide skill to ~/.claude/skills/classroom (so it's available immediately)
 #   3. Registers the Classroom marketplace in ~/.claude/plugins/known_marketplaces.json
-#   4. Installs the schedule helper to ~/.claude/classroom-schedule.sh
-#   5. Installs the Codex sync helper to ~/.claude/classroom-sync-codex.sh
-#   6. Installs the telemetry helper to ~/.claude/classroom-telemetry.sh
-#   7. Installs the propose helper to ~/.claude/classroom-propose.sh
-#   8. If Codex is detected (~/.codex/ or codex on PATH), mirrors skills to ~/.codex/skills/
-#   9. Initializes the analytics log at ~/.claude/classroom-analytics.log
-#   10. Installs a refresh + first-run hook on Claude Code SessionStart
+#   4. Installs the Codex sync helper to ~/.claude/classroom-sync-codex.sh
+#   5. Installs the telemetry helper to ~/.claude/classroom-telemetry.sh
+#   6. Installs the propose helper to ~/.claude/classroom-propose.sh
+#   7. If Codex is detected (~/.codex/ or codex on PATH), mirrors skills to ~/.codex/skills/
+#   8. Initializes the analytics log at ~/.claude/classroom-analytics.log
+#   9. Installs a refresh + first-run hook on Claude Code SessionStart
 #
 # Safe to re-run. Atomic swap means readers never observe a half-written cache.
 #
@@ -44,7 +43,6 @@ SETTINGS_FILE="$HOME/.claude/settings.json"
 GUIDE_SKILL_DIR="$HOME/.claude/skills/classroom"
 HOOK_SCRIPT="$HOME/.claude/classroom-first-run.sh"
 REFRESH_SCRIPT="$HOME/.claude/classroom-refresh.sh"
-SCHEDULE_SCRIPT="$HOME/.claude/classroom-schedule.sh"
 SYNC_CODEX_SCRIPT="$HOME/.claude/classroom-sync-codex.sh"
 TELEMETRY_SCRIPT="$HOME/.claude/classroom-telemetry.sh"
 PROPOSE_SCRIPT="$HOME/.claude/classroom-propose.sh"
@@ -287,15 +285,9 @@ else
   warn "Manually add the SessionStart hook to $SETTINGS_FILE."
 fi
 
-# ---- Step 4a: install the schedule helper -----------------------------------
-SCHEDULE_SOURCE="$CLASSROOM_DIR/classroom-schedule.sh"
-if [ -f "$SCHEDULE_SOURCE" ]; then
-  say "Installing schedule helper to $SCHEDULE_SCRIPT"
-  cp "$SCHEDULE_SOURCE" "$SCHEDULE_SCRIPT"
-  chmod +x "$SCHEDULE_SCRIPT"
-else
-  warn "classroom-schedule.sh not found in snapshot — skipping schedule helper install"
-fi
+# Note: scheduling is handled by the host (Claude Code Routines, Cowork
+# scheduled-tasks). Classroom no longer ships a schedule helper.
+# See docs/scheduling.md for the rationale.
 
 # ---- Step 4b: install the Codex sync helper ---------------------------------
 SYNC_CODEX_SOURCE="$CLASSROOM_DIR/classroom-sync-codex.sh"
@@ -538,7 +530,6 @@ echo "  Reference cache:  $CLASSROOM_DIR"
 echo "  Guide skill:      $GUIDE_SKILL_DIR/SKILL.md"
 echo "  Settings:         $SETTINGS_FILE"
 echo "  Refresh script:   $REFRESH_SCRIPT"
-echo "  Schedule helper:  $SCHEDULE_SCRIPT"
 echo "  Codex sync:       $SYNC_CODEX_SCRIPT"
 echo "  Telemetry helper: $TELEMETRY_SCRIPT"
 echo "  Propose helper:   $PROPOSE_SCRIPT"

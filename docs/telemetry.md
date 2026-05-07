@@ -15,7 +15,6 @@ Events are appended to `~/.claude/classroom-analytics.log` as JSONL (one JSON ob
 | `skill_install` | You confirmed installing a plugin |
 | `skill_invoke` | Guide routed you to a specific skill |
 | `extension_created` | You created a local skill extension via `/classroom extend`. Carries enriched fields (`parent`, `parent_plugin`, `additions`, `tools_added`, `user_intent`) that feed the central learning loop — see [extension-telemetry.md](extension-telemetry.md) |
-| `schedule_created` | You scheduled a skill via `/classroom schedule` |
 
 Example log entries:
 

@@ -105,7 +105,6 @@ Run `bash tests/run.sh` from the repo root to validate any change.
 | `curate-path` | Team-lead mode: draft a path file and open a PR |
 | `owners` | Look up the maintainer of any plugin |
 | `update` | Re-run the installer to update the Guide and force a cache refresh |
-| `schedule` | Set up a recurring (daily/weekly) skill run via cron or launchd |
 | `analytics` | Summary of which skills you've installed and actually used |
 | `sync` | Mirror Classroom skills + canonical context to OpenAI Codex |
 | `propose` | Open a PR against canonical (six sub-flows: new-skill / update / promote, plus parallel new-context / update-context / promote-context-extension) |
@@ -134,7 +133,7 @@ Run `bash tests/run.sh` from the repo root to validate any change.
 - [surfaces.md](docs/surfaces.md) — surface compatibility model
 - [telemetry.md](docs/telemetry.md) — local analytics log, opt-out, forwarding
 - [extension-telemetry.md](docs/extension-telemetry.md) — the central learning loop
-- [scheduled-runs.md](docs/scheduled-runs.md) — recurring skill runs
+- [scheduling.md](docs/scheduling.md) — why Classroom doesn't ship a scheduler (use Claude Code's Routines or Cowork's scheduled-tasks instead)
 - [codex-sync.md](docs/codex-sync.md) — syncing skills + context to OpenAI Codex
 - [npm-packs.md](docs/npm-packs.md) — publishing a plugin to npm
 - [roadmap.md](docs/roadmap.md) — what's done, what's partial, what's deferred
@@ -148,7 +147,6 @@ classroom/
 ├── CODEOWNERS                    # per-plugin maintainers (GitHub auto-review)
 ├── install.sh                    # one-line install bootstrap (no git required)
 ├── install-dev.sh                # contributor variant (git checkout)
-├── classroom-schedule.sh         # scheduler helper (installed to ~/.claude/ by install.sh)
 ├── classroom-sync-codex.sh       # Codex sync helper (installed to ~/.claude/ by install.sh)
 ├── classroom-telemetry.sh        # telemetry emit + strip-bodies helper (installed to ~/.claude/ by install.sh)
 ├── classroom-propose.sh          # propose helper: opens PRs against canonical (installed to ~/.claude/ by install.sh)

@@ -11,46 +11,21 @@ For the full status snapshot (Done / Partial / Deferred / Hosted bucket), the so
 Work the user already flagged or that came up mid-session:
 
 ### High priority
-1. **Verify scheduled execution end-to-end.** `classroom-schedule.sh` is built and unit-tested (Layer 8) but no test or manual run has confirmed a real scheduled job actually fires, has working `ANTHROPIC_API_KEY` in scope, and produces a usable log entry. Until verified, schedule is in the **Partial** column of the roadmap.
-2. **Re-add external plugin references** (still blocked on Claude Code). Once `marketplace add` accepts `git-subdir`, restore the 3 entries — Layer 3b is already written:
+1. **Re-add external plugin references** (still blocked on Claude Code). Once `marketplace add` accepts `git-subdir`, restore the 3 entries — Layer 3b is already written:
    - `exec-feedback` → `ckoglmeier/skills/templates/exec-feedback`
    - `research-assistant` → `ckoglmeier/skills/templates/research-assistant`
    - `template-strategy-feedback` → `ckoglmeier/skills/templates/template-strategy-feedback`
-3. **Stale `AGENTS.md` in working tree.** A test run with `--agents-md` once produced `AGENTS.md` at repo root with content that mistakenly substituted "Codex" for "Claude Code" in CLAUDE.md-style notes. It's in `git status` as untracked. Decide: delete, or regenerate cleanly via `bash classroom-sync-codex.sh --agents-md .` (but that targets project-level use, not the Classroom repo itself — probably just delete).
+2. **Stale `AGENTS.md` in working tree.** A test run with `--agents-md` once produced `AGENTS.md` at repo root with content that mistakenly substituted "Codex" for "Claude Code" in CLAUDE.md-style notes. It's in `git status` as untracked. Decide: delete, or regenerate cleanly via `bash classroom-sync-codex.sh --agents-md .` (but that targets project-level use, not the Classroom repo itself — probably just delete).
 
 ### Medium — feature follow-ups
-4. **Layer 8 opt-in live validation** for external `git-subdir` entries. Gated by `CLASSROOM_VALIDATE_EXTERNAL=1`. Sparse-clone, confirm `plugin.json` exists at the target path, name matches. Plan: `~/.claude/plans/external-template-sources.md` ("Follow-ups" section).
-5. **Weekly drift-check GitHub Action** for Layer 8 — natural home once it exists.
-6. **Cowork plugin marketplace UI audit.** We confirmed Cowork shares `~/.claude/`; we haven't audited how the Cowork plugin browser surfaces Classroom skills (filters, badges, etc.).
-7. **Schedule observability.** A `/classroom schedule status` command that shows what's scheduled, last run, last failure. Today the user has to grep launchctl/crontab + log files manually.
+3. **Layer 8 opt-in live validation** for external `git-subdir` entries. Gated by `CLASSROOM_VALIDATE_EXTERNAL=1`. Sparse-clone, confirm `plugin.json` exists at the target path, name matches. Plan: `~/.claude/plans/external-template-sources.md` ("Follow-ups" section). Note: the old "Layer 8" was the schedule helper (now removed); this slot is free for the live-validation layer when we build it.
+4. **Weekly drift-check GitHub Action** for the live-validation layer — natural home once it exists.
+5. **Cowork plugin marketplace UI audit.** We confirmed Cowork shares `~/.claude/`; we haven't audited how the Cowork plugin browser surfaces Classroom skills (filters, badges, etc.).
 
 ### Strategic / design — discussed, parked
-8. **Headless beyond cron** — webhook/event-triggered runs, long-running agentic loops, output sinks beyond log files. Each needs its own design pass.
-9. **Ambient nudge hook** — "I notice you're doing X — there's a skill for that." Pre-skill-routing prompt watcher.
-10. **Memory/synthesis pipeline** — daily summary of recent sessions and connected tools to refresh user context.
-11. **Chat (claude.ai) distribution** — bundle export for manual upload at minimum; investigate API path for Team/Enterprise plans.
-12. **Context-on-demand via `/classroom load` — RESOLVED, ready to build.**
-
-    Decisions (CK, 2026-05-06):
-    - **No always-loaded / global context.** Nothing should load for every conversation. The bytes-per-conversation tax is wrong, and it makes context invisible to the user.
-    - **Load on demand via the Guide.** New subcommand `/classroom load [topic]`. The Guide reads the user's topic, scans installed context bundles' titles/descriptions, and either loads the match or — if ambiguous or empty — lists candidates and asks.
-    - **Naming convention: each bundle's primary file is `context.md`.** Standardize so the Guide always knows what to read. The existing demonstrator (`plugins/competitive-intelligence/context/positioning/positioning.md`) gets renamed to `plugins/competitive-intelligence/context/positioning/context.md`. The `path:` entry in `plugin.json` is updated accordingly. A bundle can still ship additional supporting files in the same dir, but `context.md` is the canonical entry point.
-
-    Implementation sketch (next session):
-    - **Convention update**: rename `positioning.md` → `context.md`; update `plugin.json` path; update the in-skill load instructions in `competitive-analysis/SKILL.md` (both Claude Code/Cowork and Codex paths).
-    - **Lint update** in `tests/lib/check_requires_context.py` and Layer 14: warn (not fail) if a bundle's primary file isn't named `context.md`. Don't break existing v1 bundles in the wild that may use other names.
-    - **New Guide §11 Load**:
-      1. Parse `$1` as topic (optional).
-      2. Walk `~/.claude/classroom/plugins/*/.claude-plugin/plugin.json`, collect every `context: []` entry's `id`, `title`, `description`.
-      3. If `$1` is empty: present the full list grouped by plugin, ask which to load.
-      4. If `$1` matches exactly one bundle's `id` or `title` (case-insensitive substring): confirm and load.
-      5. If `$1` matches multiple: list the matches, ask which.
-      6. "Load" means: Read the resolved `context.md` into the conversation. The Guide can then summarize what it loaded and tell the user the content is now available for the rest of the conversation.
-    - **Routing**: add `load` to argument-hint, the routing table, and the menu.
-    - **Docs**: update `docs/canonical-context.md` with the load-on-demand pattern and the `context.md` naming convention. Update `docs/canonical-context-design.md`'s "v1 decisions" with the resolution.
-    - **Tests**: Layer 14 — bundle's primary file is `context.md` (warn); Guide §11 references the helper / load mechanic.
-
-    Why this is the right answer: it keeps context invisible-when-not-needed and explicit-when-it-is, avoids the always-loaded tax, and matches a real use case ("put the brand voice in this conversation right now"). It does NOT solve "every conversation should know our company name" — that's an explicit non-goal; if you want that, you say it once and it sticks for the rest of the session.
+6. **Ambient nudge hook** — "I notice you're doing X — there's a skill for that." Pre-skill-routing prompt watcher.
+7. **Memory/synthesis pipeline** — daily summary of recent sessions and connected tools to refresh user context.
+8. **Chat (claude.ai) distribution** — bundle export for manual upload at minimum; investigate API path for Team/Enterprise plans.
 
 ### Hosted Classroom bucket (separate product layer)
 Not a backlog for this repo per se, but the local data pipe is built to feed it:

@@ -1,8 +1,8 @@
 ---
 name: classroom
 description: Classroom Guide. Helps the user discover, install, extend, schedule, and find owners of skills from their company's Classroom marketplace. Use when the user mentions Classroom, asks what skills exist for their role, or runs /classroom.
-argument-hint: "[recommend|install|extend|curate-path|owners|update|schedule|analytics|sync|propose|propose-context|load]"
-allowed-tools: Bash(claude *) Bash(cat *) Bash(ls *) Bash(mkdir *) Bash(git *) Bash(bash *) Bash(gh *) Bash(launchctl *) Bash(crontab *) Bash(python3 *) Read Write Edit Glob Grep
+argument-hint: "[recommend|install|extend|curate-path|owners|update|analytics|sync|propose|propose-context|load]"
+allowed-tools: Bash(claude *) Bash(cat *) Bash(ls *) Bash(mkdir *) Bash(git *) Bash(bash *) Bash(gh *) Bash(python3 *) Read Write Edit Glob Grep
 ---
 
 # Classroom Guide
@@ -60,11 +60,11 @@ Look at `$ARGUMENTS`. The first word (`$0`) is the subcommand. If empty, show th
 - `curate-path` → §4 Curate Path (team-lead mode)
 - `owners` → §5 Owners
 - `update` → §6 Update (re-runs the installer to refresh the Guide itself)
-- `schedule` → §7 Schedule (headless/recurring skill runs)
 - `analytics` → §8 Analytics (usage summary from local log)
 - `sync` → §9 Sync (mirror skills to Codex, show sync status)
 - `propose` → §10 Propose (open a PR to add or update a canonical skill)
 - `load` → §11 Load (load a canonical context bundle into the conversation on demand; `$1` = topic, optional)
+- `schedule` → tell the user Classroom doesn't own scheduling. Use Claude Code's Routines (cloud) or Cowork's scheduled-tasks MCP (local) to schedule a Classroom skill. Point them at [docs/scheduling.md](https://github.com/ckoglmeier/classroom/blob/main/docs/scheduling.md). Don't try to schedule it yourself.
 - empty / anything else → show the menu below
 
 ### Menu (when no subcommand)
@@ -77,13 +77,14 @@ Look at `$ARGUMENTS`. The first word (`$0`) is the subcommand. If empty, show th
 > 4. **Curate a team path** *(team leads)* — Define which skills your team should install on day one.
 > 5. **Find who maintains a skill** — Look up the owner of any plugin so you know who to ping.
 > 6. **Update Classroom** — Pull the latest version of the Guide and the reference cache.
-> 7. **Schedule a skill** — Run a skill automatically on a daily or weekly schedule.
-> 8. **View your usage analytics** — See which skills you use most and which are gathering dust.
-> 9. **Sync with Codex** — Mirror Classroom skills to OpenAI Codex so both agents share the same library.
-> 10. **Propose a canonical skill change** — Open a PR to add a new skill, update one you own, or promote a local extension upstream.
-> 11. **Load a context bundle** — Pull a canonical reference (battlecard, brand voice, strategy doc) into this conversation on demand.
+> 7. **View your usage analytics** — See which skills you use most and which are gathering dust.
+> 8. **Sync with Codex** — Mirror Classroom skills to OpenAI Codex so both agents share the same library.
+> 9. **Propose a canonical skill change** — Open a PR to add a new skill, update one you own, or promote a local extension upstream.
+> 10. **Load a context bundle** — Pull a canonical reference (battlecard, brand voice, strategy doc) into this conversation on demand.
 >
-> Reply with `1`–`11`.
+> Reply with `1`–`10`.
+>
+> *(Want to schedule a skill to run automatically? Classroom doesn't own scheduling — use Claude Code's Routines or Cowork's scheduled tasks. See [docs/scheduling.md](https://github.com/ckoglmeier/classroom/blob/main/docs/scheduling.md).)*
 
 Then route based on their choice.
 
@@ -293,60 +294,20 @@ If the installer fails (no network, permission error), surface the error and sto
 
 ---
 
-## §7 Schedule
+## §7 Scheduling — handled by the host
 
-Goal: set up an automatic recurring run of a Classroom skill without the user needing to be present.
+Classroom does **not** own scheduling. If the user asks `/classroom schedule`, tell them:
 
-1. **Ask which skill to schedule.** List what's installed:
-   ```
-   claude plugin list
-   ```
-   Present the result as a numbered list. Ask which skill they want to run automatically. If they say "meeting prep" or similar plain language, map it to the closest installed skill name.
+> Classroom doesn't ship its own scheduler — every host already has one and they all do the job better than a wrapper. Use:
+>
+> - **Claude Code**: Routines (cloud-executed cron — runs whether your laptop is on or off). Run `/schedule` to set one up.
+> - **Cowork**: scheduled-tasks (local-machine-bound). Use Cowork's task picker to schedule a Classroom skill by name.
+>
+> Point the host's scheduler at the skill: `/<skill-name>`. The skill will load its own context and run.
+>
+> See [docs/scheduling.md](https://github.com/ckoglmeier/classroom/blob/main/docs/scheduling.md) for the full picture, including why Classroom may eventually own *org-managed* scheduling (centrally-built newsletters, team-wide weekly digests) in the future hosted version.
 
-2. **Ask the trigger:**
-   - *Daily* — runs every day at a time they choose
-   - *Weekly* — runs on a day of the week at a time they choose
-
-   Ask: *"Should this run daily or weekly, and at what time?"* (e.g., "Weekly on Mondays at 8 AM.")
-
-3. **Check ANTHROPIC_API_KEY.** Run:
-   ```bash
-   bash -c 'echo "${ANTHROPIC_API_KEY:+set}"'
-   ```
-   If the output is empty (key not set), stop and tell the user: *"Your ANTHROPIC_API_KEY isn't in the current environment. Set it in your shell profile and re-run `/classroom schedule`."* Do not proceed.
-
-4. **Ask for any context.** *"Any context to pass each time it runs? For example, 'draft for my team's weekly sync' or 'focus on Q3 competitive moves'. Leave blank to just run the skill as-is."*
-
-5. **Show the plan** as a confirmation block:
-   > **About to do:** Schedule `/weekly-status-update` to run every Monday at 8:00 AM.
-   >
-   > **Command:** `claude --print "Run /weekly-status-update — draft for my team's weekly sync (scheduled run, <date>)"`
-   >
-   > **Output:** `~/classroom-logs/weekly-status-update.log`
-   >
-   > Say **yes** to proceed, **cancel** to stop.
-
-6. **On approval**, call the scheduler helper:
-
-   ```bash
-   bash ~/.claude/classroom-schedule.sh --skill SKILL_NAME --trigger TRIGGER --time HH:MM [--day N] [--context "CONTEXT"]
-   ```
-
-   For weekly triggers, `--day` is the day of week (0=Sun, 1=Mon, …, 6=Sat). Convert day names to numbers (Monday=1, Friday=5, etc.).
-
-7. **Show the output** from the helper. If it fails, surface the error and stop.
-
-8. **Unschedule.** If the user says "unschedule" or "remove" at step 1, ask which skill to remove, confirm, then run:
-   ```bash
-   bash ~/.claude/classroom-schedule.sh --skill SKILL_NAME --remove
-   ```
-
-9. **Emit analytics** on success:
-   ```bash
-   bash -c 'if [ "${CLASSROOM_TELEMETRY:-1}" != "0" ]; then printf "{\"ts\":\"%s\",\"event\":\"schedule_created\",\"skill\":\"%s\",\"trigger\":\"%s\"}\n" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "SKILL_NAME" "TRIGGER" >> ~/.claude/classroom-analytics.log 2>/dev/null; fi'
-   ```
-
-See `docs/scheduled-runs.md` in the Classroom reference cache (`~/.claude/classroom/`) for troubleshooting and manual management instructions.
+Don't try to schedule the skill yourself by writing cron lines, launchd plists, or shelling out. The host owns the scheduler.
 
 ---
 
