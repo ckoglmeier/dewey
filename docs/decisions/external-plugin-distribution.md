@@ -1,4 +1,4 @@
-# Decision: how to distribute external Classroom plugins
+# Decision: how to distribute external Dewey plugins
 
 **Status:** **RESOLVED — Option C (inline)** chosen for the current set; A/B revisit when third-party publishing becomes a real need.
 **Owner:** CK
@@ -7,15 +7,15 @@
 
 ## Resolution
 
-For the three templates (`exec-feedback`, `research-assistant`, `template-strategy-feedback`) and the rest of the canonical Classroom catalog: **Option C — inline as in-tree plugins.**
+For the three templates (`exec-feedback`, `research-assistant`, `template-strategy-feedback`) and the rest of the canonical Dewey catalog: **Option C — inline as in-tree plugins.**
 
 **Why C for this case:**
-- CK is both the author of the templates AND the maintainer of Classroom — the "wrong attribution" downside is moot.
-- "Classroom is the canonical home for the canonical skills" is the actual product goal; the thin-pointer-to-upstream model was a preference, not a requirement.
+- CK is both the author of the templates AND the maintainer of Dewey — the "wrong attribution" downside is moot.
+- "Dewey is the canonical home for the canonical skills" is the actual product goal; the thin-pointer-to-upstream model was a preference, not a requirement.
 - Selectivity (the question that prompted this decision) is trivial when entries are in-tree.
 
 **When to revisit:**
-- If a third-party author wants their plugin in Classroom's marketplace without giving CK PR rights to their content → Option A (per-repo `github` source) or Option B (npm) becomes necessary.
+- If a third-party author wants their plugin in Dewey's marketplace without giving CK PR rights to their content → Option A (per-repo `github` source) or Option B (npm) becomes necessary.
 - If the in-tree plugin count grows past ~20 and PR maintenance fan-out becomes painful → Option A + per-repo CODEOWNERS scales better.
 
 **What landed with this resolution (v1.3.0):**
@@ -24,17 +24,17 @@ For the three templates (`exec-feedback`, `research-assistant`, `template-strate
 - Resolved name collision: research-assistant's `competitive-analysis` renamed to `research-competitive-analysis` to coexist with our existing `competitive-intelligence/competitive-analysis`
 - Layer 3b tightened to reject `git`/`git-subdir` source types (the validator-realignment item)
 
-**Important framing:** Classroom's in-tree plugins are **seed skills** — starting examples that an adopting org forks and replaces. They're not "the canonical version of CK's personal templates." `ckoglmeier/skills/templates/` and Classroom's copies are independent from here on; both can evolve on their own tracks without that being a problem. Drift is expected.
+**Important framing:** Dewey's in-tree plugins are **seed skills** — starting examples that an adopting org forks and replaces. They're not "the canonical version of CK's personal templates." `ckoglmeier/skills/templates/` and Dewey's copies are independent from here on; both can evolve on their own tracks without that being a problem. Drift is expected.
 
 ## TL;DR
 
-Classroom's marketplace can reference plugins that live in other repos. We attempted three external entries pointing at sub-directories of `ckoglmeier/skills` (`templates/exec-feedback`, `templates/research-assistant`, `templates/template-strategy-feedback`). They had to be removed because **no Claude Code source type currently supports installing a plugin that lives in a sub-path of an external repo**.
+Dewey's marketplace can reference plugins that live in other repos. We attempted three external entries pointing at sub-directories of `ckoglmeier/skills` (`templates/exec-feedback`, `templates/research-assistant`, `templates/template-strategy-feedback`). They had to be removed because **no Claude Code source type currently supports installing a plugin that lives in a sub-path of an external repo**.
 
 We need to decide which of three viable distribution models to adopt before we can re-add external references. Each has real cost. This doc lays out the verified findings, the three options, and the architecture questions that should drive the call.
 
 ## Context
 
-Classroom is a thin marketplace. The four in-tree plugins (`competitive-intelligence`, `customer-research`, `ops-essentials`, `sales-enablement`) ship from this repo because they're authored *for* Classroom's audience and reviewed here. Templates that live elsewhere — like the contents of `ckoglmeier/skills/templates/` — were intended to be referenced *by* Classroom's marketplace, not copied into it. The "thin pointer" model avoids drift, keeps Classroom small, and lets upstream evolve at its own pace.
+Dewey is a thin marketplace. The four in-tree plugins (`competitive-intelligence`, `customer-research`, `ops-essentials`, `sales-enablement`) ship from this repo because they're authored *for* Dewey's audience and reviewed here. Templates that live elsewhere — like the contents of `ckoglmeier/skills/templates/` — were intended to be referenced *by* Dewey's marketplace, not copied into it. The "thin pointer" model avoids drift, keeps Dewey small, and lets upstream evolve at its own pace.
 
 That model assumes Claude Code's plugin system can install from a sub-path of an external repo. As of v2.1.47, it can't.
 
@@ -74,10 +74,10 @@ Conclusion: the `github` fetcher silently ignores any sub-path field. There is n
 
 A solution needs to:
 
-1. **Install end-to-end via `claude plugin install <name>@classroom`** — registration AND fetcher honor it.
+1. **Install end-to-end via `claude plugin install <name>@dewey`** — registration AND fetcher honor it.
 2. **Survive a Claude Code minor-version bump** without further tightening breaking it (so favor schema shapes Anthropic clearly intends to keep, like `github` and `npm`).
-3. **Keep ownership clearly attributable** to the upstream maintainer (Classroom doesn't review the content of external plugins — its job is to validate the manifest entry).
-4. **Scale to N templates** without Classroom maintenance work growing linearly with N.
+3. **Keep ownership clearly attributable** to the upstream maintainer (Dewey doesn't review the content of external plugins — its job is to validate the manifest entry).
+4. **Scale to N templates** without Dewey maintenance work growing linearly with N.
 5. **Be a real publish/update flow**, not a one-time copy that drifts.
 
 ## Three distribution models
@@ -107,11 +107,11 @@ Promote each template from a sub-directory of `ckoglmeier/skills` to its own Git
 - Cross-template refactors (e.g., shared utility prompts) become multi-repo PRs
 - Forking workflow ("clone all my company's skills") becomes harder — there's no single tree
 
-**Migration cost:** ~30 min per template to set up the new repo, transfer history, point Classroom at the new URL. Multiplied by 3 = ~90 min for the current set, or ~10 hours for a hypothetical 20-template library.
+**Migration cost:** ~30 min per template to set up the new repo, transfer history, point Dewey at the new URL. Multiplied by 3 = ~90 min for the current set, or ~10 hours for a hypothetical 20-template library.
 
 ### Option B: Per-skill npm packages
 
-Publish each template as an npm package under `@ck-skills/<name>` (or `@classroom-templates/<name>`). Manifest entry becomes:
+Publish each template as an npm package under `@ck-skills/<name>` (or `@dewey-templates/<name>`). Manifest entry becomes:
 
 ```json
 {
@@ -125,7 +125,7 @@ Publish each template as an npm package under `@ck-skills/<name>` (or `@classroo
 **Pros:**
 - npm registry is the distribution mechanism — no GitHub repo proliferation
 - Real semantic versioning out of the box (`1.2.3`)
-- Pin a specific version per Classroom: `{"source": "npm", "package": "@ck-skills/exec-feedback", "version": "^1.0.0"}`
+- Pin a specific version per Dewey: `{"source": "npm", "package": "@ck-skills/exec-feedback", "version": "^1.0.0"}`
 - npm tooling for searching, deprecating, deprecating versions
 - Publish-once, install-many — clean delivery model
 - The single upstream `ckoglmeier/skills` repo can stay the dev monorepo; it just publishes N npm packages on release
@@ -138,21 +138,21 @@ Publish each template as an npm package under `@ck-skills/<name>` (or `@classroo
 
 **Migration cost:** ~1 hour to set up an org scope and publish pipeline; ~5 min per template to publish; ongoing publish step on every update (automatable).
 
-### Option C: Inline into Classroom's `plugins/` directory
+### Option C: Inline into Dewey's `plugins/` directory
 
 Move all three templates into `plugins/exec-feedback/`, `plugins/research-assistant/`, `plugins/template-strategy-feedback/`. Manifest entries become string-source (in-tree) like the existing four plugins.
 
 **Pros:**
 - Works today, no upstream dependency
 - One place for review, validation, CODEOWNERS, releases
-- Best Classroom test coverage — Layer 1-7 lint runs against every file
+- Best Dewey test coverage — Layer 1-7 lint runs against every file
 - Same install pipeline as the other in-tree plugins
 
 **Cons:**
-- Defeats the "Classroom is a thin pointer to upstream" goal
-- The original `ckoglmeier/skills/templates/` has to either be deleted (drift risk if not) or become a fork that diverges from Classroom's copy
-- Classroom maintainer becomes the owner of skills they didn't author — wrong attribution
-- Doesn't scale: if 30 teams all want their templates available through Classroom, in-tree means 30 plugins land in *this* repo
+- Defeats the "Dewey is a thin pointer to upstream" goal
+- The original `ckoglmeier/skills/templates/` has to either be deleted (drift risk if not) or become a fork that diverges from Dewey's copy
+- Dewey maintainer becomes the owner of skills they didn't author — wrong attribution
+- Doesn't scale: if 30 teams all want their templates available through Dewey, in-tree means 30 plugins land in *this* repo
 
 **Migration cost:** ~15 min to copy the three templates in, set up CODEOWNERS lines, run tests.
 
@@ -160,17 +160,17 @@ Move all three templates into `plugins/exec-feedback/`, `plugins/research-assist
 
 These should drive the choice — list them, get answers, then the right option falls out:
 
-1. **Is `ckoglmeier/skills` still the canonical home for these three templates?** If yes, Classroom is a thin pointer and Option A or B fit. If no (i.e., we're happy to move them), Option C is on the table.
+1. **Is `ckoglmeier/skills` still the canonical home for these three templates?** If yes, Dewey is a thin pointer and Option A or B fit. If no (i.e., we're happy to move them), Option C is on the table.
 
-2. **What's the realistic 12-month count of external templates Classroom should reference?** If single digits, Option A is fine. If 20+, Option A's repo proliferation gets painful and B (or a future `git-subdir` un-blocking) becomes necessary.
+2. **What's the realistic 12-month count of external templates Dewey should reference?** If single digits, Option A is fine. If 20+, Option A's repo proliferation gets painful and B (or a future `git-subdir` un-blocking) becomes necessary.
 
 3. **Do we want pinned versions or always-track-latest?** Today's marketplace entries are mostly bare references with no pinning. If we want pinning (and we probably should for production use), npm's semver is a better fit than github's branch-tracking (which doesn't even accept a `ref:` field today).
 
-4. **Who's in CODEOWNERS for each template?** If the same person owns Classroom and these templates, attribution is moot. If different owners, the in-tree option (C) creates a confusing review fan-out.
+4. **Who's in CODEOWNERS for each template?** If the same person owns Dewey and these templates, attribution is moot. If different owners, the in-tree option (C) creates a confusing review fan-out.
 
 5. **What's our policy when Claude Code's validator changes again?** This blocker came from a silent tightening. We should pick a source type Anthropic clearly maintains as a first-class citizen. Both `github` and `npm` qualify; `git`/`git-subdir` were grandfathered and may continue to slip.
 
-6. **Do we want template authors outside our org to contribute?** If yes, the answer should be a model where any GitHub user can publish their own (`github` source pointing at their own repo, or npm package under their own scope). Option C requires PR access to Classroom's repo, which doesn't scale.
+6. **Do we want template authors outside our org to contribute?** If yes, the answer should be a model where any GitHub user can publish their own (`github` source pointing at their own repo, or npm package under their own scope). Option C requires PR access to Dewey's repo, which doesn't scale.
 
 7. **Test strategy for external entries:** Layer 3b validates the manifest schema offline. Layer 8 (now empty after we removed the schedule helper) was reserved for opt-in live validation — sparse-clone the upstream, confirm `plugin.json` exists, name matches. Whatever we pick, we need this layer to actually catch what we just demonstrated: *the registration succeeded but the install was broken*. Static schema validation isn't enough.
 
@@ -193,7 +193,7 @@ Regardless of which option:
 
 1. **Re-add the three external entries to `marketplace.json`** in the chosen source format
 2. **Tighten Layer 3b** to reject any source type that current `marketplace add` rejects (`git`, `git-subdir`)
-3. **Add the deferred opt-in live validation as Layer 8** — gated by `CLASSROOM_VALIDATE_EXTERNAL=1`, actually attempts to fetch and verify the install works end-to-end. The schedule helper used to live in Layer 8; that slot is free now.
+3. **Add the deferred opt-in live validation as Layer 8** — gated by `DEWEY_VALIDATE_EXTERNAL=1`, actually attempts to fetch and verify the install works end-to-end. The schedule helper used to live in Layer 8; that slot is free now.
 4. **Update `docs/extending-skills.md`** "Adding a plugin that lives in another repo" section to recommend the chosen source type and warn against the rejected ones
 5. **Update CLAUDE.md item #1** to mark this resolved
 
@@ -211,7 +211,7 @@ If Option A (per-repo) wins:
 If Option C (inline) wins:
 
 - Copy templates into `plugins/`, add CODEOWNERS lines
-- Decide what happens to `ckoglmeier/skills/templates/` (delete? README pointer to Classroom?)
+- Decide what happens to `ckoglmeier/skills/templates/` (delete? README pointer to Dewey?)
 
 ## Related
 

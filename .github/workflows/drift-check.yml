@@ -46,7 +46,7 @@ jobs:
         id: validate
         run: |
           set +e
-          CLASSROOM_VALIDATE_EXTERNAL=1 bash tests/run.sh > drift-output.log 2>&1
+          DEWEY_VALIDATE_EXTERNAL=1 bash tests/run.sh > drift-output.log 2>&1
           exit_code=$?
           echo "exit_code=$exit_code" >> "$GITHUB_OUTPUT"
           # Surface the tail of the log in the workflow run for human inspection

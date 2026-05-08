@@ -1,50 +1,50 @@
 #!/usr/bin/env bash
-# Classroom telemetry helper — gated emit and forwarding strip
+# Dewey telemetry helper — gated emit and forwarding strip
 #
 # Centralises the opt-out policy so every emit site uses the same gates.
 #
 # Usage:
-#   classroom-telemetry.sh emit event=<name> [key=value ...]
-#       Append a JSONL event to ~/.claude/classroom-analytics.log, gated by:
-#         - $CLASSROOM_TELEMETRY=0          → suppress all
+#   dewey-telemetry.sh emit event=<name> [key=value ...]
+#       Append a JSONL event to ~/.claude/dewey-analytics.log, gated by:
+#         - $DEWEY_TELEMETRY=0          → suppress all
 #         - plugin.json telemetry: false    → per-plugin opt-out
 #         - SKILL.md telemetry: false       → per-skill opt-out
 #       Recognised fields: event, parent, parent_plugin, parent_marketplace,
 #       extension, additions, tools_added (comma-separated), user_intent,
 #       skill, plugin, plugins (comma-separated), via, path.
 #
-#   classroom-telemetry.sh strip-bodies < in.jsonl > out.jsonl
+#   dewey-telemetry.sh strip-bodies < in.jsonl > out.jsonl
 #       Strip the prose fields (additions, user_intent) from extension_created
-#       events unless $CLASSROOM_TELEMETRY_FORWARD_BODIES=1. Used by the
+#       events unless $DEWEY_TELEMETRY_FORWARD_BODIES=1. Used by the
 #       forwarder to enforce the body-opt-in privacy boundary.
 #
 # Env:
-#   CLASSROOM_TELEMETRY                     0 = global off (default 1)
-#   CLASSROOM_TELEMETRY_FORWARD_BODIES      1 = allow body fields through
+#   DEWEY_TELEMETRY                     0 = global off (default 1)
+#   DEWEY_TELEMETRY_FORWARD_BODIES      1 = allow body fields through
 #                                             strip-bodies (default 0)
-#   CLASSROOM_DIR                           classroom cache root
-#                                             (default ~/.claude/classroom)
-#   CLASSROOM_LOG                           analytics log path
-#                                             (default ~/.claude/classroom-analytics.log)
+#   DEWEY_DIR                           dewey cache root
+#                                             (default ~/.claude/dewey)
+#   DEWEY_LOG                           analytics log path
+#                                             (default ~/.claude/dewey-analytics.log)
 
 set -euo pipefail
 
 CMD="${1:-}"
 shift || true
 
-CLASSROOM_DIR="${CLASSROOM_DIR:-$HOME/.claude/classroom}"
-CLASSROOM_LOG="${CLASSROOM_LOG:-$HOME/.claude/classroom-analytics.log}"
+DEWEY_DIR="${DEWEY_DIR:-$HOME/.claude/dewey}"
+DEWEY_LOG="${DEWEY_LOG:-$HOME/.claude/dewey-analytics.log}"
 
 case "$CMD" in
   emit)
-    if [[ "${CLASSROOM_TELEMETRY:-1}" == "0" ]]; then
+    if [[ "${DEWEY_TELEMETRY:-1}" == "0" ]]; then
       exit 0
     fi
-    python3 - "$CLASSROOM_DIR" "$CLASSROOM_LOG" "$@" <<'PY'
+    python3 - "$DEWEY_DIR" "$DEWEY_LOG" "$@" <<'PY'
 import json, os, sys, re
 from datetime import datetime, timezone
 
-classroom_dir, log_path, *kvs = sys.argv[1:]
+dewey_dir, log_path, *kvs = sys.argv[1:]
 fields = {}
 for kv in kvs:
     k, _, v = kv.partition('=')
@@ -54,7 +54,7 @@ for kv in kvs:
 plugin = fields.get('plugin') or fields.get('parent_plugin')
 skill = fields.get('skill') or fields.get('parent')
 if plugin:
-    pj = os.path.join(classroom_dir, 'plugins', plugin, '.claude-plugin', 'plugin.json')
+    pj = os.path.join(dewey_dir, 'plugins', plugin, '.claude-plugin', 'plugin.json')
     if os.path.exists(pj):
         try:
             if json.load(open(pj)).get('telemetry') is False:
@@ -64,7 +64,7 @@ if plugin:
 
 # Per-skill opt-out: read SKILL.md frontmatter telemetry field
 if plugin and skill:
-    sm = os.path.join(classroom_dir, 'plugins', plugin, 'skills', skill, 'SKILL.md')
+    sm = os.path.join(dewey_dir, 'plugins', plugin, 'skills', skill, 'SKILL.md')
     if os.path.exists(sm):
         try:
             text = open(sm).read()
@@ -102,7 +102,7 @@ PY
   strip-bodies)
     python3 <(cat <<'PY'
 import json, os, sys
-allow = os.environ.get('CLASSROOM_TELEMETRY_FORWARD_BODIES') == '1'
+allow = os.environ.get('DEWEY_TELEMETRY_FORWARD_BODIES') == '1'
 SENSITIVE = ('additions', 'user_intent')
 for line in sys.stdin:
     line = line.strip()

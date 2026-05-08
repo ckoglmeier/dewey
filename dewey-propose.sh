@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
-# Classroom propose helper — turn a drafted change into a GitHub PR.
+# Dewey propose helper — turn a drafted change into a GitHub PR.
 #
 # Usage:
-#   classroom-propose.sh --check
+#   dewey-propose.sh --check
 #       Verify prerequisites (gh installed, gh authenticated, repo reachable).
 #       Exit 0 if ready, non-zero with a clear message otherwise.
 #
-#   classroom-propose.sh --prepare
-#       Clone the Classroom repo to the working dir if missing, or fetch+reset
+#   dewey-propose.sh --prepare
+#       Clone the Dewey repo to the working dir if missing, or fetch+reset
 #       to origin/main if present. No-op if nothing changed.
 #
-#   classroom-propose.sh propose \
+#   dewey-propose.sh propose \
 #       --target-path PATH \
 #       --content-file FILE \
 #       --branch BRANCH \
@@ -23,13 +23,13 @@
 #       gh. Auto-forks if the user lacks write access. Prints PR URL on success.
 #
 # Env:
-#   CLASSROOM_REPO            Source repo URL (default https://github.com/ckoglmeier/classroom)
-#   CLASSROOM_AUTHOR_DIR      Working clone (default ~/.claude/classroom-author)
+#   DEWEY_REPO            Source repo URL (default https://github.com/ckoglmeier/dewey)
+#   DEWEY_AUTHOR_DIR      Working clone (default ~/.claude/dewey-author)
 
 set -euo pipefail
 
-CLASSROOM_REPO="${CLASSROOM_REPO:-https://github.com/ckoglmeier/classroom}"
-CLASSROOM_AUTHOR_DIR="${CLASSROOM_AUTHOR_DIR:-$HOME/.claude/classroom-author}"
+DEWEY_REPO="${DEWEY_REPO:-https://github.com/ckoglmeier/dewey}"
+DEWEY_AUTHOR_DIR="${DEWEY_AUTHOR_DIR:-$HOME/.claude/dewey-author}"
 
 green()  { printf "\033[1;32m%s\033[0m" "$*"; }
 yellow() { printf "\033[1;33m%s\033[0m" "$*"; }
@@ -64,18 +64,18 @@ do_check() {
 
 # ---- Working dir setup ----------------------------------------------------
 do_prepare() {
-  if [[ ! -d "$CLASSROOM_AUTHOR_DIR/.git" ]]; then
-    say "Cloning $CLASSROOM_REPO to $CLASSROOM_AUTHOR_DIR"
-    mkdir -p "$(dirname "$CLASSROOM_AUTHOR_DIR")"
-    git clone --quiet "$CLASSROOM_REPO" "$CLASSROOM_AUTHOR_DIR"
+  if [[ ! -d "$DEWEY_AUTHOR_DIR/.git" ]]; then
+    say "Cloning $DEWEY_REPO to $DEWEY_AUTHOR_DIR"
+    mkdir -p "$(dirname "$DEWEY_AUTHOR_DIR")"
+    git clone --quiet "$DEWEY_REPO" "$DEWEY_AUTHOR_DIR"
   else
-    say "Refreshing $CLASSROOM_AUTHOR_DIR from origin/main"
-    git -C "$CLASSROOM_AUTHOR_DIR" fetch --quiet origin
+    say "Refreshing $DEWEY_AUTHOR_DIR from origin/main"
+    git -C "$DEWEY_AUTHOR_DIR" fetch --quiet origin
     # Discard any local edits from a prior aborted run; we always start clean.
-    git -C "$CLASSROOM_AUTHOR_DIR" checkout --quiet main 2>/dev/null \
-      || git -C "$CLASSROOM_AUTHOR_DIR" checkout --quiet -b main origin/main
-    git -C "$CLASSROOM_AUTHOR_DIR" reset --hard --quiet origin/main
-    git -C "$CLASSROOM_AUTHOR_DIR" clean -fdq
+    git -C "$DEWEY_AUTHOR_DIR" checkout --quiet main 2>/dev/null \
+      || git -C "$DEWEY_AUTHOR_DIR" checkout --quiet -b main origin/main
+    git -C "$DEWEY_AUTHOR_DIR" reset --hard --quiet origin/main
+    git -C "$DEWEY_AUTHOR_DIR" clean -fdq
   fi
 }
 
@@ -84,7 +84,7 @@ detect_mode() {
   # Returns: "write" if user can push to origin, "fork" otherwise.
   # Uses gh api to check repo permissions.
   local owner_repo
-  owner_repo=$(echo "$CLASSROOM_REPO" | sed -E 's#.*github\.com[:/]##; s#\.git$##')
+  owner_repo=$(echo "$DEWEY_REPO" | sed -E 's#.*github\.com[:/]##; s#\.git$##')
   local perm
   perm=$(gh api "repos/$owner_repo" --jq '.permissions.push' 2>/dev/null || echo "false")
   if [[ "$perm" == "true" ]]; then
@@ -134,14 +134,14 @@ do_propose() {
     do_check >/dev/null || { err "prerequisites failed; run --check for details"; return 1; }
     do_prepare
   else
-    say "[dry-run] would prepare working dir at $CLASSROOM_AUTHOR_DIR"
-    if [[ ! -d "$CLASSROOM_AUTHOR_DIR/.git" ]]; then
+    say "[dry-run] would prepare working dir at $DEWEY_AUTHOR_DIR"
+    if [[ ! -d "$DEWEY_AUTHOR_DIR/.git" ]]; then
       err "[dry-run] working dir does not exist; run with --prepare first or run live"
       return 1
     fi
   fi
 
-  local repo_dir="$CLASSROOM_AUTHOR_DIR"
+  local repo_dir="$DEWEY_AUTHOR_DIR"
   local tmp_parent worktree_dir base_ref
   tmp_parent="$(mktemp -d)"
   worktree_dir="$tmp_parent/worktree"
@@ -188,9 +188,9 @@ do_propose() {
 
   if [[ -x "$worktree_dir/tests/run.sh" ]]; then
     say "Running tests/run.sh against the working tree"
-    if ! ( cd "$worktree_dir" && bash tests/run.sh ) >/tmp/classroom-propose-test.log 2>&1; then
+    if ! ( cd "$worktree_dir" && bash tests/run.sh ) >/tmp/dewey-propose-test.log 2>&1; then
       err "tests/run.sh failed. Output:"
-      tail -30 /tmp/classroom-propose-test.log >&2
+      tail -30 /tmp/dewey-propose-test.log >&2
       cleanup_worktree
       return 1
     fi
@@ -241,7 +241,7 @@ do_propose() {
   else
     # Fork mode: fork the repo (idempotent), push to fork, open cross-repo PR.
     local owner_repo fork_owner
-    owner_repo=$(echo "$CLASSROOM_REPO" | sed -E 's#.*github\.com[:/]##; s#\.git$##')
+    owner_repo=$(echo "$DEWEY_REPO" | sed -E 's#.*github\.com[:/]##; s#\.git$##')
     say "User does not have write access; using fork-and-PR flow"
     if ! fork_owner=$(gh repo fork "$owner_repo" --remote --remote-name=fork --clone=false 2>&1 | sed -nE 's/.*Created fork ([^ ]+).*/\1/p'); then
       cleanup_worktree

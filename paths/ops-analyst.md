@@ -9,10 +9,10 @@ Curated skills for an operations analyst. Install these on day one.
 
 ## Why only two plugins?
 
-Fewer is better. The Ramp data point that built Classroom: people who install one skill on day one and immediately get a result are the ones who stick. Two well-chosen plugins beat eight you never open.
+Fewer is better. The Ramp data point that built Dewey: people who install one skill on day one and immediately get a result are the ones who stick. Two well-chosen plugins beat eight you never open.
 
-If you find yourself wanting more, run `/classroom install` and browse the full marketplace — but only add what solves a problem you have *this week*.
+If you find yourself wanting more, run `/dewey install` and browse the full marketplace — but only add what solves a problem you have *this week*.
 
 ## Maintained by
 
-Classroom reference team, last updated 2026-04-11.
+Dewey reference team, last updated 2026-04-11.

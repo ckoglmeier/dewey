@@ -1,30 +1,30 @@
 # Cowork integration audit (2026-05-06)
 
-How Cowork actually surfaces and uses Classroom plugins, based on
+How Cowork actually surfaces and uses Dewey plugins, based on
 filesystem inspection of a live Cowork install. What works automatically,
 what's a parallel system, and what we can't verify without UI access.
 
 ## Scope
 
-The audit answers: when a user has both Cowork installed and Classroom
+The audit answers: when a user has both Cowork installed and Dewey
 installed, what does the user actually see and what does Cowork actually
 do with our skills, context, paths, and metadata?
 
 Method: probe `~/.claude/plugins/`, `~/.claude/scheduled-tasks/`, and
 `~/Library/Application Support/Claude/` to see what state Cowork stores
-about Classroom and what fields it consumes.
+about Dewey and what fields it consumes.
 
 ## Findings
 
 ### 1. Cowork shares `~/.claude/plugins/` with Claude Code — no separate registration
 
 `known_marketplaces.json` is the single source of truth for both Cowork and
-Claude Code CLI. Classroom appears as a `directory`-source entry alongside
+Claude Code CLI. Dewey appears as a `directory`-source entry alongside
 `ck-skills`, `claude-plugins-official`, etc. There's no Cowork-specific
 mirror or override; whatever's in this file is what Cowork sees.
 
 **Implication:** the install-once-reach-everywhere story for skills is real.
-No work needed to "make Classroom work in Cowork" beyond what we already do
+No work needed to "make Dewey work in Cowork" beyond what we already do
 for Claude Code.
 
 ### 2. Cowork has a SECOND parallel system: "Claude Extensions" (DXT format)
@@ -47,12 +47,12 @@ MCP-server packages with their own manifest shape:
 }
 ```
 
-These are **not** Classroom plugins and **not** Claude Code plugins.
+These are **not** Dewey plugins and **not** Claude Code plugins.
 They're a distinct distribution channel for MCP server bundles. Currently
 populated only with first-party Anthropic extensions (`chrome-control`).
 
-**Implication:** Classroom does nothing for the DXT channel. If we ever
-want to ship MCP servers through Classroom-the-marketplace, we'd need to
+**Implication:** Dewey does nothing for the DXT channel. If we ever
+want to ship MCP servers through Dewey-the-marketplace, we'd need to
 either learn the DXT format or stick with the Claude Code plugin
 mechanism (which can reference MCP servers through `plugin.json`).
 
@@ -68,19 +68,19 @@ still surface it in its plugin browser even though it can't really run
 there. Today this isn't a real problem because we don't ship any chat-only
 plugins. Future risk.
 
-### 4. No Classroom-specific badging or source-grouping in Cowork's UI
+### 4. No Dewey-specific badging or source-grouping in Cowork's UI
 
-From the registry's perspective, `classroom` is one of several
+From the registry's perspective, `dewey` is one of several
 marketplaces. The `name` field on each entry (`competitive-intelligence`,
 `exec-feedback`, etc.) is the only differentiator the user sees. There's
 no "from your company's marketplace" group or badge.
 
-**Implication:** for adopters whose companies fork Classroom, end users
+**Implication:** for adopters whose companies fork Dewey, end users
 won't see a visible "this is your company's curated catalog" cue in
 Cowork. Discoverability relies on naming convention and the Guide
-(`/classroom`) as the entry point.
+(`/dewey`) as the entry point.
 
-### 5. Cowork's scheduled-tasks are skill-shaped — Classroom skills can be scheduled trivially
+### 5. Cowork's scheduled-tasks are skill-shaped — Dewey skills can be scheduled trivially
 
 `~/.claude/scheduled-tasks/<name>/SKILL.md` is the format. Each scheduled
 task is literally a SKILL.md directory the scheduler runs. Example
@@ -96,8 +96,8 @@ Look at my private skills folder on github and update any skills
 locally from there.
 ```
 
-Scheduling a Classroom skill from Cowork is just "create a SKILL.md
-that says '/<classroom-skill> [args]'" in `~/.claude/scheduled-tasks/`.
+Scheduling a Dewey skill from Cowork is just "create a SKILL.md
+that says '/<dewey-skill> [args]'" in `~/.claude/scheduled-tasks/`.
 The native scheduler picks it up.
 
 **Implication:** the "we deferred scheduling to Cowork" story has a
@@ -117,19 +117,19 @@ plugins" panel:
   15 skills inside. Does Cowork show one entry (the plugin) or expand to
   15? If one entry, how does the user pick a specific skill from it?
 - **Path file surfacing.** Our `paths/sales-ae.md`,
-  `paths/ops-analyst.md` are part of Classroom but live outside the
+  `paths/ops-analyst.md` are part of Dewey but live outside the
   plugins/ tree. Does Cowork's UI know about them or ignore them entirely?
 - **Marketplace source distinction.** Multiple marketplaces register at
-  once (`classroom`, `ck-skills`, `claude-plugins-official`). Is the
+  once (`dewey`, `ck-skills`, `claude-plugins-official`). Is the
   source visible in the browser, or do all entries blend?
 - **Install/uninstall affordances.** Does Cowork show a one-click install
   button? Does uninstall clean up correctly?
 
 ## Follow-ups (from this audit)
 
-1. Document the "schedule a Classroom skill from Cowork" wrapper pattern
+1. Document the "schedule a Dewey skill from Cowork" wrapper pattern
    in `docs/scheduling.md` — concrete example of a thin SKILL.md in
-   `~/.claude/scheduled-tasks/<name>/` that delegates to a Classroom skill.
+   `~/.claude/scheduled-tasks/<name>/` that delegates to a Dewey skill.
 2. Visual UI walkthrough by an actual user (CK or someone else with
    Cowork open) to fill in the unverified items above. Not actionable
    without that.

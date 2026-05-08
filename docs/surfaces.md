@@ -1,6 +1,6 @@
 # Surface compatibility
 
-Classroom skills can run in four "surfaces" — the different ways a user invokes Claude. Each surface exposes a different toolset, so a skill that works in one may break in another.
+Dewey skills can run in four "surfaces" — the different ways a user invokes Claude. Each surface exposes a different toolset, so a skill that works in one may break in another.
 
 | Surface | Where | Tools available |
 |---|---|---|
@@ -20,7 +20,7 @@ Every plugin's `plugin.json` declares which surfaces its skills are designed for
 }
 ```
 
-If `surfaces` is omitted, Classroom treats it as `["claude-code"]` — the safest default, since Claude Code is the original target.
+If `surfaces` is omitted, Dewey treats it as `["claude-code"]` — the safest default, since Claude Code is the original target.
 
 ## Authoring rules
 
@@ -37,9 +37,9 @@ More rules will be added as we learn the failure modes.
 
 ## How the Guide uses this
 
-When you run `/classroom recommend` or `/classroom install`, the Guide:
+When you run `/dewey recommend` or `/dewey install`, the Guide:
 
-1. Detects which surface it's running in (env var `CLASSROOM_SURFACE`, falling back to asking)
+1. Detects which surface it's running in (env var `DEWEY_SURFACE`, falling back to asking)
 2. Filters the marketplace to plugins whose `surfaces` includes the current surface
 3. Hides incompatible skills from your recommendations
 

@@ -4,7 +4,7 @@
 Usage: validate_external_entry.py '<entry_json>'
 
 Performs network I/O to confirm the entry actually resolves to a valid
-Classroom plugin. Catches the failure mode that schema-only lint can't see:
+Dewey plugin. Catches the failure mode that schema-only lint can't see:
 the manifest is well-formed but the upstream is missing, the plugin.json
 isn't where we expect, or the name doesn't match what we registered.
 

@@ -1,8 +1,8 @@
 # Extension telemetry — the central learning loop
 
-Classroom captures structured events when users create local extensions of central skills, then forwards them (opt-in) to a central endpoint. This is the data layer for a future hosted aggregator that will analyze patterns across users and propose canonical updates.
+Dewey captures structured events when users create local extensions of central skills, then forwards them (opt-in) to a central endpoint. This is the data layer for a future hosted aggregator that will analyze patterns across users and propose canonical updates.
 
-**Local Classroom only captures and forwards. It does not analyze or recommend.** That's deliberate. Aggregation, pattern detection, and recommendation generation belong to the hosted side, not every user's machine.
+**Local Dewey only captures and forwards. It does not analyze or recommend.** That's deliberate. Aggregation, pattern detection, and recommendation generation belong to the hosted side, not every user's machine.
 
 ## Why this matters
 
@@ -12,7 +12,7 @@ Aggregating those signals lets central skill maintainers absorb proven patterns 
 
 ## Event schema
 
-The richest event is `extension_created`, emitted by the Guide's `/classroom extend` flow:
+The richest event is `extension_created`, emitted by the Guide's `/dewey extend` flow:
 
 ```json
 {
@@ -20,7 +20,7 @@ The richest event is `extension_created`, emitted by the Guide's `/classroom ext
   "event": "extension_created",
   "parent": "stakeholder-followup",
   "parent_plugin": "sales-enablement",
-  "parent_marketplace": "classroom",
+  "parent_marketplace": "dewey",
   "extension": "acme-stakeholder-followup",
   "additions": "1. Pull last 5 Gong calls for the account...\n2. Append our team's battlecard.",
   "tools_added": ["Bash(gong *)", "mcp:linear"],
@@ -34,7 +34,7 @@ The richest event is `extension_created`, emitted by the Guide's `/classroom ext
 | `event` | yes | Always `extension_created` for this event type |
 | `parent` | yes | Name of the parent skill being extended |
 | `parent_plugin` | yes | Plugin the parent lives in |
-| `parent_marketplace` | yes | Always `classroom` (this is the filter that gates the emission) |
+| `parent_marketplace` | yes | Always `dewey` (this is the filter that gates the emission) |
 | `extension` | yes | Name of the new extension SKILL.md |
 | `additions` | no | The user-authored body content of the extension (after "Then additionally:"). Sensitive — gated by body-forwarding opt-in |
 | `tools_added` | no | Tools the user added in `allowed-tools` |
@@ -46,9 +46,9 @@ Other events (`skill_install`, `guide_recommend`, `skill_invoke`, etc.) carry sh
 
 Privacy is enforced at three layers, evaluated in this order:
 
-### 1. Global opt-out — `CLASSROOM_TELEMETRY=0`
+### 1. Global opt-out — `DEWEY_TELEMETRY=0`
 
-Set `CLASSROOM_TELEMETRY=0` in your shell profile and **nothing is logged anywhere**. The local analytics file isn't even created. This is the off switch.
+Set `DEWEY_TELEMETRY=0` in your shell profile and **nothing is logged anywhere**. The local analytics file isn't even created. This is the off switch.
 
 ### 2. Per-plugin / per-skill opt-out — `telemetry: false`
 
@@ -76,9 +76,9 @@ telemetry: false
 
 Default for both is `true` (telemetry on). When `false`, no events about that scope are emitted at all — the gate runs at capture time, before the log is touched.
 
-### 3. Body-forwarding opt-in — `CLASSROOM_TELEMETRY_FORWARD_BODIES=1`
+### 3. Body-forwarding opt-in — `DEWEY_TELEMETRY_FORWARD_BODIES=1`
 
-The local log always contains the full event including `additions` and `user_intent`. But when the log is forwarded to a central endpoint via `CLASSROOM_TELEMETRY_ENDPOINT`, those two prose fields are **stripped by default**.
+The local log always contains the full event including `additions` and `user_intent`. But when the log is forwarded to a central endpoint via `DEWEY_TELEMETRY_ENDPOINT`, those two prose fields are **stripped by default**.
 
 Forwarding still includes everything else:
 - Counts: how many extensions of skill X
@@ -90,29 +90,29 @@ That's enough to count and group, just not to read prose verbatim.
 To allow the prose through (which is what enables semantic clustering of extension content for richer pattern detection), set:
 
 ```bash
-export CLASSROOM_TELEMETRY_FORWARD_BODIES=1
+export DEWEY_TELEMETRY_FORWARD_BODIES=1
 ```
 
-The forwarder uses `~/.claude/classroom-telemetry.sh strip-bodies` to apply the strip — same logic everywhere.
+The forwarder uses `~/.claude/dewey-telemetry.sh strip-bodies` to apply the strip — same logic everywhere.
 
 ## Helper script
 
-Both capture and forwarding go through `~/.claude/classroom-telemetry.sh`:
+Both capture and forwarding go through `~/.claude/dewey-telemetry.sh`:
 
 ```bash
 # Emit an event (gated by all three layers above)
-bash ~/.claude/classroom-telemetry.sh emit event=extension_created \
+bash ~/.claude/dewey-telemetry.sh emit event=extension_created \
   parent=stakeholder-followup parent_plugin=sales-enablement \
-  parent_marketplace=classroom extension=acme-stakeholder-followup \
+  parent_marketplace=dewey extension=acme-stakeholder-followup \
   additions="..." tools_added="Bash(gong *),mcp:linear" user_intent="..."
 
 # Strip bodies (used by the forwarder)
-cat ~/.claude/classroom-analytics.log | bash ~/.claude/classroom-telemetry.sh strip-bodies
+cat ~/.claude/dewey-analytics.log | bash ~/.claude/dewey-telemetry.sh strip-bodies
 ```
 
 The helper is installed by `install.sh`. The Guide skill calls it at every emit site.
 
-## What Classroom does NOT do locally
+## What Dewey does NOT do locally
 
 - No analysis of events
 - No pattern detection
@@ -120,7 +120,7 @@ The helper is installed by `install.sh`. The Guide skill calls it at every emit 
 - No PR drafting against the canonical
 - No opening of issues or notifications
 
-All of those belong to a future hosted aggregator that consumes the forwarded JSONL. Local Classroom is a thin data pipe.
+All of those belong to a future hosted aggregator that consumes the forwarded JSONL. Local Dewey is a thin data pipe.
 
 ## Contract for a future central aggregator
 

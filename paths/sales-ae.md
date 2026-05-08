@@ -11,8 +11,8 @@ Curated skills for a new Account Executive. Install these on day one.
 
 ## How to use this path
 
-When you run `/classroom` and tell it you're a new AE, the Guide will offer to install all four of these. Say yes, then immediately try `/competitive-analysis` on a competitor in your current pipeline. The wow happens when you get a real brief in 90 seconds.
+When you run `/dewey` and tell it you're a new AE, the Guide will offer to install all four of these. Say yes, then immediately try `/competitive-analysis` on a competitor in your current pipeline. The wow happens when you get a real brief in 90 seconds.
 
 ## Maintained by
 
-Classroom reference team, last updated 2026-04-11.
+Dewey reference team, last updated 2026-04-11.

@@ -1,12 +1,12 @@
 {
-  "name": "classroom",
+  "name": "dewey",
   "owner": {
     "name": "ckoglmeier",
-    "url": "https://github.com/ckoglmeier/classroom"
+    "url": "https://github.com/ckoglmeier/dewey"
   },
   "metadata": {
-    "description": "Reference implementation of the Classroom convention: a Claude-native skill marketplace organized by problem domain, with a Guide that helps non-technical users discover, install, and extend skills.",
-    "version": "1.3.0"
+    "description": "Reference implementation of the Dewey convention: a Claude-native skill marketplace organized by problem domain, with a Guide that helps non-technical users discover, install, and extend skills.",
+    "version": "2.0.0"
   },
   "plugins": [
     {

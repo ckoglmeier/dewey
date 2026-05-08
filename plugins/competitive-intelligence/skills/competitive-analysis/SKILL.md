@@ -16,10 +16,10 @@ Before analysing the competitor, load the canonical positioning context so the b
 
 - Stable ID: `competitive-intelligence/positioning`
 - Look for it at one of these paths (read whichever exists):
-  - `~/.claude/classroom/plugins/competitive-intelligence/context/positioning/context.md` (Claude Code or Cowork)
+  - `~/.claude/dewey/plugins/competitive-intelligence/context/positioning/context.md` (Claude Code or Cowork)
   - `~/.codex/context/competitive-intelligence/positioning/context.md` (standalone Codex)
 
-Read the file in full. If neither path exists, stop and tell the user the `competitive-intelligence` plugin appears to be incomplete — they should run `/classroom update`. Do not proceed with a brief based on guessed positioning.
+Read the file in full. If neither path exists, stop and tell the user the `competitive-intelligence` plugin appears to be incomplete — they should run `/dewey update`. Do not proceed with a brief based on guessed positioning.
 
 ## What to gather
 

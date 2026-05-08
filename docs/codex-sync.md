@@ -1,8 +1,8 @@
-# Classroom + OpenAI Codex sync
+# Dewey + OpenAI Codex sync
 
-Classroom works with both Claude Code and OpenAI Codex. SKILL.md format is identical between the two agents — the same skill files work in both without modification.
+Dewey works with both Claude Code and OpenAI Codex. SKILL.md format is identical between the two agents — the same skill files work in both without modification.
 
-When you have both agents installed, Classroom mirrors its skills to `~/.codex/skills/` as symlinks so Codex picks them up automatically.
+When you have both agents installed, Dewey mirrors its skills to `~/.codex/skills/` as symlinks so Codex picks them up automatically.
 
 ## How it works
 
@@ -10,79 +10,79 @@ When you have both agents installed, Classroom mirrors its skills to `~/.codex/s
 |---|---|---|
 | **Skill directory** | `~/.claude/skills/` | `~/.codex/skills/` |
 | **Plugin cache** | `~/.claude/plugins/cache/` | (not applicable) |
-| **Reference cache** | `~/.claude/classroom/` | synced from classroom cache |
+| **Reference cache** | `~/.claude/dewey/` | synced from Dewey cache |
 | **Skill format** | SKILL.md | SKILL.md (identical) |
 | **Project context** | CLAUDE.md | AGENTS.md |
 
-Classroom uses **symlinks** rather than copies, so when the Classroom cache refreshes (every 24h in the background), the Codex skills update automatically too.
+Dewey uses **symlinks** rather than copies, so when the Dewey cache refreshes (every 24h in the background), the Codex skills update automatically too.
 
 ## Setup
 
-The installer handles this automatically. If Codex is installed before you run Classroom's installer, you're done:
+The installer handles this automatically. If Codex is installed before you run Dewey's installer, you're done:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ckoglmeier/classroom/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/ckoglmeier/dewey/main/install.sh | bash
 ```
 
-If you install Codex after Classroom is already set up, run:
+If you install Codex after Dewey is already set up, run:
 
 ```bash
-/classroom sync force
+/dewey sync force
 ```
 
 Or re-run the installer:
 
 ```bash
-/classroom update
+/dewey update
 ```
 
 ## Env vars
 
 | Var | Default | Effect |
 |---|---|---|
-| `CLASSROOM_SYNC_CODEX` | `auto` | `auto` = sync if Codex detected; `1` = always sync; `0` = never sync |
+| `DEWEY_SYNC_CODEX` | `auto` | `auto` = sync if Codex detected; `1` = always sync; `0` = never sync |
 | `CODEX_HOME` | `~/.codex` | Where Codex stores config/skills |
 
 ## Manual sync
 
 ```bash
 # Check current sync state
-bash ~/.claude/classroom-sync-codex.sh --status
+bash ~/.claude/dewey-sync-codex.sh --status
 
 # Force a full re-sync
-bash ~/.claude/classroom-sync-codex.sh
+bash ~/.claude/dewey-sync-codex.sh
 
-# Remove all Classroom symlinks from Codex (leaves non-Classroom files alone)
-bash ~/.claude/classroom-sync-codex.sh --remove
+# Remove all Dewey symlinks from Codex (leaves non-Dewey files alone)
+bash ~/.claude/dewey-sync-codex.sh --remove
 
 # Dry-run: show what would change
-bash ~/.claude/classroom-sync-codex.sh --dry-run
+bash ~/.claude/dewey-sync-codex.sh --dry-run
 ```
 
 Or from within Claude Code:
 
 ```
-/classroom sync
-/classroom sync force
-/classroom sync status
+/dewey sync
+/dewey sync force
+/dewey sync status
 ```
 
 ## AGENTS.md for project context
 
-Codex reads `AGENTS.md` from your repo root as project-level context. Generate one that lists your installed Classroom skills:
+Codex reads `AGENTS.md` from your repo root as project-level context. Generate one that lists your installed Dewey skills:
 
 ```bash
-bash ~/.claude/classroom-sync-codex.sh --agents-md .
+bash ~/.claude/dewey-sync-codex.sh --agents-md .
 ```
 
-Or: `/classroom sync agents-md`
+Or: `/dewey sync agents-md`
 
 The generated file looks like:
 
 ```markdown
-# Classroom Skills
+# Dewey Skills
 
-This project has access to skills from the Classroom marketplace.
+This project has access to skills from the Dewey marketplace.
 The following skills are available in your Codex environment:
 
 - `/meeting-prep` — Prepare for meetings...
@@ -94,20 +94,20 @@ Commit it to your repo so Codex sees the skill list in every session.
 
 ## What gets synced
 
-Everything in the Classroom reference cache is mirrored:
+Everything in the Dewey reference cache is mirrored:
 - All skills from all installed plugins (`plugins/*/skills/*/SKILL.md`)
-- The Guide skill itself (`guide/SKILL.md` → `~/.codex/skills/classroom/SKILL.md`)
+- The Guide skill itself (`guide/SKILL.md` → `~/.codex/skills/dewey/SKILL.md`)
 - All canonical context directories (`plugins/*/context/`) → `~/.codex/context/<plugin>/`
 
-Skills and context that exist in `~/.codex/skills/` or `~/.codex/context/` but are not from Classroom are **not touched**.
+Skills and context that exist in `~/.codex/skills/` or `~/.codex/context/` but are not from Dewey are **not touched**.
 
 ### Why a separate `~/.codex/context/` directory?
 
-Classroom skills declare `requires-context:` for canonical content (see [canonical-context.md](canonical-context.md)). On Claude Code and Cowork, those files live at `~/.claude/classroom/plugins/<plugin>/context/...`. Standalone Codex doesn't share `~/.claude/`, so the sync mirrors each plugin's `context/` directory to `~/.codex/context/<plugin>/`. Skills authored for Classroom should reference both possible paths in their "First, load:" step so they work in either environment.
+Dewey skills declare `requires-context:` for canonical content (see [canonical-context.md](canonical-context.md)). On Claude Code and Cowork, those files live at `~/.claude/dewey/plugins/<plugin>/context/...`. Standalone Codex doesn't share `~/.claude/`, so the sync mirrors each plugin's `context/` directory to `~/.codex/context/<plugin>/`. Skills authored for Dewey should reference both possible paths in their "First, load:" step so they work in either environment.
 
 ## Refresh cadence
 
-The Classroom background refresh (`~/.claude/classroom-refresh.sh`) runs the Codex sync automatically on each successful cache update, so new skills added to Classroom appear in Codex within 24h with no user action.
+The Dewey background refresh (`~/.claude/dewey-refresh.sh`) runs the Codex sync automatically on each successful cache update, so new skills added to Dewey appear in Codex within 24h with no user action.
 
 ## Troubleshooting
 
@@ -118,7 +118,7 @@ The sync checks for `~/.codex/` or `codex` on PATH. Make sure Codex is installed
 Codex reads skills at session start. Close and reopen Codex after syncing.
 
 **Symlink is broken**
-Run `bash ~/.claude/classroom-sync-codex.sh` to re-sync. This happens if the Classroom cache was cleared and re-downloaded (the symlink target changed). The refresh script handles this automatically on next background refresh.
+Run `bash ~/.claude/dewey-sync-codex.sh` to re-sync. This happens if the Dewey cache was cleared and re-downloaded (the symlink target changed). The refresh script handles this automatically on next background refresh.
 
 **Want copies instead of symlinks**
 The sync uses symlinks by design so refreshes propagate automatically. If you need copies (e.g. for a shared system where home dirs differ), run after sync:

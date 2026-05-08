@@ -1,6 +1,6 @@
 # Canonical context — author's reference
 
-Skills tell Claude *how to do something*. Context tells Claude *what your company believes* — battlecards, brand voice, product strategy, ICP definitions. Classroom plugins can ship context alongside skills so it's published, owned, versioned, and extensible just like a skill.
+Skills tell Claude *how to do something*. Context tells Claude *what your company believes* — battlecards, brand voice, product strategy, ICP definitions. Dewey plugins can ship context alongside skills so it's published, owned, versioned, and extensible just like a skill.
 
 This is the user-facing reference. The full design rationale lives in [canonical-context-design.md](canonical-context-design.md).
 
@@ -20,7 +20,7 @@ plugins/<plugin>/
 
 A "bundle" is a logical unit of canonical context — usually a single markdown file, occasionally a directory of related files (e.g. `battlecards/` containing one file per competitor).
 
-**Naming convention:** the primary file in each bundle is named `context.md`. This is what `/classroom load` will read by default and what skills should reference. A bundle can ship additional supporting files in the same directory (e.g. `examples.md`, `appendix.md`), but `context.md` is the canonical entry point. The lint warns (doesn't fail) if a bundle's primary `path:` doesn't end in `context.md` — older bundles may use other names; the resolver always uses the `path:` from `plugin.json` rather than guessing.
+**Naming convention:** the primary file in each bundle is named `context.md`. This is what `/dewey load` will read by default and what skills should reference. A bundle can ship additional supporting files in the same directory (e.g. `examples.md`, `appendix.md`), but `context.md` is the canonical entry point. The lint warns (doesn't fail) if a bundle's primary `path:` doesn't end in `context.md` — older bundles may use other names; the resolver always uses the `path:` from `plugin.json` rather than guessing.
 
 ## Declaring a context bundle in plugin.json
 
@@ -68,7 +68,7 @@ Then in the skill body, include a "First, load:" section that references the sam
 
 - Stable ID: `competitive-intelligence/positioning`
 - Look for it at one of these paths (read whichever exists):
-  - `~/.claude/classroom/plugins/competitive-intelligence/context/positioning/positioning.md` (Claude Code or Cowork)
+  - `~/.claude/dewey/plugins/competitive-intelligence/context/positioning/positioning.md` (Claude Code or Cowork)
   - `~/.codex/context/competitive-intelligence/positioning/positioning.md` (standalone Codex)
 
 Read the file in full. If neither path exists, stop and tell the user the plugin appears to be incomplete.
@@ -78,7 +78,7 @@ The lint enforces that every declared `requires-context:` ID literally appears i
 
 ## Why two paths?
 
-Cowork shares `~/.claude/` with Claude Code, so the first path covers both. Standalone Codex uses `~/.codex/` and Classroom's sync mirrors context bundles to `~/.codex/context/<plugin>/`. Skills should reference both paths so they work in either environment.
+Cowork shares `~/.claude/` with Claude Code, so the first path covers both. Standalone Codex uses `~/.codex/` and Dewey's sync mirrors context bundles to `~/.codex/context/<plugin>/`. Skills should reference both paths so they work in either environment.
 
 ## Extending canonical context
 
@@ -121,7 +121,7 @@ The lint enforces that a skill's surfaces ⊆ each required context's surfaces. 
 For ad-hoc reference work — the user wants the brand voice doc available because they're about to draft a one-off message — the Guide has a load-on-demand subcommand:
 
 ```
-/classroom load [topic]
+/dewey load [topic]
 ```
 
 - No topic → Guide lists every installed context bundle, grouped by plugin, asks which to load.
@@ -130,13 +130,13 @@ For ad-hoc reference work — the user wants the brand voice doc available becau
 
 Loading reads the bundle's `context.md` into the conversation literally (no summarization), so the content is available verbatim for the rest of the session.
 
-**This is only for ad-hoc loads.** When a skill needs context as part of its procedure, it declares `requires-context:` and loads the file in its body — the user doesn't need to think about it. `/classroom load` exists for the cases where no skill is involved or the user wants reference material outside any specific skill flow.
+**This is only for ad-hoc loads.** When a skill needs context as part of its procedure, it declares `requires-context:` and loads the file in its body — the user doesn't need to think about it. `/dewey load` exists for the cases where no skill is involved or the user wants reference material outside any specific skill flow.
 
-**Nothing about Classroom is auto-loaded for every conversation.** Context only enters a session through one of these two paths.
+**Nothing about Dewey is auto-loaded for every conversation.** Context only enters a session through one of these two paths.
 
 ## Proposing context changes
 
-`/classroom propose` has three context sub-flows:
+`/dewey propose` has three context sub-flows:
 
 - `propose new-context` — add a new context bundle to an existing plugin
 - `propose update-context <id>` — update an existing canonical context bundle

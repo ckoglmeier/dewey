@@ -14,10 +14,10 @@ A working snapshot of what's done, what's partial, and what's deferred. Updated 
 ### Multi-agent reach
 - **Claude Code**: native (the original target)
 - **Cowork**: shares `~/.claude/` with Claude Code — zero extra work, automatic
-- **OpenAI Codex**: skills + canonical context mirrored as symlinks to `~/.codex/skills/` and `~/.codex/context/<plugin>/` via `classroom-sync-codex.sh`
+- **OpenAI Codex**: skills + canonical context mirrored as symlinks to `~/.codex/skills/` and `~/.codex/context/<plugin>/` via `dewey-sync-codex.sh`
 - `surfaces:` field in `plugin.json` declares which agents a plugin supports; Guide filters recommendations to the current surface
 
-### The Guide skill (`/classroom`)
+### The Guide skill (`/dewey`)
 - `recommend` — path-driven role recommendation
 - `install` — confirm-before-action installs, with `requires-context:` dependency resolution and offer-to-install for missing context plugins
 - `extend` — local skill extensions via the composition convention
@@ -38,14 +38,14 @@ A working snapshot of what's done, what's partial, and what's deferred. Updated 
 - Convention-based loading via explicit Read in skill bodies (no runtime mediator)
 
 ### Telemetry — capture and forwarding
-- Local JSONL log at `~/.claude/classroom-analytics.log`
+- Local JSONL log at `~/.claude/dewey-analytics.log`
 - Events: `first_run`, `refresh_success`, `refresh_failure`, `guide_recommend`, `skill_install`, `skill_invoke`, `extension_created` (enriched with parent_plugin, additions, tools_added, user_intent)
-- Three-tier opt-out: `CLASSROOM_TELEMETRY=0` global, plugin-level `telemetry: false`, skill-level `telemetry: false`
-- Body-forwarding gate: `CLASSROOM_TELEMETRY_FORWARD_BODIES=1` opt-in to forward `additions` and `user_intent`; default-strip via `classroom-telemetry.sh strip-bodies`
-- `CLASSROOM_TELEMETRY_ENDPOINT` contract for forwarding (no implementation; documented for future hosted aggregator to consume)
+- Three-tier opt-out: `DEWEY_TELEMETRY=0` global, plugin-level `telemetry: false`, skill-level `telemetry: false`
+- Body-forwarding gate: `DEWEY_TELEMETRY_FORWARD_BODIES=1` opt-in to forward `additions` and `user_intent`; default-strip via `dewey-telemetry.sh strip-bodies`
+- `DEWEY_TELEMETRY_ENDPOINT` contract for forwarding (no implementation; documented for future hosted aggregator to consume)
 
 ### PR authoring
-- `classroom-propose.sh`: clone-or-refresh working dir, branch, lint via `tests/run.sh`, push, open PR via `gh`. Auto-forks if no write access.
+- `dewey-propose.sh`: clone-or-refresh working dir, branch, lint via `tests/run.sh`, push, open PR via `gh`. Auto-forks if no write access.
 - Path-traversal guards on `--target-path`
 - `--check`, `--prepare`, `--dry-run` modes
 
@@ -58,7 +58,7 @@ All under `docs/`: `extending-skills.md`, `path-files.md`, `pr-checklist.md`, `n
 ## Partial
 
 ### Scheduled execution — REMOVED, deferred to host + hosted bucket
-Earlier versions shipped `classroom-schedule.sh` and a `/classroom schedule` Guide flow. We removed both because they reinvented what every host already provides: Claude Code has Routines (cloud-executed cron) and Cowork has the scheduled-tasks MCP (local). For individual scheduling, point the host's scheduler at `/<skill-name>`. See [scheduling.md](scheduling.md). Org-managed scheduled distribution (centrally-built newsletters, team-wide weekly digests with curated content) is still a real Classroom use case but lives in the hosted bucket — see below.
+Earlier versions shipped `dewey-schedule.sh` and a `/dewey schedule` Guide flow. We removed both because they reinvented what every host already provides: Claude Code has Routines (cloud-executed cron) and Cowork has the scheduled-tasks MCP (local). For individual scheduling, point the host's scheduler at `/<skill-name>`. See [scheduling.md](scheduling.md). Org-managed scheduled distribution (centrally-built newsletters, team-wide weekly digests with curated content) is still a real Dewey use case but lives in the hosted bucket — see below.
 
 ### External plugin references
 - **Done**: schema validation for `git-subdir`, `github`, `url`, `npm` source types in `marketplace.json`. Layer 3b enforces the schema offline.
@@ -79,15 +79,15 @@ Earlier versions shipped `classroom-schedule.sh` and a `/classroom schedule` Gui
 "I notice you're doing X — there's a skill for that" surfaced inline during real work. Would need a hook that watches user prompts pre-skill-routing and inserts suggestions.
 
 ### Memory / synthesis pipeline
-Daily summary of recent sessions and connected tools to refresh user context. Currently captured manually via memory skills, not a Classroom convention.
+Daily summary of recent sessions and connected tools to refresh user context. Currently captured manually via memory skills, not a Dewey convention.
 
 ### Chat (claude.ai) distribution
-Cowork shares Claude Code's filesystem; Codex is mirrored via symlink; Chat is hosted and has no local skill directory. To get Classroom skills into Chat:
-- **Manual upload + bundle export**: a `classroom-export-chat.sh` that produces an upload bundle. Documented click path. No native distribution.
+Cowork shares Claude Code's filesystem; Codex is mirrored via symlink; Chat is hosted and has no local skill directory. To get Dewey skills into Chat:
+- **Manual upload + bundle export**: a `dewey-export-chat.sh` that produces an upload bundle. Documented click path. No native distribution.
 - **API push**: only if Anthropic exposes a Skills API for claude.ai accounts. Not yet investigated.
-- **Org-managed marketplace** for Team/Enterprise plans: lands automatically when a company adopts Classroom in the admin marketplace, but that's an Anthropic-side feature not a Classroom one.
+- **Org-managed marketplace** for Team/Enterprise plans: lands automatically when a company adopts Dewey in the admin marketplace, but that's an Anthropic-side feature not a Dewey one.
 
-## Hosted Classroom bucket
+## Hosted Dewey bucket
 
 A separate hosted product layer that consumes the local data pipe. Not part of this repo's roadmap directly, but the local side is built to feed it.
 
@@ -105,4 +105,4 @@ A separate hosted product layer that consumes the local data pipe. Not part of t
 - A new feature in the repo bumps an item from **Deferred** → **Done** (or **Partial**) and adds a section under **Done** describing what's actually shipped.
 - Untested-live items live in **Partial** until verified — don't claim **Done** based on unit tests alone for anything that crosses a network or scheduler boundary.
 - New ideas that come up in design discussions go in **Deferred** with a one-line problem statement, not a half-spec.
-- Hosted-product ideas go in the **Hosted Classroom bucket** and don't drive this repo's roadmap unless they need a hook on the local side.
+- Hosted-product ideas go in the **Hosted Dewey bucket** and don't drive this repo's roadmap unless they need a hook on the local side.

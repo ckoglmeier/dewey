@@ -1,8 +1,8 @@
 # Extending skills (the composition convention)
 
-Central Classroom skills are **immutable to most users**. You shouldn't fork `competitive-analysis` to add your team's quirks — if you do, you fall off the update path. The next time the central maintainer ships an improvement, your fork won't get it.
+Central Dewey skills are **immutable to most users**. You shouldn't fork `competitive-analysis` to add your team's quirks — if you do, you fall off the update path. The next time the central maintainer ships an improvement, your fork won't get it.
 
-Instead, Classroom uses a **composition convention**: a local extension is a standalone skill that *references* the parent and adds your steps.
+Instead, Dewey uses a **composition convention**: a local extension is a standalone skill that *references* the parent and adds your steps.
 
 ## How it works
 
@@ -45,7 +45,7 @@ Then additionally:
 | :------- | :--------------------------------------------------- |
 | Personal | `~/.claude/skills/<extension-name>/SKILL.md`         |
 | Project  | `.claude/skills/<extension-name>/SKILL.md`           |
-| Team     | `classroom-extensions-<team>/skills/<extension-name>/SKILL.md` (in a team-managed git repo, distributed via its own marketplace) |
+| Team     | `dewey-extensions-<team>/skills/<extension-name>/SKILL.md` (in a team-managed git repo, distributed via its own marketplace) |
 
 The personal and project paths are standard Claude Code skill locations — extensions are just regular skills that follow the convention. Nothing special needs to be installed.
 
@@ -60,14 +60,14 @@ If you had forked it instead, you'd be stuck on v1 forever, manually merging cha
 The fastest way to write an extension is to let the Guide do it:
 
 ```
-/classroom extend competitive-analysis
+/dewey extend competitive-analysis
 ```
 
 The Guide reads the parent, asks what you want to add, drafts the extension, shows you the draft, and writes the file only after you approve. See the Guide skill for details.
 
 ## Adding a plugin that lives in another repo
 
-Not every plugin in classroom's marketplace has to live in this repo. You can reference a plugin from another git repo by using an object `source` in `.claude-plugin/marketplace.json` instead of a relative path.
+Not every plugin in Dewey's marketplace has to live in this repo. You can reference a plugin from another git repo by using an object `source` in `.claude-plugin/marketplace.json` instead of a relative path.
 
 The most common shape is `git-subdir`, which points at a specific folder inside an external repo:
 
@@ -90,10 +90,10 @@ Claude Code supports four object-source types: `git-subdir`, `github`, `url`, an
 
 **Rules of thumb:**
 
-- Use an in-tree plugin (`./plugins/foo`) when classroom is the canonical home for the plugin — when the plugin is authored *for* classroom's audience and its maintainers review PRs here.
-- Use an external plugin when the canonical home is somewhere else — when classroom is simply curating a pointer at a plugin that lives and evolves in its own repo.
-- Always pin with `ref` (branch name) or `sha` (exact commit). `ref: "main"` means "track latest"; a SHA means "deterministic, requires a bump PR to move forward." Classroom currently uses `ref: "main"` for its external entries — simple, with a 24h refresh cadence as the safety net.
-- External plugins do **not** need a CODEOWNERS line or a `plugins/*/` directory in classroom. Ownership and validation live in the upstream repo. Classroom's test suite only validates the schema of the external entry (correct type, required fields, pinning) — it trusts the upstream for content quality.
+- Use an in-tree plugin (`./plugins/foo`) when Dewey is the canonical home for the plugin — when the plugin is authored *for* Dewey's audience and its maintainers review PRs here.
+- Use an external plugin when the canonical home is somewhere else — when Dewey is simply curating a pointer at a plugin that lives and evolves in its own repo.
+- Always pin with `ref` (branch name) or `sha` (exact commit). `ref: "main"` means "track latest"; a SHA means "deterministic, requires a bump PR to move forward." Dewey currently uses `ref: "main"` for its external entries — simple, with a 24h refresh cadence as the safety net.
+- External plugins do **not** need a CODEOWNERS line or a `plugins/*/` directory in Dewey. Ownership and validation live in the upstream repo. Dewey's test suite only validates the schema of the external entry (correct type, required fields, pinning) — it trusts the upstream for content quality.
 
 If you're adding the first external plugin from a new upstream repo, it's worth running `git ls-remote <url>` manually and sparse-cloning the target path once to sanity-check that the upstream layout matches your marketplace entry. A future opt-in test layer will automate this.
 

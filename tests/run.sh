@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Classroom v1 test suite
+# Dewey v1 test suite
 #
 # Runs three layers of checks:
 #   1. Static/structural — JSON validity, schema, file presence
@@ -339,8 +339,8 @@ unknown = candidates - known
 assert not unknown, \"references unknown plugins: \" + repr(unknown)
 '"
 
-# Guide skill name should be 'classroom' since /classroom is the entry point
-check "guide skill name is classroom (matches /classroom slash command)" \
+# Guide skill name should be 'dewey' since /dewey is the entry point
+check "guide skill name is dewey (matches /dewey slash command)" \
   "python3 -c '
 import re
 text = open(\"guide/SKILL.md\").read()
@@ -351,7 +351,7 @@ for line in fm.splitlines():
     if line.startswith(\"name:\"):
         found_name = line.split(\":\", 1)[1].strip()
         break
-assert found_name == \"classroom\", \"guide name is \" + repr(found_name) + \", expected classroom\"
+assert found_name == \"dewey\", \"guide name is \" + repr(found_name) + \", expected dewey\"
 '"
 
 # ============================================================================
@@ -362,32 +362,32 @@ section "Layer 4 — install.sh integration (sandboxed)"
 SANDBOX="$(mktemp -d)"
 trap 'rm -rf "$SANDBOX"' EXIT
 
-# Pre-populate the sandbox CLASSROOM_DIR with a non-git copy of our repo, so
+# Pre-populate the sandbox DEWEY_DIR with a non-git copy of our repo, so
 # install.sh hits the "exists but not git" branch and uses files in place.
 # This avoids needing the repo to be on a real git remote during tests.
-SANDBOX_CLASSROOM="$SANDBOX/.claude/classroom"
-mkdir -p "$SANDBOX_CLASSROOM"
+SANDBOX_DEWEY="$SANDBOX/.claude/dewey"
+mkdir -p "$SANDBOX_DEWEY"
 # Copy everything except the tests dir (avoid recursion noise) and .git if present
-rsync -a --exclude='tests/' --exclude='.git/' "$REPO_ROOT/" "$SANDBOX_CLASSROOM/" 2>/dev/null \
-  || cp -R "$REPO_ROOT/." "$SANDBOX_CLASSROOM/"
+rsync -a --exclude='tests/' --exclude='.git/' "$REPO_ROOT/" "$SANDBOX_DEWEY/" 2>/dev/null \
+  || cp -R "$REPO_ROOT/." "$SANDBOX_DEWEY/"
 
 run_install() {
   HOME="$SANDBOX" \
-  CLASSROOM_DIR="$SANDBOX_CLASSROOM" \
-  CLASSROOM_REPO="file://$REPO_ROOT" \
-  CLASSROOM_REF="main" \
-  CLASSROOM_USE_INPLACE=1 \
+  DEWEY_DIR="$SANDBOX_DEWEY" \
+  DEWEY_REPO="file://$REPO_ROOT" \
+  DEWEY_REF="main" \
+  DEWEY_USE_INPLACE=1 \
   bash "$REPO_ROOT/install.sh" >"$SANDBOX/install.log" 2>&1
 }
 
 check "install.sh runs cleanly in sandbox" \
   "run_install"
 
-check "Guide skill installed at \$HOME/.claude/skills/classroom/SKILL.md" \
-  "test -f '$SANDBOX/.claude/skills/classroom/SKILL.md'"
+check "Guide skill installed at \$HOME/.claude/skills/dewey/SKILL.md" \
+  "test -f '$SANDBOX/.claude/skills/dewey/SKILL.md'"
 
 check "installed Guide matches source guide/SKILL.md" \
-  "cmp -s '$REPO_ROOT/guide/SKILL.md' '$SANDBOX/.claude/skills/classroom/SKILL.md'"
+  "cmp -s '$REPO_ROOT/guide/SKILL.md' '$SANDBOX/.claude/skills/dewey/SKILL.md'"
 
 check "settings.json was created" \
   "test -f '$SANDBOX/.claude/settings.json'"
@@ -395,12 +395,12 @@ check "settings.json was created" \
 check "settings.json is valid JSON" \
   "python3 -c 'import json; json.load(open(\"$SANDBOX/.claude/settings.json\"))'"
 
-check "known_marketplaces.json registers classroom marketplace" \
+check "known_marketplaces.json registers dewey marketplace" \
   "python3 -c '
 import json
 s = json.load(open(\"$SANDBOX/.claude/plugins/known_marketplaces.json\"))
-assert \"classroom\" in s
-assert s[\"classroom\"][\"source\"][\"source\"] == \"directory\"
+assert \"dewey\" in s
+assert s[\"dewey\"][\"source\"][\"source\"] == \"directory\"
 '"
 
 check "settings.json has SessionStart hook pointing at first-run script" \
@@ -412,25 +412,25 @@ assert hooks, \"no SessionStart hooks\"
 found = False
 for entry in hooks:
     for h in entry.get(\"hooks\", []):
-        if \"classroom-first-run.sh\" in h.get(\"command\", \"\"):
+        if \"dewey-first-run.sh\" in h.get(\"command\", \"\"):
             found = True
 assert found, \"first-run hook not registered\"
 '"
 
 check "first-run hook script created and executable" \
-  "test -x '$SANDBOX/.claude/classroom-first-run.sh'"
+  "test -x '$SANDBOX/.claude/dewey-first-run.sh'"
 
 # Run the first-run hook the FIRST time — should print welcome
 check "first-run hook prints welcome on first invocation" \
-  "HOME='$SANDBOX' bash '$SANDBOX/.claude/classroom-first-run.sh' | grep -q 'Welcome to Classroom'"
+  "HOME='$SANDBOX' bash '$SANDBOX/.claude/dewey-first-run.sh' | grep -q 'Welcome to Dewey'"
 
 # Marker should now exist
 check "first-run marker created after first invocation" \
-  "test -f '$SANDBOX/.claude/classroom-onboarded'"
+  "test -f '$SANDBOX/.claude/dewey-onboarded'"
 
 # Run the first-run hook the SECOND time — should be silent
 check "first-run hook is silent on second invocation" \
-  "out=\$(HOME='$SANDBOX' bash '$SANDBOX/.claude/classroom-first-run.sh'); test -z \"\$out\""
+  "out=\$(HOME='$SANDBOX' bash '$SANDBOX/.claude/dewey-first-run.sh'); test -z \"\$out\""
 
 # Idempotency: run install.sh AGAIN. Should not error, should not duplicate hooks.
 check "install.sh is idempotent (second run succeeds)" \
@@ -447,7 +447,7 @@ hooks = s[\"hooks\"][\"SessionStart\"]
 matching = 0
 for entry in hooks:
     for h in entry.get(\"hooks\", []):
-        if \"classroom-first-run.sh\" in h.get(\"command\", \"\"):
+        if \"dewey-first-run.sh\" in h.get(\"command\", \"\"):
             matching += 1
 assert matching == 1, f\"expected 1 first-run hook, found {matching}\"
 '"
@@ -458,20 +458,139 @@ check "install.sh preserves unrelated keys in settings.json" \
 SANDBOX2=\$(mktemp -d)
 mkdir -p \"\$SANDBOX2/.claude\"
 echo '{\"theme\": \"dark\", \"unrelated\": {\"keep\": \"me\"}}' > \"\$SANDBOX2/.claude/settings.json\"
-SANDBOX_CLASSROOM2=\"\$SANDBOX2/.claude/classroom\"
-mkdir -p \"\$SANDBOX_CLASSROOM2\"
-cp -R \"$REPO_ROOT/.\" \"\$SANDBOX_CLASSROOM2/\"
-HOME=\"\$SANDBOX2\" CLASSROOM_DIR=\"\$SANDBOX_CLASSROOM2\" CLASSROOM_REPO=\"file://$REPO_ROOT\" CLASSROOM_REF=main CLASSROOM_USE_INPLACE=1 bash \"$REPO_ROOT/install.sh\" >/dev/null 2>&1
+SANDBOX_DEWEY2=\"\$SANDBOX2/.claude/dewey\"
+mkdir -p \"\$SANDBOX_DEWEY2\"
+cp -R \"$REPO_ROOT/.\" \"\$SANDBOX_DEWEY2/\"
+HOME=\"\$SANDBOX2\" DEWEY_DIR=\"\$SANDBOX_DEWEY2\" DEWEY_REPO=\"file://$REPO_ROOT\" DEWEY_REF=main DEWEY_USE_INPLACE=1 bash \"$REPO_ROOT/install.sh\" >/dev/null 2>&1
 python3 -c \"
 import json
 s = json.load(open('\$SANDBOX2/.claude/settings.json'))
 assert s.get('theme') == 'dark', 'theme key was lost'
 assert s.get('unrelated', {}).get('keep') == 'me', 'unrelated key was lost'
 mk = json.load(open('\$SANDBOX2/.claude/plugins/known_marketplaces.json'))
-assert 'classroom' in mk, 'classroom marketplace not registered'
+assert 'dewey' in mk, 'dewey marketplace not registered'
 \"
 rm -rf \"\$SANDBOX2\"
 "
+
+# ============================================================================
+# LAYER 4b: CLASSROOM → DEWEY MIGRATION (sandbox)
+# ============================================================================
+# v2.0 install must hard-rename a prior Classroom install to Dewey:
+# - ~/.claude/classroom/ → ~/.claude/dewey/
+# - ~/.claude/skills/classroom/ → ~/.claude/skills/dewey/
+# - ~/.claude/classroom-*.sh → removed (replaced by dewey-* helpers)
+# - ~/.claude/classroom-{onboarded,first-run.sh,refresh.sh,...} → dewey-* equivalents
+# - ~/.claude/classroom-analytics.log → ~/.claude/dewey-analytics.log (history preserved)
+# - known_marketplaces.json: "classroom" key → "dewey", with paths updated
+section "Layer 4b — Classroom→Dewey migration"
+
+MIG_SANDBOX="$(mktemp -d)"
+TMPDIRS_TO_CLEAN+=("$MIG_SANDBOX")
+mkdir -p "$MIG_SANDBOX/.claude/skills/classroom" \
+         "$MIG_SANDBOX/.claude/classroom" \
+         "$MIG_SANDBOX/.claude/plugins"
+
+# Pre-seed a fake old Classroom install
+echo "old-cache-marker" > "$MIG_SANDBOX/.claude/classroom/marker"
+echo "old-guide-content" > "$MIG_SANDBOX/.claude/skills/classroom/SKILL.md"
+echo "old-analytics-line" > "$MIG_SANDBOX/.claude/classroom-analytics.log"
+touch "$MIG_SANDBOX/.claude/classroom-onboarded"
+echo "stub" > "$MIG_SANDBOX/.claude/classroom-refresh.sh"
+echo "stub" > "$MIG_SANDBOX/.claude/classroom-propose.sh"
+cat > "$MIG_SANDBOX/.claude/plugins/known_marketplaces.json" <<EOF
+{
+  "classroom": {
+    "source": {"source": "directory", "path": "$MIG_SANDBOX/.claude/classroom"},
+    "installLocation": "$MIG_SANDBOX/.claude/classroom",
+    "lastUpdated": "2026-04-01T00:00:00Z"
+  }
+}
+EOF
+
+# Run install — should detect old paths and migrate
+HOME="$MIG_SANDBOX" DEWEY_REPO="file://$REPO_ROOT" DEWEY_REF=main DEWEY_USE_INPLACE=1 \
+  DEWEY_DIR="$MIG_SANDBOX/.claude/dewey" \
+  bash "$REPO_ROOT/install.sh" >/dev/null 2>&1 || true
+
+# But DEWEY_USE_INPLACE=1 means it won't fetch — for migration test we want the migration to run
+# even when the cache itself is newly-arriving. Use the tarball path:
+TARBALL_FILE2="$(mktemp -t dewey-mig.XXXXXX.tar.gz)"
+TMPDIRS_TO_CLEAN+=("$(dirname "$TARBALL_FILE2")")
+TARBALL_DIR2="$(mktemp -d)"
+mkdir -p "$TARBALL_DIR2/stage/dewey-snapshot"
+if command -v rsync >/dev/null 2>&1; then
+  rsync -a --exclude='tests/' --exclude='.git/' "$REPO_ROOT/" "$TARBALL_DIR2/stage/dewey-snapshot/" 2>/dev/null
+else
+  cp -R "$REPO_ROOT/." "$TARBALL_DIR2/stage/dewey-snapshot/"
+  rm -rf "$TARBALL_DIR2/stage/dewey-snapshot/tests" "$TARBALL_DIR2/stage/dewey-snapshot/.git"
+fi
+( cd "$TARBALL_DIR2/stage" && tar -czf "$TARBALL_FILE2" dewey-snapshot )
+TMPDIRS_TO_CLEAN+=("$TARBALL_DIR2")
+
+# Reset sandbox state for a clean run
+rm -rf "$MIG_SANDBOX"
+mkdir -p "$MIG_SANDBOX/.claude/skills/classroom" \
+         "$MIG_SANDBOX/.claude/classroom" \
+         "$MIG_SANDBOX/.claude/plugins"
+echo "old-cache-marker" > "$MIG_SANDBOX/.claude/classroom/marker"
+echo "old-guide-content" > "$MIG_SANDBOX/.claude/skills/classroom/SKILL.md"
+echo "old-analytics-line" > "$MIG_SANDBOX/.claude/classroom-analytics.log"
+touch "$MIG_SANDBOX/.claude/classroom-onboarded"
+echo "stub" > "$MIG_SANDBOX/.claude/classroom-refresh.sh"
+echo "stub" > "$MIG_SANDBOX/.claude/classroom-propose.sh"
+cat > "$MIG_SANDBOX/.claude/plugins/known_marketplaces.json" <<EOF
+{
+  "classroom": {
+    "source": {"source": "directory", "path": "$MIG_SANDBOX/.claude/classroom"},
+    "installLocation": "$MIG_SANDBOX/.claude/classroom",
+    "lastUpdated": "2026-04-01T00:00:00Z"
+  }
+}
+EOF
+
+HOME="$MIG_SANDBOX" DEWEY_REPO="$REPO_ROOT" DEWEY_REF=main DEWEY_TARBALL="file://$TARBALL_FILE2" \
+  bash "$REPO_ROOT/install.sh" >/dev/null 2>&1
+
+check "migration: ~/.claude/classroom/ renamed to ~/.claude/dewey/" \
+  "test ! -e '$MIG_SANDBOX/.claude/classroom' && test -d '$MIG_SANDBOX/.claude/dewey'"
+
+check "migration: ~/.claude/skills/classroom/ renamed to ~/.claude/skills/dewey/" \
+  "test ! -e '$MIG_SANDBOX/.claude/skills/classroom' && test -d '$MIG_SANDBOX/.claude/skills/dewey'"
+
+check "migration: classroom-analytics.log renamed to dewey-analytics.log (content preserved)" \
+  "test ! -e '$MIG_SANDBOX/.claude/classroom-analytics.log' && \
+   grep -q 'old-analytics-line' '$MIG_SANDBOX/.claude/dewey-analytics.log'"
+
+check "migration: classroom-onboarded renamed to dewey-onboarded" \
+  "test ! -e '$MIG_SANDBOX/.claude/classroom-onboarded' && test -e '$MIG_SANDBOX/.claude/dewey-onboarded'"
+
+check "migration: old classroom-*.sh helpers removed" \
+  "test ! -e '$MIG_SANDBOX/.claude/classroom-propose.sh' && \
+   test ! -e '$MIG_SANDBOX/.claude/classroom-refresh.sh'"
+
+check "migration: known_marketplaces.json 'classroom' key renamed to 'dewey'" \
+  "python3 -c '
+import json
+d = json.load(open(\"$MIG_SANDBOX/.claude/plugins/known_marketplaces.json\"))
+assert \"classroom\" not in d, \"classroom key still present\"
+assert \"dewey\" in d, \"dewey key missing\"
+loc = d[\"dewey\"][\"installLocation\"]
+assert loc.endswith(\"/.claude/dewey\"), \"installLocation not migrated: \" + loc
+'"
+
+check "migration: dewey-migration.log records what was migrated" \
+  "test -f '$MIG_SANDBOX/.claude/dewey-migration.log' && \
+   grep -q 'classroom' '$MIG_SANDBOX/.claude/dewey-migration.log'"
+
+# Idempotency: run install again; nothing more to migrate
+HOME="$MIG_SANDBOX" DEWEY_REPO="$REPO_ROOT" DEWEY_REF=main DEWEY_TARBALL="file://$TARBALL_FILE2" \
+  bash "$REPO_ROOT/install.sh" >/dev/null 2>&1
+
+check "migration: re-running install is idempotent (no classroom paths reappear)" \
+  "test ! -e '$MIG_SANDBOX/.claude/classroom' && \
+   test ! -e '$MIG_SANDBOX/.claude/skills/classroom' && \
+   test ! -e '$MIG_SANDBOX/.claude/classroom-analytics.log'"
 
 # ============================================================================
 # LAYER 5: OWNERSHIP (plugin.json author field + CODEOWNERS)
@@ -519,33 +638,33 @@ trap cleanup_tmpdirs EXIT
 
 # Stage repo contents under a single parent dir, excluding tests/ (avoid recursion)
 # and .git/. We then tar that single parent so --strip-components=1 cleanly removes it.
-mkdir -p "$TARBALL_DIR/stage/classroom-snapshot"
+mkdir -p "$TARBALL_DIR/stage/dewey-snapshot"
 if command -v rsync >/dev/null 2>&1; then
-  rsync -a --exclude='tests/' --exclude='.git/' "$REPO_ROOT/" "$TARBALL_DIR/stage/classroom-snapshot/" 2>/dev/null
+  rsync -a --exclude='tests/' --exclude='.git/' "$REPO_ROOT/" "$TARBALL_DIR/stage/dewey-snapshot/" 2>/dev/null
 else
-  cp -R "$REPO_ROOT/." "$TARBALL_DIR/stage/classroom-snapshot/"
-  rm -rf "$TARBALL_DIR/stage/classroom-snapshot/tests" "$TARBALL_DIR/stage/classroom-snapshot/.git"
+  cp -R "$REPO_ROOT/." "$TARBALL_DIR/stage/dewey-snapshot/"
+  rm -rf "$TARBALL_DIR/stage/dewey-snapshot/tests" "$TARBALL_DIR/stage/dewey-snapshot/.git"
 fi
 
-TARBALL_FILE="$TARBALL_DIR/classroom.tar.gz"
-( cd "$TARBALL_DIR/stage" && tar -czf "$TARBALL_FILE" classroom-snapshot )
+TARBALL_FILE="$TARBALL_DIR/dewey.tar.gz"
+( cd "$TARBALL_DIR/stage" && tar -czf "$TARBALL_FILE" dewey-snapshot )
 
 check "test tarball was built" \
   "test -s '$TARBALL_FILE'"
 
 TARBALL_SHA=$(shasum -a 256 "$TARBALL_FILE" | awk '{print $1}')
 
-# Fresh sandbox with NO pre-populated CLASSROOM_DIR — install must download.
+# Fresh sandbox with NO pre-populated DEWEY_DIR — install must download.
 TARBALL_SANDBOX="$(mktemp -d)"
 TMPDIRS_TO_CLEAN+=("$TARBALL_SANDBOX")
-TARBALL_SANDBOX_CLASSROOM="$TARBALL_SANDBOX/.claude/classroom"
+TARBALL_SANDBOX_DEWEY="$TARBALL_SANDBOX/.claude/dewey"
 
 run_tarball_install() {
   HOME="$TARBALL_SANDBOX" \
-  CLASSROOM_DIR="$TARBALL_SANDBOX_CLASSROOM" \
-  CLASSROOM_REPO="https://example.invalid/classroom" \
-  CLASSROOM_REF="main" \
-  CLASSROOM_TARBALL="file://$TARBALL_FILE" \
+  DEWEY_DIR="$TARBALL_SANDBOX_DEWEY" \
+  DEWEY_REPO="https://example.invalid/dewey" \
+  DEWEY_REF="main" \
+  DEWEY_TARBALL="file://$TARBALL_FILE" \
   bash "$REPO_ROOT/install.sh" >"$TARBALL_SANDBOX/install.log" 2>&1
 }
 
@@ -553,61 +672,61 @@ check "install.sh runs cleanly via tarball (no git)" \
   "run_tarball_install"
 
 check "tarball install populated guide/SKILL.md" \
-  "test -f '$TARBALL_SANDBOX_CLASSROOM/guide/SKILL.md'"
+  "test -f '$TARBALL_SANDBOX_DEWEY/guide/SKILL.md'"
 
 check "tarball install populated marketplace.json" \
-  "test -f '$TARBALL_SANDBOX_CLASSROOM/.claude-plugin/marketplace.json'"
+  "test -f '$TARBALL_SANDBOX_DEWEY/.claude-plugin/marketplace.json'"
 
 check "tarball install installed Guide as personal skill" \
-  "test -f '$TARBALL_SANDBOX/.claude/skills/classroom/SKILL.md'"
+  "test -f '$TARBALL_SANDBOX/.claude/skills/dewey/SKILL.md'"
 
 check "tarball install left no .old or .new sibling dirs" \
-  "test ! -e '$TARBALL_SANDBOX_CLASSROOM.new' && ! ls -d '$TARBALL_SANDBOX_CLASSROOM'.old.* >/dev/null 2>&1"
+  "test ! -e '$TARBALL_SANDBOX_DEWEY.new' && ! ls -d '$TARBALL_SANDBOX_DEWEY'.old.* >/dev/null 2>&1"
 
 check "tarball install registered the marketplace in known_marketplaces.json" \
   "python3 -c '
 import json
 s = json.load(open(\"$TARBALL_SANDBOX/.claude/plugins/known_marketplaces.json\"))
-assert \"classroom\" in s
-assert s[\"classroom\"][\"source\"][\"source\"] == \"directory\"
+assert \"dewey\" in s
+assert s[\"dewey\"][\"source\"][\"source\"] == \"directory\"
 '"
 
 check "tarball install dropped a refresh script" \
-  "test -x '$TARBALL_SANDBOX/.claude/classroom-refresh.sh'"
+  "test -x '$TARBALL_SANDBOX/.claude/dewey-refresh.sh'"
 
 # Idempotent re-run via tarball
 check "tarball install is idempotent" \
   "run_tarball_install"
 
 check "second tarball run still left no stale .old.* dirs" \
-  "test ! -e '$TARBALL_SANDBOX_CLASSROOM.new' && ! ls -d '$TARBALL_SANDBOX_CLASSROOM'.old.* >/dev/null 2>&1"
+  "test ! -e '$TARBALL_SANDBOX_DEWEY.new' && ! ls -d '$TARBALL_SANDBOX_DEWEY'.old.* >/dev/null 2>&1"
 
 # ---- Checksum verification --------------------------------------------------
 
 # Pass: correct SHA
 TARBALL_SANDBOX_OK="$(mktemp -d)"
 TMPDIRS_TO_CLEAN+=("$TARBALL_SANDBOX_OK")
-check "tarball install passes with matching CLASSROOM_TARBALL_SHA256" \
-  "HOME='$TARBALL_SANDBOX_OK' CLASSROOM_DIR='$TARBALL_SANDBOX_OK/.claude/classroom' CLASSROOM_TARBALL='file://$TARBALL_FILE' CLASSROOM_TARBALL_SHA256='$TARBALL_SHA' bash '$REPO_ROOT/install.sh' >/dev/null 2>&1"
+check "tarball install passes with matching DEWEY_TARBALL_SHA256" \
+  "HOME='$TARBALL_SANDBOX_OK' DEWEY_DIR='$TARBALL_SANDBOX_OK/.claude/dewey' DEWEY_TARBALL='file://$TARBALL_FILE' DEWEY_TARBALL_SHA256='$TARBALL_SHA' bash '$REPO_ROOT/install.sh' >/dev/null 2>&1"
 
-# Fail: wrong SHA, must abort and leave CLASSROOM_DIR untouched
+# Fail: wrong SHA, must abort and leave DEWEY_DIR untouched
 TARBALL_SANDBOX_BAD="$(mktemp -d)"
 TMPDIRS_TO_CLEAN+=("$TARBALL_SANDBOX_BAD")
-check "tarball install aborts on bad CLASSROOM_TARBALL_SHA256" \
-  "HOME='$TARBALL_SANDBOX_BAD' CLASSROOM_DIR='$TARBALL_SANDBOX_BAD/.claude/classroom' CLASSROOM_TARBALL='file://$TARBALL_FILE' CLASSROOM_TARBALL_SHA256='0000000000000000000000000000000000000000000000000000000000000000' bash '$REPO_ROOT/install.sh' >/dev/null 2>&1; test \$? -ne 0"
+check "tarball install aborts on bad DEWEY_TARBALL_SHA256" \
+  "HOME='$TARBALL_SANDBOX_BAD' DEWEY_DIR='$TARBALL_SANDBOX_BAD/.claude/dewey' DEWEY_TARBALL='file://$TARBALL_FILE' DEWEY_TARBALL_SHA256='0000000000000000000000000000000000000000000000000000000000000000' bash '$REPO_ROOT/install.sh' >/dev/null 2>&1; test \$? -ne 0"
 
-check "bad-checksum run did NOT populate CLASSROOM_DIR" \
-  "test ! -f '$TARBALL_SANDBOX_BAD/.claude/classroom/guide/SKILL.md'"
+check "bad-checksum run did NOT populate DEWEY_DIR" \
+  "test ! -f '$TARBALL_SANDBOX_BAD/.claude/dewey/guide/SKILL.md'"
 
 # ---- Destructive-path guard -------------------------------------------------
 
-# CLASSROOM_DIR that doesn't end in .claude/classroom must be refused.
+# DEWEY_DIR that doesn't end in .claude/dewey must be refused.
 GUARD_SANDBOX="$(mktemp -d)"
 TMPDIRS_TO_CLEAN+=("$GUARD_SANDBOX")
 mkdir -p "$GUARD_SANDBOX/somewhere-else"
 echo "do not delete me" > "$GUARD_SANDBOX/somewhere-else/canary.txt"
-check "install.sh refuses CLASSROOM_DIR that doesn't end in .claude/classroom" \
-  "HOME='$GUARD_SANDBOX' CLASSROOM_DIR='$GUARD_SANDBOX/somewhere-else' CLASSROOM_TARBALL='file://$TARBALL_FILE' bash '$REPO_ROOT/install.sh' >/dev/null 2>&1; test \$? -ne 0"
+check "install.sh refuses DEWEY_DIR that doesn't end in .claude/dewey" \
+  "HOME='$GUARD_SANDBOX' DEWEY_DIR='$GUARD_SANDBOX/somewhere-else' DEWEY_TARBALL='file://$TARBALL_FILE' bash '$REPO_ROOT/install.sh' >/dev/null 2>&1; test \$? -ne 0"
 
 check "guard left the canary file untouched" \
   "test -f '$GUARD_SANDBOX/somewhere-else/canary.txt'"
@@ -626,10 +745,10 @@ done
 NOGIT_SANDBOX="$(mktemp -d)"
 TMPDIRS_TO_CLEAN+=("$NOGIT_SANDBOX")
 check "install.sh runs with git absent from PATH" \
-  "PATH='$STRIP_DIR' HOME='$NOGIT_SANDBOX' CLASSROOM_DIR='$NOGIT_SANDBOX/.claude/classroom' CLASSROOM_TARBALL='file://$TARBALL_FILE' bash '$REPO_ROOT/install.sh' >/dev/null 2>&1"
+  "PATH='$STRIP_DIR' HOME='$NOGIT_SANDBOX' DEWEY_DIR='$NOGIT_SANDBOX/.claude/dewey' DEWEY_TARBALL='file://$TARBALL_FILE' bash '$REPO_ROOT/install.sh' >/dev/null 2>&1"
 
 check "no-git install populated guide/SKILL.md" \
-  "test -f '$NOGIT_SANDBOX/.claude/classroom/guide/SKILL.md'"
+  "test -f '$NOGIT_SANDBOX/.claude/dewey/guide/SKILL.md'"
 
 # ============================================================================
 # LAYER 7: REFRESH SCRIPT
@@ -637,7 +756,7 @@ check "no-git install populated guide/SKILL.md" \
 section "Layer 7 — Refresh script"
 
 # Use the tarball sandbox from Layer 6 which has a refresh.sh installed.
-REFRESH="$TARBALL_SANDBOX/.claude/classroom-refresh.sh"
+REFRESH="$TARBALL_SANDBOX/.claude/dewey-refresh.sh"
 
 check "refresh.sh exists and is executable" \
   "test -x '$REFRESH'"
@@ -645,9 +764,9 @@ check "refresh.sh exists and is executable" \
 # Force interval=0 so the marker doesn't gate the test, point at our local tarball.
 run_refresh() {
   HOME="$TARBALL_SANDBOX" \
-  CLASSROOM_DIR="$TARBALL_SANDBOX_CLASSROOM" \
-  CLASSROOM_TARBALL="file://$TARBALL_FILE" \
-  CLASSROOM_REFRESH_INTERVAL=0 \
+  DEWEY_DIR="$TARBALL_SANDBOX_DEWEY" \
+  DEWEY_TARBALL="file://$TARBALL_FILE" \
+  DEWEY_REFRESH_INTERVAL=0 \
   bash "$REFRESH"
 }
 
@@ -655,69 +774,69 @@ check "refresh.sh runs cleanly when forced" \
   "run_refresh"
 
 check "refresh.sh wrote a last-refresh marker" \
-  "test -f '$TARBALL_SANDBOX/.claude/classroom-last-refresh'"
+  "test -f '$TARBALL_SANDBOX/.claude/dewey-last-refresh'"
 
 check "refresh.sh wrote a log entry" \
-  "test -s '$TARBALL_SANDBOX/.claude/classroom-refresh.log'"
+  "test -s '$TARBALL_SANDBOX/.claude/dewey-refresh.log'"
 
 check "refresh.sh left no stale .old.* dirs" \
-  "test ! -e '$TARBALL_SANDBOX_CLASSROOM.new' && ! ls -d '$TARBALL_SANDBOX_CLASSROOM'.old.* >/dev/null 2>&1"
+  "test ! -e '$TARBALL_SANDBOX_DEWEY.new' && ! ls -d '$TARBALL_SANDBOX_DEWEY'.old.* >/dev/null 2>&1"
 
 # Lock-file blocks concurrent execution.
 check "refresh.sh exits silently when lock file exists" \
   "
-touch '$TARBALL_SANDBOX/.claude/classroom-refresh.lock'
-HOME='$TARBALL_SANDBOX' CLASSROOM_DIR='$TARBALL_SANDBOX_CLASSROOM' CLASSROOM_TARBALL='file://$TARBALL_FILE' CLASSROOM_REFRESH_INTERVAL=0 bash '$REFRESH'
+touch '$TARBALL_SANDBOX/.claude/dewey-refresh.lock'
+HOME='$TARBALL_SANDBOX' DEWEY_DIR='$TARBALL_SANDBOX_DEWEY' DEWEY_TARBALL='file://$TARBALL_FILE' DEWEY_REFRESH_INTERVAL=0 bash '$REFRESH'
 test \$? -eq 0
-test -f '$TARBALL_SANDBOX/.claude/classroom-refresh.lock'
-rm -f '$TARBALL_SANDBOX/.claude/classroom-refresh.lock'
+test -f '$TARBALL_SANDBOX/.claude/dewey-refresh.lock'
+rm -f '$TARBALL_SANDBOX/.claude/dewey-refresh.lock'
 "
 
 # 24h marker honored: with default interval and a fresh marker, refresh should be a no-op.
 check "refresh.sh skips when marker is fresh and interval is default" \
   "
-touch '$TARBALL_SANDBOX/.claude/classroom-last-refresh'
-out=\$(HOME='$TARBALL_SANDBOX' CLASSROOM_DIR='$TARBALL_SANDBOX_CLASSROOM' CLASSROOM_TARBALL='file://$TARBALL_FILE' bash '$REFRESH' 2>&1)
+touch '$TARBALL_SANDBOX/.claude/dewey-last-refresh'
+out=\$(HOME='$TARBALL_SANDBOX' DEWEY_DIR='$TARBALL_SANDBOX_DEWEY' DEWEY_TARBALL='file://$TARBALL_FILE' bash '$REFRESH' 2>&1)
 test -z \"\$out\"
 "
 
 # Disabled when interval is -1.
-check "refresh.sh disabled with CLASSROOM_REFRESH_INTERVAL=-1" \
-  "HOME='$TARBALL_SANDBOX' CLASSROOM_DIR='$TARBALL_SANDBOX_CLASSROOM' CLASSROOM_TARBALL='file://$TARBALL_FILE' CLASSROOM_REFRESH_INTERVAL=-1 bash '$REFRESH'"
+check "refresh.sh disabled with DEWEY_REFRESH_INTERVAL=-1" \
+  "HOME='$TARBALL_SANDBOX' DEWEY_DIR='$TARBALL_SANDBOX_DEWEY' DEWEY_TARBALL='file://$TARBALL_FILE' DEWEY_REFRESH_INTERVAL=-1 bash '$REFRESH'"
 
 # Network/extract failure must not break the cache or exit non-zero.
-NETFAIL_LOG="$TARBALL_SANDBOX/.claude/classroom-refresh.log"
+NETFAIL_LOG="$TARBALL_SANDBOX/.claude/dewey-refresh.log"
 NETFAIL_BEFORE=$(wc -c < "$NETFAIL_LOG" 2>/dev/null || echo 0)
 check "refresh.sh exits 0 on network failure (bad URL)" \
-  "HOME='$TARBALL_SANDBOX' CLASSROOM_DIR='$TARBALL_SANDBOX_CLASSROOM' CLASSROOM_TARBALL='file:///nonexistent/path/that/does/not/exist.tar.gz' CLASSROOM_REFRESH_INTERVAL=0 bash '$REFRESH'"
+  "HOME='$TARBALL_SANDBOX' DEWEY_DIR='$TARBALL_SANDBOX_DEWEY' DEWEY_TARBALL='file:///nonexistent/path/that/does/not/exist.tar.gz' DEWEY_REFRESH_INTERVAL=0 bash '$REFRESH'"
 
 check "refresh.sh logged the network failure" \
   "test \$(wc -c < '$NETFAIL_LOG') -gt $NETFAIL_BEFORE"
 
-check "refresh.sh did NOT damage CLASSROOM_DIR after network failure" \
-  "test -f '$TARBALL_SANDBOX_CLASSROOM/guide/SKILL.md'"
+check "refresh.sh did NOT damage DEWEY_DIR after network failure" \
+  "test -f '$TARBALL_SANDBOX_DEWEY/guide/SKILL.md'"
 
 # Dev-checkout no-op: with .git/ present, refresh exits silently.
-mkdir -p "$TARBALL_SANDBOX_CLASSROOM/.git"
-check "refresh.sh is a no-op when CLASSROOM_DIR/.git exists" \
+mkdir -p "$TARBALL_SANDBOX_DEWEY/.git"
+check "refresh.sh is a no-op when DEWEY_DIR/.git exists" \
   "
-out=\$(HOME='$TARBALL_SANDBOX' CLASSROOM_DIR='$TARBALL_SANDBOX_CLASSROOM' CLASSROOM_TARBALL='file://$TARBALL_FILE' CLASSROOM_REFRESH_INTERVAL=0 bash '$REFRESH' 2>&1)
+out=\$(HOME='$TARBALL_SANDBOX' DEWEY_DIR='$TARBALL_SANDBOX_DEWEY' DEWEY_TARBALL='file://$TARBALL_FILE' DEWEY_REFRESH_INTERVAL=0 bash '$REFRESH' 2>&1)
 test -z \"\$out\"
 "
-rm -rf "$TARBALL_SANDBOX_CLASSROOM/.git"
+rm -rf "$TARBALL_SANDBOX_DEWEY/.git"
 
 # ============================================================================
 # LAYER 8: LIVE EXTERNAL ENTRY VALIDATION (opt-in)
 # ============================================================================
-# Network-dependent. Off by default; gated by CLASSROOM_VALIDATE_EXTERNAL=1.
+# Network-dependent. Off by default; gated by DEWEY_VALIDATE_EXTERNAL=1.
 # For each external entry in marketplace.json (object source), actually fetches
 # the upstream and confirms it resolves to a valid plugin. Catches the failure
 # class that schema-only lint can't see — entry passes Layer 3b but install
 # would produce a broken plugin.
 section "Layer 8 — Live external entry validation (opt-in)"
 
-if [ "${CLASSROOM_VALIDATE_EXTERNAL:-0}" != "1" ]; then
-  printf "  (skipped — set CLASSROOM_VALIDATE_EXTERNAL=1 to enable)\n"
+if [ "${DEWEY_VALIDATE_EXTERNAL:-0}" != "1" ]; then
+  printf "  (skipped — set DEWEY_VALIDATE_EXTERNAL=1 to enable)\n"
 else
   # Iterate every external entry; one check per entry.
   while IFS= read -r entry_json; do
@@ -738,7 +857,7 @@ for p in m["plugins"]:
   check "[self-test] validator rejects a nonexistent github repo" \
     "
 out=\$(python3 '$REPO_ROOT/tests/lib/validate_external_entry.py' \
-      '{\"name\":\"x\",\"source\":{\"source\":\"github\",\"repo\":\"ckoglmeier/this-does-not-exist-classroom-test\"}}' 2>&1)
+      '{\"name\":\"x\",\"source\":{\"source\":\"github\",\"repo\":\"ckoglmeier/this-does-not-exist-dewey-test\"}}' 2>&1)
 echo \"\$out\" | grep -qi 'not found'
 "
 fi
@@ -748,34 +867,34 @@ fi
 # ============================================================================
 section "Layer 9 — Analytics log"
 
-check "install.sh creates classroom-analytics.log when CLASSROOM_TELEMETRY != 0" \
-  "test -f '$SANDBOX/.claude/classroom-analytics.log'"
+check "install.sh creates dewey-analytics.log when DEWEY_TELEMETRY != 0" \
+  "test -f '$SANDBOX/.claude/dewey-analytics.log'"
 
-check "classroom-analytics.log is a file (not dir, not symlink)" \
-  "test -f '$SANDBOX/.claude/classroom-analytics.log' && test ! -L '$SANDBOX/.claude/classroom-analytics.log'"
+check "dewey-analytics.log is a file (not dir, not symlink)" \
+  "test -f '$SANDBOX/.claude/dewey-analytics.log' && test ! -L '$SANDBOX/.claude/dewey-analytics.log'"
 
 # When telemetry is disabled, analytics log should NOT be created
 NOTEL_SANDBOX="$(mktemp -d)"
-NOTEL_CLASSROOM="$NOTEL_SANDBOX/.claude/classroom"
+NOTEL_DEWEY="$NOTEL_SANDBOX/.claude/dewey"
 TMPDIRS_TO_CLEAN+=("$NOTEL_SANDBOX")
-mkdir -p "$NOTEL_CLASSROOM"
-cp -R "$REPO_ROOT/." "$NOTEL_CLASSROOM/"
-check "install.sh does NOT create analytics log when CLASSROOM_TELEMETRY=0" \
+mkdir -p "$NOTEL_DEWEY"
+cp -R "$REPO_ROOT/." "$NOTEL_DEWEY/"
+check "install.sh does NOT create analytics log when DEWEY_TELEMETRY=0" \
   "
-CLASSROOM_TELEMETRY=0 HOME='$NOTEL_SANDBOX' CLASSROOM_DIR='$NOTEL_CLASSROOM' \
-  CLASSROOM_REPO='file://$REPO_ROOT' CLASSROOM_REF=main CLASSROOM_USE_INPLACE=1 \
+DEWEY_TELEMETRY=0 HOME='$NOTEL_SANDBOX' DEWEY_DIR='$NOTEL_DEWEY' \
+  DEWEY_REPO='file://$REPO_ROOT' DEWEY_REF=main DEWEY_USE_INPLACE=1 \
   bash '$REPO_ROOT/install.sh' >/dev/null 2>&1
-test ! -f '$NOTEL_SANDBOX/.claude/classroom-analytics.log'
+test ! -f '$NOTEL_SANDBOX/.claude/dewey-analytics.log'
 "
 
 # Any JSONL written to the log by the first-run hook must be valid JSON
 check "first-run hook appends valid JSON to analytics log" \
   "
-HOME='$SANDBOX' bash '$SANDBOX/.claude/classroom-first-run.sh' >/dev/null 2>&1
-if [ -s '$SANDBOX/.claude/classroom-analytics.log' ]; then
+HOME='$SANDBOX' bash '$SANDBOX/.claude/dewey-first-run.sh' >/dev/null 2>&1
+if [ -s '$SANDBOX/.claude/dewey-analytics.log' ]; then
   python3 -c '
 import json, sys
-with open(\"$SANDBOX/.claude/classroom-analytics.log\") as f:
+with open(\"$SANDBOX/.claude/dewey-analytics.log\") as f:
     for i, line in enumerate(f, 1):
         line = line.strip()
         if line:
@@ -792,24 +911,24 @@ fi
 # ============================================================================
 # LAYER 10: CODEX SYNC
 # ============================================================================
-section "Layer 10 — Codex sync (classroom-sync-codex.sh)"
+section "Layer 10 — Codex sync (dewey-sync-codex.sh)"
 
-SYNC_SRC="$REPO_ROOT/classroom-sync-codex.sh"
+SYNC_SRC="$REPO_ROOT/dewey-sync-codex.sh"
 
-check "classroom-sync-codex.sh exists" \
+check "dewey-sync-codex.sh exists" \
   "test -f '$SYNC_SRC'"
 
-check "classroom-sync-codex.sh has clean bash syntax" \
+check "dewey-sync-codex.sh has clean bash syntax" \
   "bash -n '$SYNC_SRC'"
 
 # install.sh drops the sync script
-check "install.sh installs classroom-sync-codex.sh to \$HOME/.claude" \
-  "test -x '$SANDBOX/.claude/classroom-sync-codex.sh'"
+check "install.sh installs dewey-sync-codex.sh to \$HOME/.claude" \
+  "test -x '$SANDBOX/.claude/dewey-sync-codex.sh'"
 
-check "installed classroom-sync-codex.sh has clean bash syntax" \
-  "bash -n '$SANDBOX/.claude/classroom-sync-codex.sh'"
+check "installed dewey-sync-codex.sh has clean bash syntax" \
+  "bash -n '$SANDBOX/.claude/dewey-sync-codex.sh'"
 
-# --dry-run: skills found in the Classroom cache, printed but not written
+# --dry-run: skills found in the Dewey cache, printed but not written
 SYNC_SANDBOX="$(mktemp -d)"
 TMPDIRS_TO_CLEAN+=("$SYNC_SANDBOX")
 # Give it a fake ~/.codex so Codex is "detected"
@@ -817,7 +936,7 @@ mkdir -p "$SYNC_SANDBOX/.codex"
 
 check "sync --dry-run lists skills without writing files" \
   "
-sync_out=\$(CLASSROOM_DIR='$REPO_ROOT' CODEX_HOME='$SYNC_SANDBOX/.codex' HOME='$SYNC_SANDBOX' \
+sync_out=\$(DEWEY_DIR='$REPO_ROOT' CODEX_HOME='$SYNC_SANDBOX/.codex' HOME='$SYNC_SANDBOX' \
   bash '$SYNC_SRC' --dry-run 2>&1)
 # Must mention at least one skill or 'dry-run'
 echo \"\$sync_out\" | grep -qiE '(dry-run|skill|SKILL)'
@@ -828,7 +947,7 @@ test ! -d '$SYNC_SANDBOX/.codex/skills' || test -z \"\$(find '$SYNC_SANDBOX/.cod
 # --status: runs without error
 check "sync --status exits 0 and prints output" \
   "
-sync_out=\$(CLASSROOM_DIR='$REPO_ROOT' CODEX_HOME='$SYNC_SANDBOX/.codex' HOME='$SYNC_SANDBOX' \
+sync_out=\$(DEWEY_DIR='$REPO_ROOT' CODEX_HOME='$SYNC_SANDBOX/.codex' HOME='$SYNC_SANDBOX' \
   bash '$SYNC_SRC' --status 2>&1)
 echo \"\$sync_out\" | grep -qiE '(synced|missing|not in Codex|skill)'
 "
@@ -840,7 +959,7 @@ mkdir -p "$LIVE_SYNC_SANDBOX/.codex"
 
 check "sync (no flags) creates symlinks in ~/.codex/skills/" \
   "
-CLASSROOM_DIR='$REPO_ROOT' CODEX_HOME='$LIVE_SYNC_SANDBOX/.codex' HOME='$LIVE_SYNC_SANDBOX' \
+DEWEY_DIR='$REPO_ROOT' CODEX_HOME='$LIVE_SYNC_SANDBOX/.codex' HOME='$LIVE_SYNC_SANDBOX' \
   bash '$SYNC_SRC' >/dev/null 2>&1
 test -d '$LIVE_SYNC_SANDBOX/.codex/skills'
 find '$LIVE_SYNC_SANDBOX/.codex/skills' -name 'SKILL.md' | grep -q .
@@ -849,23 +968,23 @@ find '$LIVE_SYNC_SANDBOX/.codex/skills' -name 'SKILL.md' | grep -q .
 check "synced SKILL.md files are symlinks (not copies)" \
   "find '$LIVE_SYNC_SANDBOX/.codex/skills' -name 'SKILL.md' -type l | grep -q ."
 
-check "synced symlinks point to the Classroom cache" \
+check "synced symlinks point to the Dewey cache" \
   "
 python3 -c '
 import os, sys
 skills_dir = \"$LIVE_SYNC_SANDBOX/.codex/skills\"
-classroom_dir = \"$REPO_ROOT\"
+dewey_dir = \"$REPO_ROOT\"
 for root, dirs, files in os.walk(skills_dir):
     for f in files:
         if f == \"SKILL.md\":
             p = os.path.join(root, f)
             target = os.readlink(p)
-            assert target.startswith(classroom_dir), f\"symlink {p} points outside classroom: {target}\"
+            assert target.startswith(dewey_dir), f\"symlink {p} points outside dewey: {target}\"
 '
 "
 
-check "Guide skill (classroom) is included in sync" \
-  "test -L '$LIVE_SYNC_SANDBOX/.codex/skills/classroom/SKILL.md'"
+check "Guide skill (dewey) is included in sync" \
+  "test -L '$LIVE_SYNC_SANDBOX/.codex/skills/dewey/SKILL.md'"
 
 # Context bundles are symlinked to ~/.codex/context/<plugin>/
 check "sync mirrors context dirs to ~/.codex/context/<plugin>/" \
@@ -879,11 +998,11 @@ check "context symlink resolves to a real directory containing context.md" \
   "test -f '$LIVE_SYNC_SANDBOX/.codex/context/competitive-intelligence/positioning/context.md'"
 
 # --remove: removes symlinks
-check "sync --remove removes only Classroom symlinks" \
+check "sync --remove removes only Dewey symlinks" \
   "
-CLASSROOM_DIR='$REPO_ROOT' CODEX_HOME='$LIVE_SYNC_SANDBOX/.codex' HOME='$LIVE_SYNC_SANDBOX' \
+DEWEY_DIR='$REPO_ROOT' CODEX_HOME='$LIVE_SYNC_SANDBOX/.codex' HOME='$LIVE_SYNC_SANDBOX' \
   bash '$SYNC_SRC' --remove >/dev/null 2>&1
-# After removal, no Classroom SKILL.md symlinks should remain
+# After removal, no Dewey SKILL.md symlinks should remain
 remaining=\$(find '$LIVE_SYNC_SANDBOX/.codex/skills' -name 'SKILL.md' -type l 2>/dev/null | wc -l | tr -d ' ')
 test \"\$remaining\" = '0' && \
 # Context symlinks should also be gone
@@ -895,17 +1014,17 @@ NO_CODEX_SANDBOX="$(mktemp -d)"
 TMPDIRS_TO_CLEAN+=("$NO_CODEX_SANDBOX")
 check "sync exits non-zero when Codex not detected and HOME has no ~/.codex" \
   "
-CLASSROOM_DIR='$REPO_ROOT' CODEX_HOME='$NO_CODEX_SANDBOX/.codex' HOME='$NO_CODEX_SANDBOX' CLASSROOM_CODEX_DETECTED=0 \
+DEWEY_DIR='$REPO_ROOT' CODEX_HOME='$NO_CODEX_SANDBOX/.codex' HOME='$NO_CODEX_SANDBOX' DEWEY_CODEX_DETECTED=0 \
   bash '$SYNC_SRC' >/dev/null 2>&1; test \$? -ne 0
 "
 
-# Classroom not installed: exits with error
-NO_CLASSROOM_SANDBOX="$(mktemp -d)"
-TMPDIRS_TO_CLEAN+=("$NO_CLASSROOM_SANDBOX")
-mkdir -p "$NO_CLASSROOM_SANDBOX/.codex"
-check "sync exits non-zero when CLASSROOM_DIR missing" \
+# Dewey not installed: exits with error
+NO_DEWEY_SANDBOX="$(mktemp -d)"
+TMPDIRS_TO_CLEAN+=("$NO_DEWEY_SANDBOX")
+mkdir -p "$NO_DEWEY_SANDBOX/.codex"
+check "sync exits non-zero when DEWEY_DIR missing" \
   "
-CLASSROOM_DIR='$NO_CLASSROOM_SANDBOX/nonexistent' CODEX_HOME='$NO_CLASSROOM_SANDBOX/.codex' HOME='$NO_CLASSROOM_SANDBOX' \
+DEWEY_DIR='$NO_DEWEY_SANDBOX/nonexistent' CODEX_HOME='$NO_DEWEY_SANDBOX/.codex' HOME='$NO_DEWEY_SANDBOX' \
   bash '$SYNC_SRC' >/dev/null 2>&1; test \$? -ne 0
 "
 
@@ -915,25 +1034,25 @@ TMPDIRS_TO_CLEAN+=("$AGENTS_SANDBOX")
 mkdir -p "$AGENTS_SANDBOX/.codex"
 check "sync --agents-md writes an AGENTS.md file" \
   "
-CLASSROOM_DIR='$REPO_ROOT' CODEX_HOME='$AGENTS_SANDBOX/.codex' HOME='$AGENTS_SANDBOX' \
+DEWEY_DIR='$REPO_ROOT' CODEX_HOME='$AGENTS_SANDBOX/.codex' HOME='$AGENTS_SANDBOX' \
   bash '$SYNC_SRC' --agents-md '$AGENTS_SANDBOX' >/dev/null 2>&1
 test -f '$AGENTS_SANDBOX/AGENTS.md'
-grep -q 'Classroom' '$AGENTS_SANDBOX/AGENTS.md'
+grep -q 'Dewey' '$AGENTS_SANDBOX/AGENTS.md'
 "
 
 check "generated AGENTS.md mentions at least one skill" \
   "grep -qE '^\- \`/' '$AGENTS_SANDBOX/AGENTS.md'"
 
-# install.sh with CLASSROOM_SYNC_CODEX=0 must not run sync
+# install.sh with DEWEY_SYNC_CODEX=0 must not run sync
 NO_SYNC_SANDBOX="$(mktemp -d)"
-NO_SYNC_CLASSROOM="$NO_SYNC_SANDBOX/.claude/classroom"
+NO_SYNC_DEWEY="$NO_SYNC_SANDBOX/.claude/dewey"
 TMPDIRS_TO_CLEAN+=("$NO_SYNC_SANDBOX")
-mkdir -p "$NO_SYNC_CLASSROOM"
-cp -R "$REPO_ROOT/." "$NO_SYNC_CLASSROOM/"
-check "install.sh skips Codex sync when CLASSROOM_SYNC_CODEX=0" \
+mkdir -p "$NO_SYNC_DEWEY"
+cp -R "$REPO_ROOT/." "$NO_SYNC_DEWEY/"
+check "install.sh skips Codex sync when DEWEY_SYNC_CODEX=0" \
   "
-CLASSROOM_SYNC_CODEX=0 HOME='$NO_SYNC_SANDBOX' CLASSROOM_DIR='$NO_SYNC_CLASSROOM' \
-  CLASSROOM_REPO='file://$REPO_ROOT' CLASSROOM_REF=main CLASSROOM_USE_INPLACE=1 \
+DEWEY_SYNC_CODEX=0 HOME='$NO_SYNC_SANDBOX' DEWEY_DIR='$NO_SYNC_DEWEY' \
+  DEWEY_REPO='file://$REPO_ROOT' DEWEY_REF=main DEWEY_USE_INPLACE=1 \
   bash '$REPO_ROOT/install.sh' >/dev/null 2>&1
 test ! -d '$NO_SYNC_SANDBOX/.codex/skills'
 "
@@ -989,25 +1108,25 @@ check "docs/surfaces.md exists" \
 
 # Guide skill mentions surface awareness (so the runtime filtering instructions are present)
 check "guide/SKILL.md documents surface detection" \
-  "grep -q 'CLASSROOM_SURFACE' '$REPO_ROOT/guide/SKILL.md'"
+  "grep -q 'DEWEY_SURFACE' '$REPO_ROOT/guide/SKILL.md'"
 
 # ============================================================================
 # LAYER 12: EXTENSION TELEMETRY (helper, gates, schema, body-strip)
 # ============================================================================
 section "Layer 12 — Extension telemetry"
 
-TELEMETRY_SRC="$REPO_ROOT/classroom-telemetry.sh"
+TELEMETRY_SRC="$REPO_ROOT/dewey-telemetry.sh"
 
-check "classroom-telemetry.sh exists" \
+check "dewey-telemetry.sh exists" \
   "test -f '$TELEMETRY_SRC'"
 
-check "classroom-telemetry.sh has clean bash syntax" \
+check "dewey-telemetry.sh has clean bash syntax" \
   "bash -n '$TELEMETRY_SRC'"
 
-# Build a sandbox classroom cache with one demo plugin + skill
+# Build a sandbox Dewey cache with one demo plugin + skill
 TELEM_SANDBOX="$(mktemp -d)"
 TMPDIRS_TO_CLEAN+=("$TELEM_SANDBOX")
-TELEM_CACHE="$TELEM_SANDBOX/classroom"
+TELEM_CACHE="$TELEM_SANDBOX/dewey"
 TELEM_LOG="$TELEM_SANDBOX/log"
 mkdir -p "$TELEM_CACHE/plugins/demo/.claude-plugin" "$TELEM_CACHE/plugins/demo/skills/foo"
 printf '{"name":"demo"}\n' > "$TELEM_CACHE/plugins/demo/.claude-plugin/plugin.json"
@@ -1016,7 +1135,7 @@ printf -- "---\nname: foo\ndescription: x\n---\nbody\n" > "$TELEM_CACHE/plugins/
 # Basic emit lands a JSONL line with required fields
 check "emit appends a JSON line with ts, event, and provided fields" \
   "
-CLASSROOM_DIR='$TELEM_CACHE' CLASSROOM_LOG='$TELEM_LOG' \
+DEWEY_DIR='$TELEM_CACHE' DEWEY_LOG='$TELEM_LOG' \
   bash '$TELEMETRY_SRC' emit event=test_event plugin=demo parent=foo additions='hello' tools_added='Bash(*),mcp:linear'
 test -f '$TELEM_LOG'
 python3 -c '
@@ -1032,37 +1151,37 @@ assert \"ts\" in o
 '
 "
 
-# Global opt-out: CLASSROOM_TELEMETRY=0 suppresses
+# Global opt-out: DEWEY_TELEMETRY=0 suppresses
 TELEM_LOG2="$TELEM_SANDBOX/log2"
-check "CLASSROOM_TELEMETRY=0 suppresses emit (no log file created)" \
+check "DEWEY_TELEMETRY=0 suppresses emit (no log file created)" \
   "
-CLASSROOM_TELEMETRY=0 CLASSROOM_DIR='$TELEM_CACHE' CLASSROOM_LOG='$TELEM_LOG2' \
+DEWEY_TELEMETRY=0 DEWEY_DIR='$TELEM_CACHE' DEWEY_LOG='$TELEM_LOG2' \
   bash '$TELEMETRY_SRC' emit event=test plugin=demo
 test ! -e '$TELEM_LOG2'
 "
 
 # Plugin-level opt-out: telemetry: false on plugin.json
-TELEM_CACHE2="$TELEM_SANDBOX/classroom2"
+TELEM_CACHE2="$TELEM_SANDBOX/dewey2"
 TELEM_LOG3="$TELEM_SANDBOX/log3"
 mkdir -p "$TELEM_CACHE2/plugins/demo/.claude-plugin" "$TELEM_CACHE2/plugins/demo/skills/foo"
 printf '{"name":"demo","telemetry":false}\n' > "$TELEM_CACHE2/plugins/demo/.claude-plugin/plugin.json"
 printf -- "---\nname: foo\n---\nbody\n" > "$TELEM_CACHE2/plugins/demo/skills/foo/SKILL.md"
 check "plugin telemetry: false suppresses emit (no log file)" \
   "
-CLASSROOM_DIR='$TELEM_CACHE2' CLASSROOM_LOG='$TELEM_LOG3' \
+DEWEY_DIR='$TELEM_CACHE2' DEWEY_LOG='$TELEM_LOG3' \
   bash '$TELEMETRY_SRC' emit event=test plugin=demo parent=foo
 test ! -e '$TELEM_LOG3'
 "
 
 # Skill-level opt-out: telemetry: false in SKILL.md frontmatter (plugin allows)
-TELEM_CACHE3="$TELEM_SANDBOX/classroom3"
+TELEM_CACHE3="$TELEM_SANDBOX/dewey3"
 TELEM_LOG4="$TELEM_SANDBOX/log4"
 mkdir -p "$TELEM_CACHE3/plugins/demo/.claude-plugin" "$TELEM_CACHE3/plugins/demo/skills/foo"
 printf '{"name":"demo"}\n' > "$TELEM_CACHE3/plugins/demo/.claude-plugin/plugin.json"
 printf -- "---\nname: foo\ntelemetry: false\n---\nbody\n" > "$TELEM_CACHE3/plugins/demo/skills/foo/SKILL.md"
 check "skill telemetry: false suppresses emit (no log file)" \
   "
-CLASSROOM_DIR='$TELEM_CACHE3' CLASSROOM_LOG='$TELEM_LOG4' \
+DEWEY_DIR='$TELEM_CACHE3' DEWEY_LOG='$TELEM_LOG4' \
   bash '$TELEMETRY_SRC' emit event=test plugin=demo parent=foo
 test ! -e '$TELEM_LOG4'
 "
@@ -1089,10 +1208,10 @@ assert inst[\"event\"] == \"skill_install\"
 "
 
 # strip-bodies with FORWARD_BODIES=1 preserves
-check "CLASSROOM_TELEMETRY_FORWARD_BODIES=1 preserves additions and user_intent" \
+check "DEWEY_TELEMETRY_FORWARD_BODIES=1 preserves additions and user_intent" \
   "
 out=\$(echo '{\"event\":\"extension_created\",\"parent\":\"foo\",\"additions\":\"secret\",\"user_intent\":\"a\"}' \
-  | CLASSROOM_TELEMETRY_FORWARD_BODIES=1 bash '$TELEMETRY_SRC' strip-bodies)
+  | DEWEY_TELEMETRY_FORWARD_BODIES=1 bash '$TELEMETRY_SRC' strip-bodies)
 echo \"\$out\" | python3 -c '
 import json, sys
 o = json.loads(sys.stdin.read())
@@ -1101,18 +1220,18 @@ assert o[\"user_intent\"] == \"a\"
 '
 "
 
-# install.sh installs classroom-telemetry.sh
-INSTALLED_TELEM="$SANDBOX/.claude/classroom-telemetry.sh"
-check "install.sh installs classroom-telemetry.sh to \$HOME/.claude" \
+# install.sh installs dewey-telemetry.sh
+INSTALLED_TELEM="$SANDBOX/.claude/dewey-telemetry.sh"
+check "install.sh installs dewey-telemetry.sh to \$HOME/.claude" \
   "test -f '$INSTALLED_TELEM' && test -x '$INSTALLED_TELEM'"
 
-check "installed classroom-telemetry.sh has clean bash syntax" \
+check "installed dewey-telemetry.sh has clean bash syntax" \
   "bash -n '$INSTALLED_TELEM'"
 
 # Guide §3 calls the helper for extension_created
-check "guide/SKILL.md §3 calls classroom-telemetry.sh emit for extension_created" \
+check "guide/SKILL.md §3 calls dewey-telemetry.sh emit for extension_created" \
   "grep -A1 -E '^## §3' '$REPO_ROOT/guide/SKILL.md' >/dev/null
-grep -q 'classroom-telemetry.sh emit' '$REPO_ROOT/guide/SKILL.md'
+grep -q 'dewey-telemetry.sh emit' '$REPO_ROOT/guide/SKILL.md'
 grep -q 'event=extension_created' '$REPO_ROOT/guide/SKILL.md'"
 
 # docs/extension-telemetry.md exists
@@ -1120,42 +1239,42 @@ check "docs/extension-telemetry.md exists" \
   "test -f '$REPO_ROOT/docs/extension-telemetry.md'"
 
 check "docs/extension-telemetry.md describes 3 privacy layers" \
-  "grep -q 'CLASSROOM_TELEMETRY=0' '$REPO_ROOT/docs/extension-telemetry.md' &&
+  "grep -q 'DEWEY_TELEMETRY=0' '$REPO_ROOT/docs/extension-telemetry.md' &&
    grep -q 'telemetry: false' '$REPO_ROOT/docs/extension-telemetry.md' &&
-   grep -q 'CLASSROOM_TELEMETRY_FORWARD_BODIES' '$REPO_ROOT/docs/extension-telemetry.md'"
+   grep -q 'DEWEY_TELEMETRY_FORWARD_BODIES' '$REPO_ROOT/docs/extension-telemetry.md'"
 
 # ============================================================================
 # LAYER 13: PROPOSE HELPER (--check, --prepare, propose --dry-run)
 # ============================================================================
 section "Layer 13 — Propose helper"
 
-PROPOSE_SRC="$REPO_ROOT/classroom-propose.sh"
+PROPOSE_SRC="$REPO_ROOT/dewey-propose.sh"
 
-check "classroom-propose.sh exists" \
+check "dewey-propose.sh exists" \
   "test -f '$PROPOSE_SRC'"
 
-check "classroom-propose.sh has clean bash syntax" \
+check "dewey-propose.sh has clean bash syntax" \
   "bash -n '$PROPOSE_SRC'"
 
-check "classroom-propose.sh prints help with no args" \
-  "bash '$PROPOSE_SRC' 2>&1 | grep -q 'classroom-propose'"
+check "dewey-propose.sh prints help with no args" \
+  "bash '$PROPOSE_SRC' 2>&1 | grep -q 'dewey-propose'"
 
-check "classroom-propose.sh rejects unknown subcommand" \
+check "dewey-propose.sh rejects unknown subcommand" \
   "out=\$(bash '$PROPOSE_SRC' nope 2>&1); echo \"\$out\" | grep -q 'unknown command'; test \$(bash '$PROPOSE_SRC' nope 2>&1; echo \$?) -ne 0 || true"
 
 # install.sh installs the helper (sandbox HOME is built earlier in Layer 6)
-INSTALLED_PROPOSE="$SANDBOX/.claude/classroom-propose.sh"
-check "install.sh installs classroom-propose.sh to \$HOME/.claude" \
+INSTALLED_PROPOSE="$SANDBOX/.claude/dewey-propose.sh"
+check "install.sh installs dewey-propose.sh to \$HOME/.claude" \
   "test -f '$INSTALLED_PROPOSE' && test -x '$INSTALLED_PROPOSE'"
 
-check "installed classroom-propose.sh has clean bash syntax" \
+check "installed dewey-propose.sh has clean bash syntax" \
   "bash -n '$INSTALLED_PROPOSE'"
 
-# Dry-run flow: build a fake working clone (looks like a classroom repo) and
+# Dry-run flow: build a fake working clone (looks like a Dewey repo) and
 # verify the helper stages the file, runs lint, and exits 0 without pushing.
 PROPOSE_SANDBOX="$(mktemp -d)"
 TMPDIRS_TO_CLEAN+=("$PROPOSE_SANDBOX")
-PROPOSE_AUTHOR_DIR="$PROPOSE_SANDBOX/classroom-author"
+PROPOSE_AUTHOR_DIR="$PROPOSE_SANDBOX/dewey-author"
 mkdir -p "$PROPOSE_AUTHOR_DIR"
 git init --quiet "$PROPOSE_AUTHOR_DIR"
 ( cd "$PROPOSE_AUTHOR_DIR" && \
@@ -1182,7 +1301,7 @@ printf "Test PR body\n" > "$BODY"
 
 check "propose --dry-run validates file, runs lint, exits 0 without pushing" \
   "
-CLASSROOM_AUTHOR_DIR='$PROPOSE_AUTHOR_DIR' \
+DEWEY_AUTHOR_DIR='$PROPOSE_AUTHOR_DIR' \
   bash '$PROPOSE_SRC' propose \
     --target-path 'plugins/demo/skills/bar/SKILL.md' \
     --content-file '$DRAFT' \
@@ -1204,7 +1323,7 @@ git -C "$PROPOSE_AUTHOR_DIR" branch propose/existing main
 EXISTING_BRANCH_SHA="$(git -C "$PROPOSE_AUTHOR_DIR" rev-parse propose/existing)"
 check "propose --dry-run preserves an existing branch with the same name" \
   "
-CLASSROOM_AUTHOR_DIR='$PROPOSE_AUTHOR_DIR' \
+DEWEY_AUTHOR_DIR='$PROPOSE_AUTHOR_DIR' \
   bash '$PROPOSE_SRC' propose \
     --target-path 'plugins/demo/skills/bar/SKILL.md' \
     --content-file '$DRAFT' \
@@ -1218,7 +1337,7 @@ test \"\$(git -C '$PROPOSE_AUTHOR_DIR' branch --show-current)\" = 'main'
 
 check "propose rejects absolute target-path" \
   "
-out=\$(CLASSROOM_AUTHOR_DIR='$PROPOSE_AUTHOR_DIR' \
+out=\$(DEWEY_AUTHOR_DIR='$PROPOSE_AUTHOR_DIR' \
   bash '$PROPOSE_SRC' propose \
     --target-path '/etc/passwd' \
     --content-file '$DRAFT' \
@@ -1228,7 +1347,7 @@ echo \"\$out\" | grep -q 'must be a repo-relative path'
 
 check "propose rejects target-path with .." \
   "
-out=\$(CLASSROOM_AUTHOR_DIR='$PROPOSE_AUTHOR_DIR' \
+out=\$(DEWEY_AUTHOR_DIR='$PROPOSE_AUTHOR_DIR' \
   bash '$PROPOSE_SRC' propose \
     --target-path '../escape.md' \
     --content-file '$DRAFT' \
@@ -1238,7 +1357,7 @@ echo \"\$out\" | grep -q 'must be a repo-relative path'
 
 check "propose rejects missing content file" \
   "
-out=\$(CLASSROOM_AUTHOR_DIR='$PROPOSE_AUTHOR_DIR' \
+out=\$(DEWEY_AUTHOR_DIR='$PROPOSE_AUTHOR_DIR' \
   bash '$PROPOSE_SRC' propose \
     --target-path 'plugins/demo/skills/bar/SKILL.md' \
     --content-file '$PROPOSE_SANDBOX/nonexistent.md' \
@@ -1250,7 +1369,7 @@ echo \"\$out\" | grep -q 'content file not found'
 # mode would clone from the real GitHub repo.
 check "propose --dry-run errors if working dir missing" \
   "
-out=\$(CLASSROOM_AUTHOR_DIR='$PROPOSE_SANDBOX/missing' \
+out=\$(DEWEY_AUTHOR_DIR='$PROPOSE_SANDBOX/missing' \
   bash '$PROPOSE_SRC' propose \
     --target-path 'plugins/demo/skills/bar/SKILL.md' \
     --content-file '$DRAFT' \
@@ -1259,8 +1378,8 @@ echo \"\$out\" | grep -q 'working dir does not exist'
 "
 
 # Guide §10 references the helper
-check "guide/SKILL.md §10 calls classroom-propose.sh" \
-  "grep -q 'classroom-propose.sh' '$REPO_ROOT/guide/SKILL.md' &&
+check "guide/SKILL.md §10 calls dewey-propose.sh" \
+  "grep -q 'dewey-propose.sh' '$REPO_ROOT/guide/SKILL.md' &&
    grep -q '## §10 Propose' '$REPO_ROOT/guide/SKILL.md'"
 
 # docs exist
@@ -1452,7 +1571,7 @@ done
 # Guide §11 Load: section exists and references the load mechanic
 check "guide/SKILL.md §11 Load is present and documents the load flow" \
   "grep -q '## §11 Load' '$REPO_ROOT/guide/SKILL.md' &&
-   grep -q '/classroom load' '$REPO_ROOT/guide/SKILL.md' &&
+   grep -q '/dewey load' '$REPO_ROOT/guide/SKILL.md' &&
    grep -q 'context.md' '$REPO_ROOT/guide/SKILL.md'"
 
 check "guide argument-hint includes load" \

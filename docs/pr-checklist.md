@@ -1,12 +1,12 @@
 # Central skill PR checklist
 
-Skills in the central Classroom repo are **immutable to most users** — once installed, they're trusted defaults for everyone. That means the bar for merging a new central skill is high. This checklist is what a maintainer should walk through before clicking merge.
+Skills in the central Dewey repo are **immutable to most users** — once installed, they're trusted defaults for everyone. That means the bar for merging a new central skill is high. This checklist is what a maintainer should walk through before clicking merge.
 
 ## What gets reviewed
 
 ### 1. Does this belong in the central repo?
 
-Central skills are for problems **multiple teams** have. If only one team needs this, it should live in their team extension repo (`classroom-extensions-<team>`), not central.
+Central skills are for problems **multiple teams** have. If only one team needs this, it should live in their team extension repo (`dewey-extensions-<team>`), not central.
 
 Test: can you name three teams that would install this on day one? If not, send it back.
 

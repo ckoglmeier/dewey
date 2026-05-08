@@ -1,32 +1,32 @@
 #!/usr/bin/env bash
-# Classroom ↔ Codex skill sync
+# Dewey ↔ Codex skill sync
 #
-# Mirrors Classroom skills into ~/.codex/skills/ so OpenAI Codex picks them up
+# Mirrors Dewey skills into ~/.codex/skills/ so OpenAI Codex picks them up
 # alongside Claude Code. SKILL.md format is identical between the two agents —
-# no translation needed. Uses symlinks so Classroom cache refreshes propagate
+# no translation needed. Uses symlinks so Dewey cache refreshes propagate
 # automatically without re-running the sync.
 #
 # Usage:
-#   classroom-sync-codex.sh             # sync skills, print summary
-#   classroom-sync-codex.sh --status    # show sync state, no changes
-#   classroom-sync-codex.sh --agents-md [DIR]  # write AGENTS.md to DIR (default: .)
-#   classroom-sync-codex.sh --dry-run   # print what would change, no writes
-#   classroom-sync-codex.sh --remove    # remove all Classroom symlinks from ~/.codex/skills/
+#   dewey-sync-codex.sh             # sync skills, print summary
+#   dewey-sync-codex.sh --status    # show sync state, no changes
+#   dewey-sync-codex.sh --agents-md [DIR]  # write AGENTS.md to DIR (default: .)
+#   dewey-sync-codex.sh --dry-run   # print what would change, no writes
+#   dewey-sync-codex.sh --remove    # remove all Dewey symlinks from ~/.codex/skills/
 #
 # Env vars honoured:
-#   CLASSROOM_DIR    Where the Classroom cache lives (default: ~/.claude/classroom)
+#   DEWEY_DIR    Where the Dewey cache lives (default: ~/.claude/dewey)
 #   CODEX_HOME       Where Codex stores its config (default: ~/.codex)
-#   CLASSROOM_CODEX_DETECTED  Test override: auto | 1 | 0 (default: auto)
+#   DEWEY_CODEX_DETECTED  Test override: auto | 1 | 0 (default: auto)
 #
 # Requires: bash 3.2+, find, ln, mkdir, python3 (for --agents-md only)
 
 set -euo pipefail
 
-CLASSROOM_DIR="${CLASSROOM_DIR:-$HOME/.claude/classroom}"
+DEWEY_DIR="${DEWEY_DIR:-$HOME/.claude/dewey}"
 CODEX_HOME="${CODEX_HOME:-$HOME/.codex}"
 CODEX_SKILLS_DIR="$CODEX_HOME/skills"
 CODEX_CONTEXT_DIR="$CODEX_HOME/context"
-CLASSROOM_CODEX_DETECTED="${CLASSROOM_CODEX_DETECTED:-auto}"
+DEWEY_CODEX_DETECTED="${DEWEY_CODEX_DETECTED:-auto}"
 
 DRY_RUN=0
 STATUS_ONLY=0
@@ -53,13 +53,13 @@ while [[ $# -gt 0 ]]; do
 done
 
 # ---- Pre-flight -------------------------------------------------------------
-if [[ ! -d "$CLASSROOM_DIR" ]]; then
-  printf "Classroom cache not found at %s\n" "$CLASSROOM_DIR" >&2
-  printf "Run the Classroom installer first.\n" >&2
+if [[ ! -d "$DEWEY_DIR" ]]; then
+  printf "Dewey cache not found at %s\n" "$DEWEY_DIR" >&2
+  printf "Run the Dewey installer first.\n" >&2
   exit 1
 fi
 
-case "$CLASSROOM_CODEX_DETECTED" in
+case "$DEWEY_CODEX_DETECTED" in
   auto)
     CODEX_DETECTED=0
     [[ -d "$CODEX_HOME" ]] && CODEX_DETECTED=1
@@ -68,7 +68,7 @@ case "$CLASSROOM_CODEX_DETECTED" in
   1) CODEX_DETECTED=1 ;;
   0) CODEX_DETECTED=0 ;;
   *)
-    printf "CLASSROOM_CODEX_DETECTED must be auto, 1, or 0 (got: %s)\n" "$CLASSROOM_CODEX_DETECTED" >&2
+    printf "DEWEY_CODEX_DETECTED must be auto, 1, or 0 (got: %s)\n" "$DEWEY_CODEX_DETECTED" >&2
     exit 1
     ;;
 esac
@@ -82,15 +82,15 @@ fi
 # ---- list_skills: print "skill_name|source_path" pairs ---------------------
 # One line per skill. Avoids associative arrays for bash 3.2 compatibility.
 list_skills() {
-  # Plugins in the Classroom cache
+  # Plugins in the Dewey cache
   while IFS= read -r skill_md; do
     skill_name="$(basename "$(dirname "$skill_md")")"
     printf "%s|%s\n" "$skill_name" "$skill_md"
-  done < <(find "$CLASSROOM_DIR/plugins" -path "*/skills/*/SKILL.md" 2>/dev/null | sort)
+  done < <(find "$DEWEY_DIR/plugins" -path "*/skills/*/SKILL.md" 2>/dev/null | sort)
 
   # Guide skill
-  if [[ -f "$CLASSROOM_DIR/guide/SKILL.md" ]]; then
-    printf "classroom|%s\n" "$CLASSROOM_DIR/guide/SKILL.md"
+  if [[ -f "$DEWEY_DIR/guide/SKILL.md" ]]; then
+    printf "dewey|%s\n" "$DEWEY_DIR/guide/SKILL.md"
   fi
 }
 
@@ -101,7 +101,7 @@ list_context_dirs() {
     [[ -d "$ctx_dir" ]] || continue
     plugin_name="$(basename "$(dirname "$ctx_dir")")"
     printf "%s|%s\n" "$plugin_name" "$ctx_dir"
-  done < <(find "$CLASSROOM_DIR/plugins" -mindepth 2 -maxdepth 2 -type d -name context 2>/dev/null | sort)
+  done < <(find "$DEWEY_DIR/plugins" -mindepth 2 -maxdepth 2 -type d -name context 2>/dev/null | sort)
 }
 
 # Verify we have at least one skill
@@ -111,13 +111,13 @@ while IFS='|' read -r _name _path; do
 done < <(list_skills)
 
 if [[ "$skill_count" -eq 0 ]]; then
-  printf "No skills found in Classroom cache at %s\n" "$CLASSROOM_DIR" >&2
+  printf "No skills found in Dewey cache at %s\n" "$DEWEY_DIR" >&2
   exit 1
 fi
 
 # ---- Remove mode ------------------------------------------------------------
 if [[ "$REMOVE" -eq 1 ]]; then
-  say "Removing Classroom symlinks from $CODEX_SKILLS_DIR and $CODEX_CONTEXT_DIR"
+  say "Removing Dewey symlinks from $CODEX_SKILLS_DIR and $CODEX_CONTEXT_DIR"
   removed=0
   while IFS='|' read -r skill_name src; do
     target="$CODEX_SKILLS_DIR/$skill_name/SKILL.md"
@@ -144,7 +144,7 @@ if [[ "$REMOVE" -eq 1 ]]; then
   done < <(list_context_dirs)
   # Try to remove the context dir if it's empty
   [[ "$DRY_RUN" -eq 0 ]] && rmdir "$CODEX_CONTEXT_DIR" 2>/dev/null || true
-  [[ "$DRY_RUN" -eq 0 ]] && say "Removed $removed Classroom symlink(s) from Codex."
+  [[ "$DRY_RUN" -eq 0 ]] && say "Removed $removed Dewey symlink(s) from Codex."
   [[ "$DRY_RUN" -eq 1 ]] && say "[dry-run] Would remove $removed symlink(s)."
   exit 0
 fi
@@ -175,10 +175,10 @@ while IFS='|' read -r skill_name src; do
     fi
 
   elif [[ -f "$target" ]]; then
-    # Regular file — don't clobber a non-Classroom file
+    # Regular file — don't clobber a non-Dewey file
     stale=$((stale + 1))
     if [[ "$STATUS_ONLY" -eq 1 ]]; then
-      printf "  %s %-40s (existing file, not managed by Classroom)\n" "$(yellow ●)" "$skill_name"
+      printf "  %s %-40s (existing file, not managed by Dewey)\n" "$(yellow ●)" "$skill_name"
     elif [[ "$DRY_RUN" -eq 1 ]]; then
       printf "  %s %-40s (would skip — existing non-symlink file)\n" "$(yellow ●)" "$skill_name"
     fi
@@ -221,7 +221,7 @@ while IFS='|' read -r plugin_name src; do
   elif [[ -e "$target" ]]; then
     ctx_stale=$((ctx_stale + 1))
     if [[ "$STATUS_ONLY" -eq 1 ]]; then
-      printf "  %s %-40s (existing path, not managed by Classroom)\n" "$(yellow ●)" "context/$plugin_name"
+      printf "  %s %-40s (existing path, not managed by Dewey)\n" "$(yellow ●)" "context/$plugin_name"
     elif [[ "$DRY_RUN" -eq 1 ]]; then
       printf "  %s %-40s (would skip — existing non-symlink)\n" "$(yellow ●)" "context/$plugin_name"
     fi
@@ -262,8 +262,8 @@ if [[ "$AGENTS_MD" -eq 1 ]]; then
   say "Generating $agents_file"
 
   {
-    printf "# Classroom Skills\n\n"
-    printf "This project has access to skills from the [Classroom](https://github.com/ckoglmeier/classroom) marketplace.\n"
+    printf "# Dewey Skills\n\n"
+    printf "This project has access to skills from the [Dewey](https://github.com/ckoglmeier/dewey) marketplace.\n"
     printf "The following skills are available in your Codex environment:\n\n"
 
     while IFS='|' read -r skill_name src; do
@@ -294,7 +294,7 @@ PY
     printf "/meeting-prep for tomorrow's product review\n"
     printf "/competitive-analysis on Acme Corp's latest pricing\n"
     printf "\`\`\`\n\n"
-    printf "To install more skills (Claude Code): \`/classroom install\`\n"
+    printf "To install more skills (Claude Code): \`/dewey install\`\n"
   } > "$agents_file"
 
   note "Written: $agents_file"

@@ -1,8 +1,8 @@
 # Proposing canonical changes
 
-Most Classroom users only consume skills. A smaller group authors them — adds new ones, updates existing ones, promotes patterns from extensions back to canonical.
+Most Dewey users only consume skills. A smaller group authors them — adds new ones, updates existing ones, promotes patterns from extensions back to canonical.
 
-The `/classroom propose` flow exists to make this path conversational instead of "clone the repo, edit, PR." Non-engineer authors should not have to touch git directly.
+The `/dewey propose` flow exists to make this path conversational instead of "clone the repo, edit, PR." Non-engineer authors should not have to touch git directly.
 
 ## Six sub-flows
 
@@ -23,7 +23,7 @@ The `promote` and `promote-context-extension` sub-flows close the loop: extensio
 
 1. The Guide drafts the change conversationally and shows it to you.
 2. You approve the draft.
-3. The helper at `~/.claude/classroom-propose.sh` clones (or refreshes) a working copy of the canonical Classroom repo at `~/.claude/classroom-author/`.
+3. The helper at `~/.claude/dewey-propose.sh` clones (or refreshes) a working copy of the canonical Dewey repo at `~/.claude/dewey-author/`.
 4. It places the drafted content at the right path, runs `tests/run.sh` against the change, and commits to a feature branch.
 5. It pushes the branch and opens a PR via the GitHub CLI (`gh`).
 6. CODEOWNERS auto-tags the skill's owner; CI runs `tests/run.sh` again.
@@ -35,19 +35,19 @@ The `promote` and `promote-context-extension` sub-flows close the loop: extensio
 - `git` installed.
 - Network access to GitHub.
 
-If you don't have direct write access to the canonical Classroom repo, the helper auto-forks and opens a cross-repo PR from your fork. You don't need to set anything up — `gh repo fork` handles it.
+If you don't have direct write access to the canonical Dewey repo, the helper auto-forks and opens a cross-repo PR from your fork. You don't need to set anything up — `gh repo fork` handles it.
 
 ## Manual usage
 
 ```bash
 # Verify prerequisites
-bash ~/.claude/classroom-propose.sh --check
+bash ~/.claude/dewey-propose.sh --check
 
 # Refresh the working clone without doing anything else
-bash ~/.claude/classroom-propose.sh --prepare
+bash ~/.claude/dewey-propose.sh --prepare
 
 # Stage a draft and open a PR (the Guide builds these args for you)
-bash ~/.claude/classroom-propose.sh propose \
+bash ~/.claude/dewey-propose.sh propose \
   --target-path plugins/competitive-intelligence/skills/competitive-deepdive/SKILL.md \
   --content-file /tmp/draft.md \
   --branch propose/new-skill-competitive-deepdive-20260506 \
@@ -55,10 +55,10 @@ bash ~/.claude/classroom-propose.sh propose \
   --body-file /tmp/body.md
 
 # Dry-run — same flow but stops before pushing
-bash ~/.claude/classroom-propose.sh propose ... --dry-run
+bash ~/.claude/dewey-propose.sh propose ... --dry-run
 ```
 
-The Guide handles all of this in `/classroom propose` — manual usage is mostly for debugging.
+The Guide handles all of this in `/dewey propose` — manual usage is mostly for debugging.
 
 ## What the PR body should contain
 
@@ -71,9 +71,9 @@ The Guide drafts this for you, but if you're writing it manually, include:
 
 ## Approval
 
-Approval happens on GitHub — there's no Classroom-specific gate. CODEOWNERS routes the PR to the right reviewer; once they approve and CI passes, anyone with merge rights can merge.
+Approval happens on GitHub — there's no Dewey-specific gate. CODEOWNERS routes the PR to the right reviewer; once they approve and CI passes, anyone with merge rights can merge.
 
-When Classroom moves to a hosted version, this layer gets richer — UI for non-technical authors, telemetry-informed reviewer hints, staged rollouts. For now, GitHub is the approval system.
+When Dewey moves to a hosted version, this layer gets richer — UI for non-technical authors, telemetry-informed reviewer hints, staged rollouts. For now, GitHub is the approval system.
 
 ## Related
 

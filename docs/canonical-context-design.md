@@ -8,7 +8,7 @@
 
 Skills tell Claude *how to do something*. Knowledge work also requires *reference material* — battlecards, positioning notes, brand voice guidelines, ICP definitions, FAQ corpora, customer account profiles, strategy documents. This is content, not procedure.
 
-Today in Classroom this content has no clean home:
+Today in Dewey this content has no clean home:
 
 - **Embed it in skill bodies** — battlecards literally inside `competitive-analysis/SKILL.md`. Bloats skills, duplicates content across every skill that needs it, every refresh ripples through N skills.
 - **Drop it in global `~/.claude/CLAUDE.md`** — one shared blob with no scoping; every chat loads everything.
@@ -16,7 +16,7 @@ Today in Classroom this content has no clean home:
 - **Personal memory** — doesn't share across the team.
 - **MCP servers** — way too heavy for what's essentially a markdown corpus.
 
-What's missing is the same machinery skills get — *publish once, install centrally, owned by someone, versioned, extensible without forking* — but for content. A Competitive Intelligence team should be able to publish their battlecards through Classroom; a sales AE should be able to install the bundle; their `competitive-analysis` skill should know to load those battlecards when it runs; updates should flow through automatically; the AE should be able to add their team's variations as a local extension on top.
+What's missing is the same machinery skills get — *publish once, install centrally, owned by someone, versioned, extensible without forking* — but for content. A Competitive Intelligence team should be able to publish their battlecards through Dewey; a sales AE should be able to install the bundle; their `competitive-analysis` skill should know to load those battlecards when it runs; updates should flow through automatically; the AE should be able to add their team's variations as a local extension on top.
 
 This doc records the selected v1 design and the tradeoffs behind it.
 
@@ -33,7 +33,7 @@ This doc records the selected v1 design and the tradeoffs behind it.
 - Generated/synthesized knowledge (notes synthesized from sessions, learned customer facts) — defer
 - Full-text search or semantic retrieval over context — defer
 - Selective loading by section/chunking — defer (large docs split into multiple files for now)
-- Hosted UI for browsing context — defer to hosted Classroom
+- Hosted UI for browsing context — defer to hosted Dewey
 
 ## Design dimensions
 
@@ -134,7 +134,7 @@ Then ...
 **Cons:**
 - Slightly more spec — `requires-context:` field, a placeholder convention.
 - Frontmatter and skill body can drift unless lint verifies that declared context is also referenced in the load step.
-- No reliable `context_loaded` telemetry unless loading goes through a Classroom-controlled loader later.
+- No reliable `context_loaded` telemetry unless loading goes through a Dewey-controlled loader later.
 
 ## Loading model
 
@@ -167,7 +167,7 @@ On install, symlink each plugin's `context/` into a known path (`~/.claude/conte
 
 **Tradeoff:** marginal value over Loading-1; the path is shorter but the mechanic is the same.
 
-**Recommendation:** Loading-1 (convention-based explicit Read). Conventions over magic. Install-time injection makes hot-reload broken; symlinks add complexity for shorter paths. The convention is what we already use everywhere else in Classroom. The important addition is lint: v1 should not rely on authors remembering to keep frontmatter and load instructions in sync.
+**Recommendation:** Loading-1 (convention-based explicit Read). Conventions over magic. Install-time injection makes hot-reload broken; symlinks add complexity for shorter paths. The convention is what we already use everywhere else in Dewey. The important addition is lint: v1 should not rely on authors remembering to keep frontmatter and load instructions in sync.
 
 ## Extension model
 
@@ -184,7 +184,7 @@ extends-context: brand/voice
 (Adds regional examples on top of canonical brand voice.)
 ```
 
-Skills loading `brand/voice` via the convention also pull in any `extends-context: brand/voice` files the user has installed. The Guide's `/classroom extend` flow gets a context-extension sub-flow.
+Skills loading `brand/voice` via the convention also pull in any `extends-context: brand/voice` files the user has installed. The Guide's `/dewey extend` flow gets a context-extension sub-flow.
 
 V1 merge semantics should be append-only and deterministic:
 
@@ -205,7 +205,7 @@ This mirrors what already works for skills — central updates flow through, loc
 
 **Validation: strict in CI, helpful at install, loud at runtime.** Marketplace PRs should fail if declared context paths do not resolve or if a skill declares context without loading it. Install should explain missing dependencies and offer to install them. Runtime should fail clearly if required context is unavailable. Silent partial loading is too easy to mistake for a correct answer.
 
-**Telemetry: no new context telemetry in v1.** With convention-based Read, Classroom cannot reliably know what actually reached the model. `context_declared`, `context_installed`, and `context_loaded` all stay deferred until there is a runtime loader or a clearer product question.
+**Telemetry: no new context telemetry in v1.** With convention-based Read, Dewey cannot reliably know what actually reached the model. `context_declared`, `context_installed`, and `context_loaded` all stay deferred until there is a runtime loader or a clearer product question.
 
 ## Content safety
 
@@ -220,14 +220,14 @@ Context files are markdown, but they are still prompt material. Battlecards, cus
 
 1. **Install behavior for missing dependencies** — install should offer to install missing required context plugins. If the dependency cannot be installed or the user declines, the skill install fails clearly. Do not install a skill in a known-incomplete state.
 2. **Version references** — v1 does not support versioned context references such as `brand/voice@^1.2.0`. `requires-context:` resolves against the latest installed compatible plugin. Plugin versions still exist, but dependency version solving is deferred.
-3. **Telemetry** — no new context telemetry in v1. Existing plugin install/update telemetry, if any, is enough. Defer `context_declared`, `context_installed`, and `context_loaded` until Classroom has a runtime loader or a clearer product question.
-4. **`/classroom propose` for context** — yes, extend the existing propose flow with `propose new-context`, `propose update-context`, and `propose promote-context-extension`. Use the same target-path mechanic as skill proposals.
+3. **Telemetry** — no new context telemetry in v1. Existing plugin install/update telemetry, if any, is enough. Defer `context_declared`, `context_installed`, and `context_loaded` until Dewey has a runtime loader or a clearer product question.
+4. **`/dewey propose` for context** — yes, extend the existing propose flow with `propose new-context`, `propose update-context`, and `propose promote-context-extension`. Use the same target-path mechanic as skill proposals.
 5. **Surfaces and context** — lint enforces surface compatibility across the dependency graph. A skill that supports `chat` cannot require context from a plugin that does not support `chat`.
 6. **Size and chunking** — v1 does not implement chunking or retrieval. Lint warns when a single context file exceeds 20 KB or when a skill's total declared context exceeds 80 KB. Lint fails when a single context file exceeds 100 KB or total declared context exceeds 300 KB unless the context entry explicitly sets `allow-large-context: true`.
 7. **Context for Codex** — yes, Codex sync mirrors `context/` alongside skills. Codex users should be able to load the same canonical context.
 8. **Metadata location** — v1 stores context bundle metadata in `plugin.json` only. Do not add per-context manifests yet.
-9. **Global / always-loaded context — REJECTED.** Nothing about Classroom is auto-loaded for every conversation. The bytes-per-conversation tax is wrong, and an always-on bundle makes context invisible to the user. Context only enters a session through one of two paths: a skill's `requires-context:` (procedural) or an explicit `/classroom load [topic]` (ad-hoc).
-10. **`/classroom load [topic]` — Guide-mediated, on-demand.** New subcommand. Empty topic → lists all bundles, asks. Ambiguous topic → lists matches, asks. Single match → confirms and loads. "Load" reads the resolved primary file literally into the conversation; no summarization. No telemetry in v1 (load is convention-based and can't be reliably observed; user might load and never reference it).
+9. **Global / always-loaded context — REJECTED.** Nothing about Dewey is auto-loaded for every conversation. The bytes-per-conversation tax is wrong, and an always-on bundle makes context invisible to the user. Context only enters a session through one of two paths: a skill's `requires-context:` (procedural) or an explicit `/dewey load [topic]` (ad-hoc).
+10. **`/dewey load [topic]` — Guide-mediated, on-demand.** New subcommand. Empty topic → lists all bundles, asks. Ambiguous topic → lists matches, asks. Single match → confirms and loads. "Load" reads the resolved primary file literally into the conversation; no summarization. No telemetry in v1 (load is convention-based and can't be reliably observed; user might load and never reference it).
 11. **Naming convention: `context.md`** is the primary file in each bundle. Lint warns (doesn't fail) if a bundle's `path:` doesn't end in `context.md` — older bundles may use other names; the resolver always uses the `path:` from `plugin.json` rather than guessing.
 
 ## Implementation plan
@@ -237,9 +237,9 @@ Context files are markdown, but they are still prompt material. Battlecards, cus
 3. **ID resolution** — `brand/voice` resolves through marketplace metadata to the installed context path. Skills should reference stable IDs in frontmatter and generated load instructions, not raw repo paths.
 4. **Convention** — skills using context include a `First, load:` step near the top of the body referencing the declared IDs. The Guide drafts this automatically when authoring a skill that declares `requires-context:`.
 5. **Test layer** — Layer 14 validates that `requires-context:` IDs resolve, declared IDs appear in the load step, extensions target existing context IDs, size thresholds are not exceeded without an explicit override, and surface compatibility holds across the dependency graph.
-6. **Codex sync** — extend `classroom-sync-codex.sh` to symlink `context/` directories alongside skills.
+6. **Codex sync** — extend `dewey-sync-codex.sh` to symlink `context/` directories alongside skills.
 7. **Propose flow** — new sub-flows: `propose new-context`, `propose update-context`, `propose promote-context-extension`.
-8. **Extension convention** — `extends-context:` field; Guide's `/classroom extend` adds a context branch. Loading order is canonical first, then extensions sorted by plugin name and extension name. Extensions append in v1; they do not override canonical context.
+8. **Extension convention** — `extends-context:` field; Guide's `/dewey extend` adds a context branch. Loading order is canonical first, then extensions sorted by plugin name and extension name. Extensions append in v1; they do not override canonical context.
 9. **Install behavior** — installer detects missing required context plugins, explains the dependency, and offers to install them. If dependency install is declined or unavailable, the skill install fails clearly.
 10. **Runtime behavior** — if a required context ID cannot be resolved when a skill runs, fail loudly with the missing ID and suggested install command. Do not silently proceed with partial context.
 11. **Telemetry** — no new context telemetry in v1.
@@ -249,13 +249,13 @@ Estimated total effort: ~1-1.5 days. More if version constraints, runtime-mediat
 ## What this doc is NOT
 
 - Not a full product roadmap — this is the v1 implementation spec for canonical authored context.
-- Not a commitment to ship ahead of other Classroom roadmap items (hosted version, MCP for native push).
+- Not a commitment to ship ahead of other Dewey roadmap items (hosted version, MCP for native push).
 - Not a discussion of generated/synthesized knowledge (live session notes, learned customer facts). That's a separate future doc.
 
 ## Deferred decisions
 
 - **Versioned context dependencies** — revisit only if context updates break downstream skills often enough to justify resolver complexity.
-- **Runtime loader** — revisit if Classroom needs reliable `context_loaded` telemetry, automatic extension composition, or more consistent runtime failure behavior.
+- **Runtime loader** — revisit if Dewey needs reliable `context_loaded` telemetry, automatic extension composition, or more consistent runtime failure behavior.
 - **Chunking/retrieval** — revisit when real context bundles exceed the v1 size thresholds in normal use.
 - **Per-context manifests** — revisit if `plugin.json` context metadata becomes too noisy or authors need metadata close to individual files.
 

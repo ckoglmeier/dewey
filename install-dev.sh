@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# Classroom installer — DEVELOPER / CONTRIBUTOR variant
+# Dewey installer — DEVELOPER / CONTRIBUTOR variant
 #
-# This is for Classroom contributors who want a live git checkout at
-# ~/.claude/classroom that they can `git pull` and edit. Regular users should
+# This is for Dewey contributors who want a live git checkout at
+# ~/.claude/dewey that they can `git pull` and edit. Regular users should
 # use install.sh instead, which is faster, has no git dependency, and gets
 # updates via the background refresh script.
 #
 # What this does:
-#   1. git clones (or pulls) the Classroom reference repo to ~/.claude/classroom
-#   2. Copies the Guide skill to ~/.claude/skills/classroom
+#   1. git clones (or pulls) the Dewey reference repo to ~/.claude/dewey
+#   2. Copies the Guide skill to ~/.claude/skills/dewey
 #   3. Adds the marketplace + first-run hook to ~/.claude/settings.json
 #
 # Usage:
@@ -17,14 +17,14 @@
 set -euo pipefail
 
 # ---- Configurable -----------------------------------------------------------
-CLASSROOM_REPO="${CLASSROOM_REPO:-https://github.com/ckoglmeier/classroom.git}"
-CLASSROOM_REF="${CLASSROOM_REF:-main}"
-CLASSROOM_DIR="${CLASSROOM_DIR:-$HOME/.claude/classroom}"
+DEWEY_REPO="${DEWEY_REPO:-https://github.com/ckoglmeier/dewey.git}"
+DEWEY_REF="${DEWEY_REF:-main}"
+DEWEY_DIR="${DEWEY_DIR:-$HOME/.claude/dewey}"
 SETTINGS_FILE="$HOME/.claude/settings.json"
-GUIDE_SKILL_DIR="$HOME/.claude/skills/classroom"
-HOOK_SCRIPT="$HOME/.claude/classroom-first-run.sh"
-REFRESH_SCRIPT="$HOME/.claude/classroom-refresh.sh"
-FIRST_RUN_MARKER="$HOME/.claude/classroom-onboarded"
+GUIDE_SKILL_DIR="$HOME/.claude/skills/dewey"
+HOOK_SCRIPT="$HOME/.claude/dewey-first-run.sh"
+REFRESH_SCRIPT="$HOME/.claude/dewey-refresh.sh"
+FIRST_RUN_MARKER="$HOME/.claude/dewey-onboarded"
 
 # ---- Helpers ----------------------------------------------------------------
 say() { printf "\n\033[1;36m▸\033[0m %s\n" "$*"; }
@@ -36,7 +36,7 @@ require() {
 }
 
 # ---- Preflight --------------------------------------------------------------
-say "Classroom dev installer starting"
+say "Dewey dev installer starting"
 
 require git
 
@@ -49,20 +49,20 @@ mkdir -p "$HOME/.claude"
 mkdir -p "$HOME/.claude/skills"
 
 # ---- Step 1: clone/update the dev checkout ----------------------------------
-if [ -d "$CLASSROOM_DIR/.git" ]; then
-  say "Updating existing dev checkout at $CLASSROOM_DIR"
-  git -C "$CLASSROOM_DIR" fetch --quiet origin "$CLASSROOM_REF"
-  git -C "$CLASSROOM_DIR" checkout --quiet "$CLASSROOM_REF"
-  git -C "$CLASSROOM_DIR" pull --quiet --ff-only origin "$CLASSROOM_REF"
-elif [ -d "$CLASSROOM_DIR" ] && [ -n "$(ls -A "$CLASSROOM_DIR" 2>/dev/null)" ]; then
-  die "$CLASSROOM_DIR exists but is not a git repo. Move it aside and re-run."
+if [ -d "$DEWEY_DIR/.git" ]; then
+  say "Updating existing dev checkout at $DEWEY_DIR"
+  git -C "$DEWEY_DIR" fetch --quiet origin "$DEWEY_REF"
+  git -C "$DEWEY_DIR" checkout --quiet "$DEWEY_REF"
+  git -C "$DEWEY_DIR" pull --quiet --ff-only origin "$DEWEY_REF"
+elif [ -d "$DEWEY_DIR" ] && [ -n "$(ls -A "$DEWEY_DIR" 2>/dev/null)" ]; then
+  die "$DEWEY_DIR exists but is not a git repo. Move it aside and re-run."
 else
-  say "Cloning dev checkout into $CLASSROOM_DIR"
-  git clone --quiet --branch "$CLASSROOM_REF" "$CLASSROOM_REPO" "$CLASSROOM_DIR"
+  say "Cloning dev checkout into $DEWEY_DIR"
+  git clone --quiet --branch "$DEWEY_REF" "$DEWEY_REPO" "$DEWEY_DIR"
 fi
 
 # ---- Step 2: install the Guide as a personal skill --------------------------
-GUIDE_SOURCE="$CLASSROOM_DIR/guide/SKILL.md"
+GUIDE_SOURCE="$DEWEY_DIR/guide/SKILL.md"
 if [ ! -f "$GUIDE_SOURCE" ]; then
   die "Guide skill not found at $GUIDE_SOURCE."
 fi
@@ -82,10 +82,10 @@ if [ ! -f "$SETTINGS_FILE" ]; then
   cat > "$SETTINGS_FILE" <<EOF
 {
   "extraKnownMarketplaces": {
-    "classroom": {
+    "dewey": {
       "source": "url",
-      "url": "$CLASSROOM_REPO",
-      "ref": "$CLASSROOM_REF"
+      "url": "$DEWEY_REPO",
+      "ref": "$DEWEY_REF"
     }
   },
   "hooks": {
@@ -104,7 +104,7 @@ if [ ! -f "$SETTINGS_FILE" ]; then
 }
 EOF
 elif command -v python3 >/dev/null 2>&1; then
-  python3 - "$SETTINGS_FILE" "$CLASSROOM_REPO" "$CLASSROOM_REF" "$HOOK_SCRIPT" <<'PY'
+  python3 - "$SETTINGS_FILE" "$DEWEY_REPO" "$DEWEY_REF" "$HOOK_SCRIPT" <<'PY'
 import json, sys
 path, repo, ref, hook_script = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
 try:
@@ -114,7 +114,7 @@ except (json.JSONDecodeError, FileNotFoundError):
     data = {}
 
 mkts = data.setdefault("extraKnownMarketplaces", {})
-mkts["classroom"] = {"source": "url", "url": repo, "ref": ref}
+mkts["dewey"] = {"source": "url", "url": repo, "ref": ref}
 
 hooks = data.setdefault("hooks", {})
 session_start = hooks.setdefault("SessionStart", [])
@@ -137,12 +137,12 @@ else
 fi
 
 # ---- Step 4: write a no-op refresh script -----------------------------------
-# refresh.sh is a no-op when CLASSROOM_DIR/.git exists, but we still drop a
+# refresh.sh is a no-op when DEWEY_DIR/.git exists, but we still drop a
 # stub so the SessionStart hook doesn't error if it's referenced.
 say "Writing no-op refresh stub to $REFRESH_SCRIPT (dev checkout updates via git pull)"
 cat > "$REFRESH_SCRIPT" <<'EOF'
 #!/usr/bin/env bash
-# Dev mode: refresh is a no-op. Update with `git -C ~/.claude/classroom pull`.
+# Dev mode: refresh is a no-op. Update with `git -C ~/.claude/dewey pull`.
 exit 0
 EOF
 chmod +x "$REFRESH_SCRIPT"
@@ -165,11 +165,11 @@ if [ -f "\$MARKER" ]; then
 fi
 
 cat <<'WELCOME'
-Welcome to Classroom — your company's skill marketplace.
+Welcome to Dewey — your company's skill marketplace.
 
 This is your first time. To get started, type:
 
-  /classroom
+  /dewey
 
 The Guide will ask your team and role, recommend a few skills, and walk you through installing them. Everything confirms before it runs — nothing happens without your yes.
 WELCOME
@@ -181,9 +181,9 @@ EOF
 chmod +x "$HOOK_SCRIPT"
 
 # ---- Done -------------------------------------------------------------------
-say "Classroom (dev) installed."
+say "Dewey (dev) installed."
 echo
-echo "  Dev checkout:   $CLASSROOM_DIR  (git pull to update)"
+echo "  Dev checkout:   $DEWEY_DIR  (git pull to update)"
 echo "  Guide skill:    $GUIDE_SKILL_DIR/SKILL.md"
 echo "  Settings:       $SETTINGS_FILE"
 echo "  First-run hook: $HOOK_SCRIPT"

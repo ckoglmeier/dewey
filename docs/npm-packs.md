@@ -1,13 +1,13 @@
-# Publishing a Classroom plugin to npm
+# Publishing a Dewey plugin to npm
 
-Any Classroom plugin can be distributed as an npm package in addition to (or instead of) the default tarball/directory delivery. Publishing to npm gives you versioned, pinnable releases that teams can install without pointing at a git repository.
+Any Dewey plugin can be distributed as an npm package in addition to (or instead of) the default tarball/directory delivery. Publishing to npm gives you versioned, pinnable releases that teams can install without pointing at a git repository.
 
-Claude Code's plugin system already understands npm sources — Classroom just defines the expected layout.
+Claude Code's plugin system already understands npm sources — Dewey just defines the expected layout.
 
 ## Package layout
 
 ```
-classroom-plugin-<name>/
+dewey-plugin-<name>/
 ├── package.json
 ├── .claude-plugin/
 │   └── plugin.json        ← same schema as in-tree plugins
@@ -16,15 +16,15 @@ classroom-plugin-<name>/
         └── SKILL.md
 ```
 
-The npm package is a thin wrapper around the standard Classroom plugin directory structure. No additional manifest file is needed — `plugin.json` is the source of truth.
+The npm package is a thin wrapper around the standard Dewey plugin directory structure. No additional manifest file is needed — `plugin.json` is the source of truth.
 
 ### package.json
 
 ```json
 {
-  "name": "@myorg/classroom-plugin-meeting-prep",
+  "name": "@myorg/dewey-plugin-meeting-prep",
   "version": "1.2.0",
-  "description": "Meeting prep skills for Classroom",
+  "description": "Meeting prep skills for Dewey",
   "files": [".claude-plugin", "skills"],
   "license": "MIT"
 }
@@ -58,7 +58,7 @@ Reference the package by its npm name. Two forms:
 ```json
 {
   "name": "meeting-prep",
-  "source": { "source": "npm", "package": "@myorg/classroom-plugin-meeting-prep" },
+  "source": { "source": "npm", "package": "@myorg/dewey-plugin-meeting-prep" },
   "description": "Prepare for meetings: agendas, pre-reads, follow-up briefs.",
   "category": "operations",
   "tags": ["meetings", "async"]
@@ -69,7 +69,7 @@ Reference the package by its npm name. Two forms:
 ```json
 {
   "name": "meeting-prep",
-  "source": { "source": "npm", "package": "@myorg/classroom-plugin-meeting-prep", "version": "1.2.0" },
+  "source": { "source": "npm", "package": "@myorg/dewey-plugin-meeting-prep", "version": "1.2.0" },
   "description": "Prepare for meetings: agendas, pre-reads, follow-up briefs.",
   "category": "operations",
   "tags": ["meetings", "async"]
@@ -81,7 +81,7 @@ The test suite validates that every `npm` source entry has a `package` field (La
 ## Publishing
 
 ```bash
-cd classroom-plugin-meeting-prep
+cd dewey-plugin-meeting-prep
 npm publish --access public
 ```
 

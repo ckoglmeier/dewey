@@ -88,7 +88,7 @@ Running Phase 2 retroactively against 28 skills will probably surface failures. 
 For each skill × each trigger, ask Claude (via Anthropic SDK) "given this user prompt and the list of installed skills, which would you invoke?" Assert the right skill is picked.
 
 Same opt-in pattern as Layer 8:
-- Gated by `CLASSROOM_EVAL_TRIGGERS=1` env var
+- Gated by `DEWEY_EVAL_TRIGGERS=1` env var
 - Requires `ANTHROPIC_API_KEY`
 - Skips silently when env vars are unset
 - Borrows test pattern from `anthropic-skills:skill-creator` (which already runs trigger evals)
