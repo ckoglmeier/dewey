@@ -1,6 +1,12 @@
 ---
 name: customer-interview-prep
 description: Prepares the user for a customer interview with open-ended questions and a one-page brief. Use when the user mentions an upcoming customer call, discovery, win/loss, churn, or research interview.
+triggers:
+  - "help me prep for my customer interview with Acme tomorrow"
+  - "I have a discovery call with a new prospect, get me ready"
+  - "prep me for a win/loss interview with the buyer who churned last month"
+  - "what should I ask in my churn call with Sarah?"
+  - "I'm doing a research interview with a customer this afternoon — draft the brief"
 argument-hint: "[customer-name or account]"
 ---
 

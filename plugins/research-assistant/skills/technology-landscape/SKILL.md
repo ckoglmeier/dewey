@@ -1,13 +1,12 @@
 ---
 name: technology-landscape
-description: >
-  Map a technology category - what tools exist, their capabilities, maturity, adoption,
-  and how they compare. Use when someone asks "what tools exist for [category]", "map
-  the [technology] space", "what are our options for [capability]", "evaluate [category]
-  tools", or any request to understand what's available in a technology category. Different
-  from research-competitive-analysis (you're evaluating tools for your own use, not positioning
-  against rivals) and industry-trend (tactical tool mapping, not macro forces). Can be
-  invoked directly or via the research orchestrator.
+description: Map a technology category - what tools exist, their capabilities, maturity, adoption, and how they compare. Use when asked what tools exist for a capability, how to evaluate vendors in a category, or what options are available for a technical need.
+triggers:
+  - "map the customer data platform landscape for us"
+  - "what tools exist for data observability and how do they compare"
+  - "we need a product analytics capability — what are our options"
+  - "evaluate the top MLOps platforms for a mid-market engineering team"
+  - "what should we use for workflow automation and how mature are the vendors"
 ---
 
 # Technology Landscape Research Type

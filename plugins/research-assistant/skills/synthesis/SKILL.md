@@ -1,10 +1,6 @@
 ---
 name: synthesis
-description: >
-  Synthesis skill for combining multiple research agent outputs into a single coherent
-  prose document. Handles cross-cutting themes, contradictions, confidence assessment,
-  and type-specific output formats. Used by the research orchestrator after research
-  agents complete. Not directly invoked by users.
+description: Synthesize multiple research agent outputs into a single coherent prose document - handling cross-cutting themes, contradictions, and confidence assessment. Used by the research orchestrator after agents complete; not directly invoked by users.
 user-invocable: false
 ---
 

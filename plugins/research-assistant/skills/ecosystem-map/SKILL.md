@@ -1,13 +1,12 @@
 ---
 name: ecosystem-map
-description: >
-  Map the ecosystem around a company, market, or platform - who the key players are,
-  how they relate, where partnerships and dependencies exist, and where the power sits.
-  Use when someone asks "map the ecosystem for [market]", "who are the key players
-  around [platform]", "partnership landscape for [space]", "who should we be talking
-  to in [ecosystem]", "map the value chain for [industry]", or any request to
-  understand the web of companies, organizations, and relationships in a space. Can
-  be invoked directly or via the research orchestrator.
+description: Map the ecosystem around a company, market, or platform - key players, relationships, partnerships, and where power sits. Use when asked to map an ecosystem, identify key players in a space, or understand the value chain and who to talk to.
+triggers:
+  - "map the ecosystem around the Salesforce AppExchange"
+  - "who are the key players we should know in the HR tech space"
+  - "partnership landscape for the data infrastructure market"
+  - "where does power sit in the healthcare data ecosystem and who should we be talking to"
+  - "map the value chain for construction tech — players, relationships, and where leverage sits"
 ---
 
 # Ecosystem Map Research Type

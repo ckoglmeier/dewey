@@ -1,6 +1,6 @@
 ---
 name: dewey
-description: Dewey Guide. Helps the user discover, install, extend, schedule, and find owners of skills from their company's Dewey marketplace. Use when the user mentions Dewey, asks what skills exist for their role, or runs /dewey.
+description: Dewey Guide. Walks the user through discovering, installing, extending, and proposing skills from their company's Dewey marketplace. Use when the user mentions Dewey, asks what skills exist for their role, or runs /dewey.
 argument-hint: "[recommend|install|extend|curate-path|owners|update|analytics|sync|propose|propose-context|load]"
 allowed-tools: Bash(claude *) Bash(cat *) Bash(ls *) Bash(mkdir *) Bash(git *) Bash(bash *) Bash(gh *) Bash(python3 *) Read Write Edit Glob Grep
 ---

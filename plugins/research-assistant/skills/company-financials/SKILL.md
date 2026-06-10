@@ -1,11 +1,12 @@
 ---
 name: company-financials
-description: >
-  Analyze a company's financials - earnings, revenue, margins, valuation, M&A target
-  assessment. Use when someone asks "pull the financials on [company]", "earnings summary
-  for", "is [company] a good acquisition target", "valuation analysis", or any request
-  focused on a company's financial performance. Can be invoked directly or via the
-  research orchestrator.
+description: Analyze a company's financials - earnings, revenue, margins, valuation, and M&A target assessment. Use when asked to pull financials, summarize earnings, assess acquisition targets, or evaluate any company through a financial performance lens.
+triggers:
+  - "pull the financials on Datadog and summarize what matters"
+  - "earnings summary for Salesforce last quarter"
+  - "is HubSpot a good acquisition target — valuation and financial analysis"
+  - "what are MongoDB's revenue trends and margins over the last four quarters"
+  - "profile Veeva as an M&A target with financial analysis"
 ---
 
 # Company Financial Analysis Research Type

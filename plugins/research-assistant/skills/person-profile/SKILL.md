@@ -1,12 +1,12 @@
 ---
 name: person-profile
-description: >
-  Build a profile on a person - their background, career trajectory, public positions,
-  network, and communication style. Use when someone asks "tell me about [person]",
-  "prep me for a meeting with [person]", "who is [person]", "background on [person]",
-  "what should I know before meeting [person]", or any request to understand a person
-  before a meeting, deal, or relationship. Can be invoked directly or via the research
-  orchestrator.
+description: Build a profile on a person - background, career trajectory, public positions, network, and communication style. Use when asked to prep for a meeting, find out who someone is, or understand a person before a deal, investment, or relationship.
+triggers:
+  - "profile the CEO of Vercel before our meeting tomorrow"
+  - "who is Sarah Guo and what does she care about"
+  - "prep me for a call with the new head of procurement at Salesforce"
+  - "background on Jensen Huang — what should I know before our investor meeting"
+  - "what has this person said publicly about AI regulation"
 ---
 
 # Person Profile Research Type

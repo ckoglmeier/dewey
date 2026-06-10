@@ -1,10 +1,12 @@
 ---
 name: research-competitive-analysis
-description: >
-  Run a competitive analysis - landscape scans, competitor profiles, positioning matrix,
-  and strategic implications. Use when someone asks about competitors, competitive
-  landscape, "who are we up against", "how does X compare", or "do a competitive
-  analysis of Y". Can be invoked directly or via the research orchestrator.
+description: Run a competitive analysis - landscape scans, competitor profiles, positioning matrix, and strategic implications. Use when asked about competitors, competitive landscape, who you're up against, or how a product compares in a competitive deal.
+triggers:
+  - "do a competitive analysis of the sales engagement software landscape"
+  - "who are we up against in mid-market HRIS"
+  - "how does Gong compare to our product in competitive deals"
+  - "what would a buyer choose instead of us in a competitive deal, and why"
+  - "run a competitive landscape on the data observability space"
 ---
 
 # Competitive Analysis Research Type

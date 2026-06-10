@@ -1,10 +1,12 @@
 ---
 name: build-buy-partner
-description: >
-  Evaluate build vs. buy vs. partner decisions - capability gaps, M&A targets, partnership
-  options. Use when someone asks "should we build or buy", "evaluate M&A targets for",
-  "partnership options for", "how should we fill this capability gap", or any strategic
-  make-or-buy decision. Can be invoked directly or via the research orchestrator.
+description: Evaluate build vs. buy vs. partner decisions - capability gaps, M&A targets, and partnership options. Use when facing a strategic make-or-buy decision or asked to evaluate acquisition targets, partnership options, or how to fill a capability gap.
+triggers:
+  - "should we build or buy a data enrichment capability"
+  - "evaluate M&A targets we could acquire for workflow automation"
+  - "what are our partnership options for payments infrastructure"
+  - "help me think through the build vs. buy vs. partner decision for our analytics layer"
+  - "is there a strategic partner or acquisition that could fill this capability gap faster than building"
 ---
 
 # Build / Buy / Partner Research Type

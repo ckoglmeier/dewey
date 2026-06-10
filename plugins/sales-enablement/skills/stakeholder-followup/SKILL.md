@@ -1,6 +1,12 @@
 ---
 name: stakeholder-followup
 description: Drafts a follow-up message after a sales call or meeting that recaps what was discussed, restates next steps, and pushes the deal forward. Use when the user just finished a customer or prospect meeting and needs to send a recap.
+triggers:
+  - "I just got off a call with Acme — write the follow-up"
+  - "draft a recap for the meeting with Brian"
+  - "send a follow-up to Sarah after our demo call today"
+  - "I finished a sales call, help me draft the next steps message"
+  - "write a follow-up email that recaps what we discussed and pushes for a next meeting"
 argument-hint: "[account or call topic]"
 ---
 

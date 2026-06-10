@@ -1,6 +1,12 @@
 ---
 name: weekly-status-update
 description: Drafts a weekly status update for the user's team, role, or project. Use when the user mentions writing a weekly update, status report, Friday wrap, or async standup.
+triggers:
+  - "write my weekly status update for the engineering team"
+  - "Friday wrap-up time, draft my update"
+  - "help me write a weekly report for my manager covering the Acme project"
+  - "draft my async standup for this week"
+  - "I need to send a weekly status to the exec team — help me draft it"
 argument-hint: "[audience or project]"
 ---
 

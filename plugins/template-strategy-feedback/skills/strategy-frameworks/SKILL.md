@@ -1,12 +1,12 @@
 ---
 name: strategy-frameworks
-description: >
-  Apply proven strategy frameworks to any company's decisions. Includes 14 frameworks
-  across advantage analysis, product strategy, growth sequencing, decision-making,
-  and synthesis. Trigger on: "apply a framework", "run 7 Powers on", "use Porter's on",
-  "framework:", "what framework should I use for", "analyze this using", "Minto this",
-  "MECE this", "structure this argument", or any request to apply a structured
-  analytical lens to a strategic question. When in doubt, load it.
+description: "Applies 14 proven strategy frameworks — use when you need to analyze a decision through an analytical lens like 7 Powers, Porter's, MECE, or Minto Pyramid."
+triggers:
+  - "what framework should I use to analyze this pricing decision?"
+  - "run 7 Powers analysis on our competitive position"
+  - "use Porter's Five Forces on this market entry strategy"
+  - "Minto this argument before I take it to the board"
+  - "MECE this problem — help me structure the analysis"
 ---
 
 # Strategy Frameworks Skill

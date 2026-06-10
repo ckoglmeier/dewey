@@ -1,6 +1,12 @@
 ---
 name: competitive-analysis
 description: Analyzes a competitor's positioning, messaging, pricing, and recent moves. Use when the user asks about a competitor by name, wants a battlecard, or is preparing for a deal where a specific competitor is in the conversation.
+triggers:
+  - "give me a competitive analysis of Salesforce"
+  - "battlecard on Notion before my deal call tomorrow"
+  - "what's HubSpot's pricing and where do they lose to us?"
+  - "pull a quick competitor brief on Outreach and how we position against them"
+  - "I'm going up against Gong in a deal — pull their recent moves and how we differ"
 argument-hint: "[competitor-name]"
 requires-context:
   - competitive-intelligence/positioning

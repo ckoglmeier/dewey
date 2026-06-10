@@ -1,12 +1,12 @@
 ---
 name: competitive-intel
-description: >
-  Living competitive intelligence and strategic context layer. Maintains competitive
-  landscape, strategic decisions, and market context for one or more companies.
-  Grounds the Strategy Council, Buyer Persona Council, and Strategy Frameworks skills.
-  Trigger on: "competitive intel", "what do we know about a competitor", "competitive
-  landscape", "recent strategic decisions", "market context", "update competitive intel",
-  "set up a new company", or any request for competitive or strategic context.
+description: "Maintains competitive landscape, strategic decisions, and market context — use when you need competitive intel, want to update the landscape, or need context to ground other strategy skills."
+triggers:
+  - "what competitive intel do we have on this company?"
+  - "update competitive intel with what we learned at the conference"
+  - "pull up the competitive landscape before the strategy council"
+  - "recent strategic decisions we've made — what's the context?"
+  - "set up a new company context for competitive intel"
 ---
 
 ## Purpose

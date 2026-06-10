@@ -1,12 +1,12 @@
 ---
 name: buyer-persona-council
-description: >
-  Buyer Persona Council for GTM, marketing, and campaign work. Activates buyer voices
-  to pressure-test messaging, outbound campaigns, copy, and client pitches. Personas
-  are loaded from company-specific context files. Trigger on: "persona council:",
-  "how would a buyer react", "pressure-test this pitch", "review this copy", "how do
-  we reach", "outbound for", "messaging for a persona", or any request involving GTM
-  strategy, campaign development, messaging, or pitch prep. When in doubt, load it.
+description: "Activates buyer personas to pressure-test messaging, GTM campaigns, and pitches — use when you need to hear how real buyers would react before you send."
+triggers:
+  - "persona council: how would our buyers react to this pricing page?"
+  - "pressure-test this pitch against our buyer personas"
+  - "how would a buyer react to this outbound message?"
+  - "review this copy from a buyer's perspective"
+  - "run the persona council on this GTM campaign"
 ---
 
 # BUYER PERSONA COUNCIL

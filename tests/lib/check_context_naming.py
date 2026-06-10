@@ -25,7 +25,8 @@ def main() -> int:
     if not os.path.exists(manifest):
         return 0
 
-    p = json.load(open(manifest))
+    with open(manifest) as f:
+        p = json.load(f)
     ctx = p.get("context") or []
     for entry in ctx:
         cid = entry.get("id", "<unknown>")

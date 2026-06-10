@@ -1,11 +1,12 @@
 ---
 name: industry-trend
-description: >
-  Research industry trends and market dynamics - what's shifting, what's signal vs. noise,
-  where the market is heading. Use when someone asks "what's happening in [market]", "how
-  is [technology] changing", "what are the trends in [space]", "what's the state of
-  [industry]", or any request to understand market forces and direction. Can be invoked
-  directly or via the research orchestrator.
+description: Research industry trends and market dynamics - what's shifting, signal vs. noise, and where the market is heading. Use when asked what's happening in a market, how a technology is changing, or what trends are shaping an industry or space.
+triggers:
+  - "what's happening in the vertical SaaS market right now"
+  - "how is AI changing workforce development technology"
+  - "what are the big trends shaping B2B fintech in 2026"
+  - "what's the state of the CDP industry post-consolidation"
+  - "pull together what's happening with usage-based pricing as a trend"
 ---
 
 # Industry & Trend Research Type

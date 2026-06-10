@@ -1,6 +1,12 @@
 ---
 name: meeting-prep
 description: Prepares the user for an upcoming meeting by clarifying its purpose, drafting an agenda, and surfacing what they should know going in. Use when the user mentions an upcoming meeting, 1:1, review, or sync.
+triggers:
+  - "prep me for my meeting with the leadership team this afternoon"
+  - "I have a 1:1 with my manager in 20 minutes — quick meeting prep"
+  - "draft an agenda for tomorrow's quarterly review with the exec team"
+  - "help me prep for a sync"
+  - "I have an upcoming kickoff meeting with a new client, what should I bring?"
 argument-hint: "[meeting topic or attendees]"
 ---
 

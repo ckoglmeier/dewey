@@ -1,13 +1,12 @@
 ---
 name: due-diligence
-description: >
-  Run due diligence on a company for investment, acquisition, or partnership decisions.
-  Combines business model understanding, financial analysis, risk assessment, and deal
-  thesis validation into a single go/no-go assessment. Use when someone asks "due diligence
-  on [company]", "should we invest in [company]", "evaluate [company] as an acquisition
-  target", "assess [company] for partnership", or any request for a holistic company
-  evaluation tied to a specific deal or investment decision. Can be invoked directly or
-  via the research orchestrator.
+description: Run due diligence on a company for investment, acquisition, or partnership decisions - combining business analysis, financials, and risk into a go/no-go assessment. Use when evaluating whether to invest, acquire, or partner with a company.
+triggers:
+  - "run due diligence on Acme Corp before we invest"
+  - "should we acquire SkillsEngine — full diligence"
+  - "assess Notion as a partnership target — what are the risks"
+  - "we're evaluating a Series B investment in this company, give me a go/no-go assessment"
+  - "evaluate this vendor as an acquisition target and flag any deal breakers"
 ---
 
 # Due Diligence Research Type

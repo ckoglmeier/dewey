@@ -50,7 +50,8 @@ A working snapshot of what's done, what's partial, and what's deferred. Updated 
 - `--check`, `--prepare`, `--dry-run` modes
 
 ### Test suite
-- 220+ tests across 13 active layers (Layer 8 was scheduling and is removed): marketplace schema, install pipeline (no-git tarball path with checksum), refresh script semantics, ownership, plugin packaging, surfaces, analytics log, Codex sync (skills + context), extension telemetry (helper + opt-out gates + body-strip), propose helper, canonical context (schema + lint + size + surface compat + naming convention + load flow)
+- 383 tests across 15 active layers, split into per-layer files under `tests/layers/` sourced by a thin `tests/run.sh` harness: marketplace schema, install pipeline (no-git tarball path with checksum), refresh script semantics, ownership, plugin packaging, surfaces, analytics log, Codex sync (skills + context), extension telemetry (helper + opt-out gates + body-strip), propose helper, canonical context (schema + lint + size + surface compat + naming convention + load flow), trigger & description quality (Layer 15 — see `docs/skill-triggers.md`)
+- CI: `.github/workflows/test.yml` runs the full suite on every push to main and every PR; `drift-check.yml` runs opt-in Layer 8 live external validation weekly
 
 ### Convention docs
 All under `docs/`: `extending-skills.md`, `path-files.md`, `pr-checklist.md`, `npm-packs.md`, `telemetry.md`, `extension-telemetry.md`, `scheduling.md`, `codex-sync.md`, `surfaces.md`, `proposing-changes.md`, `canonical-context.md`, `canonical-context-design.md`, `roadmap.md` (this file).

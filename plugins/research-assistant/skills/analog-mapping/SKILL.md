@@ -1,11 +1,12 @@
 ---
 name: analog-mapping
-description: >
-  Find analog companies - structurally similar businesses in different domains, with
-  investor rosters and intro paths. Use when someone asks "find companies similar to X",
-  "who else has solved this", "find analogs to our model", "build a list of companies
-  worth getting introduced to", or any request to map structurally similar companies
-  across industries. Can be invoked directly or via the research orchestrator.
+description: Map structurally similar companies across industries - investor rosters and intro paths included. Use when finding analogs to a business model, companies worth getting introduced to, or mapping who solved a similar problem in a different domain.
+triggers:
+  - "find companies structurally similar to Stripe in other industries"
+  - "who else has solved this kind of problem in a different domain"
+  - "map analog companies for our B2B2C marketplace model"
+  - "build a list of companies worth getting introduced to that have cracked recurring revenue from physical assets"
+  - "find analogs to our model outside our industry"
 ---
 
 # Analog Mapping Research Type
