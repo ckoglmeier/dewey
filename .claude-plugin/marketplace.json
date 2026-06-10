@@ -85,6 +85,17 @@
         "strategy",
         "council"
       ]
+    },
+    {
+      "name": "admin",
+      "source": "./plugins/admin",
+      "description": "Guides an org admin through setting up Dewey for their company: fork, canonical context, role paths, plugin selection, live demo, and first-user invite.",
+      "category": "operations",
+      "tags": [
+        "admin",
+        "onboarding",
+        "setup"
+      ]
     }
   ]
 }

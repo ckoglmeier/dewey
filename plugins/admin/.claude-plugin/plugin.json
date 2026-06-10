@@ -1,0 +1,13 @@
+{
+  "name": "admin",
+  "description": "Guides an org admin through setting up Dewey for their company. Use when an ops or RevOps lead wants to onboard their team to Dewey, fork the marketplace, seed canonical context, and invite the first wave of users.",
+  "version": "0.1.0",
+  "author": {
+    "name": "CK",
+    "contact": "@ck"
+  },
+  "surfaces": [
+    "claude-code",
+    "cowork"
+  ]
+}

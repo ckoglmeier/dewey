@@ -108,6 +108,53 @@ assert o[\"user_intent\"] == \"a\"
 '
 "
 
+# Org field — default value
+TELEM_LOG_ORG_DEFAULT="$TELEM_SANDBOX/log-org-default"
+check "org field defaults to \"default\" when DEWEY_ORG is unset and no active-org file" \
+  "
+unset DEWEY_ORG
+DEWEY_DIR='$TELEM_CACHE' DEWEY_LOG='$TELEM_LOG_ORG_DEFAULT' \
+  bash '$TELEMETRY_SRC' emit event=test_org_default plugin=demo parent=foo
+python3 -c '
+import json
+line = open(\"$TELEM_LOG_ORG_DEFAULT\").read().splitlines()[-1]
+o = json.loads(line)
+assert o[\"org\"] == \"default\", repr(o.get(\"org\"))
+'
+"
+
+# Org field — DEWEY_ORG env var
+TELEM_LOG_ORG_ENV="$TELEM_SANDBOX/log-org-env"
+check "DEWEY_ORG=acme sets org field to \"acme\" in emitted event" \
+  "
+DEWEY_ORG=acme DEWEY_DIR='$TELEM_CACHE' DEWEY_LOG='$TELEM_LOG_ORG_ENV' \
+  bash '$TELEMETRY_SRC' emit event=test_org_env plugin=demo parent=foo
+python3 -c '
+import json
+line = open(\"$TELEM_LOG_ORG_ENV\").read().splitlines()[-1]
+o = json.loads(line)
+assert o[\"org\"] == \"acme\", repr(o.get(\"org\"))
+'
+"
+
+# Org field — ~/.claude/dewey-active-org file (DEWEY_ORG unset)
+TELEM_LOG_ORG_FILE="$TELEM_SANDBOX/log-org-file"
+TELEM_FAKE_HOME="$TELEM_SANDBOX/fake-home"
+mkdir -p "$TELEM_FAKE_HOME/.claude"
+printf 'task-engineering\n' > "$TELEM_FAKE_HOME/.claude/dewey-active-org"
+check "dewey-active-org file value appears in org field when DEWEY_ORG is unset" \
+  "
+unset DEWEY_ORG
+HOME='$TELEM_FAKE_HOME' DEWEY_DIR='$TELEM_CACHE' DEWEY_LOG='$TELEM_LOG_ORG_FILE' \
+  bash '$TELEMETRY_SRC' emit event=test_org_file plugin=demo parent=foo
+python3 -c '
+import json
+line = open(\"$TELEM_LOG_ORG_FILE\").read().splitlines()[-1]
+o = json.loads(line)
+assert o[\"org\"] == \"task-engineering\", repr(o.get(\"org\"))
+'
+"
+
 # install.sh installs dewey-telemetry.sh
 INSTALLED_TELEM="$SANDBOX/.claude/dewey-telemetry.sh"
 check "install.sh installs dewey-telemetry.sh to \$HOME/.claude" \

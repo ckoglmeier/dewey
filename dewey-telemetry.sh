@@ -26,6 +26,9 @@
 #                                             (default ~/.claude/dewey)
 #   DEWEY_LOG                           analytics log path
 #                                             (default ~/.claude/dewey-analytics.log)
+#   DEWEY_ORG                           org identifier included in every event;
+#                                             falls back to ~/.claude/dewey-active-org
+#                                             (first line), then "default"
 
 set -euo pipefail
 
@@ -49,6 +52,18 @@ fields = {}
 for kv in kvs:
     k, _, v = kv.partition('=')
     fields[k] = v
+
+# Org resolution: $DEWEY_ORG env > ~/.claude/dewey-active-org file > "default"
+org = os.environ.get('DEWEY_ORG', '').strip()
+if not org:
+    active_org_path = os.path.join(os.path.expanduser('~'), '.claude', 'dewey-active-org')
+    if os.path.exists(active_org_path):
+        try:
+            org = open(active_org_path).readline().strip()
+        except Exception:
+            pass
+if not org:
+    org = 'default'
 
 # Per-plugin opt-out: read plugin.json telemetry field
 plugin = fields.get('plugin') or fields.get('parent_plugin')
@@ -83,6 +98,7 @@ if not event:
 obj = {
     'ts': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
     'event': event,
+    'org': org,
 }
 LIST_FIELDS = {'tools_added', 'plugins'}
 for k, v in fields.items():

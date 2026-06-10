@@ -29,7 +29,7 @@ Dewey reference data lives at `~/.claude/dewey/` (placed there by the install sc
 - `~/.claude/dewey/paths/*.md` — role path files (curated bundles)
 - `~/.claude/dewey/plugins/<plugin>/skills/<skill>/SKILL.md` — individual skill bodies (for the `extend` flow)
 
-If `~/.claude/dewey/` does not exist, tell the user the install script hasn't run, and stop. Do not try to recover.
+If `~/.claude/dewey/` does not exist, tell the user the install script hasn't run, and stop. Do not try to recover. Setting Dewey up for your company? Install and run the `dewey-admin-setup` skill.
 
 ## Surface awareness
 
@@ -64,6 +64,7 @@ Look at `$ARGUMENTS`. The first word (`$0`) is the subcommand. If empty, show th
 - `sync` → §9 Sync (mirror skills to Codex, show sync status)
 - `propose` → §10 Propose (open a PR to add or update a canonical skill)
 - `load` → §11 Load (load a canonical context bundle into the conversation on demand; `$1` = topic, optional)
+- `admin-setup` → tell the user to install and run the `dewey-admin-setup` skill: *"Setting Dewey up for your company? Install the `admin` plugin and run `/dewey-admin-setup`."*
 - `schedule` → tell the user Dewey doesn't own scheduling. Use Claude Code's Routines (cloud) or Cowork's scheduled-tasks MCP (local) to schedule a Dewey skill. Point them at [docs/scheduling.md](https://github.com/ckoglmeier/dewey/blob/main/docs/scheduling.md). Don't try to schedule it yourself.
 - empty / anything else → show the menu below
 
@@ -81,10 +82,13 @@ Look at `$ARGUMENTS`. The first word (`$0`) is the subcommand. If empty, show th
 > 8. **Sync with Codex** — Mirror Dewey skills to OpenAI Codex so both agents share the same library.
 > 9. **Propose a canonical skill change** — Open a PR to add a new skill, update one you own, or promote a local extension upstream.
 > 10. **Load a context bundle** — Pull a canonical reference (battlecard, brand voice, strategy doc) into this conversation on demand.
+> 11. **Admin setup** — Set up Dewey for your company: fork the marketplace, seed canonical context, draft role paths, and invite the first wave of users.
 >
-> Reply with `1`–`10`.
+> Reply with `1`–`11`.
 >
 > *(Want to schedule a skill to run automatically? Dewey doesn't own scheduling — use Claude Code's Routines or Cowork's scheduled tasks. See [docs/scheduling.md](https://github.com/ckoglmeier/dewey/blob/main/docs/scheduling.md).)*
+
+If the user picks `11`, tell them: *"Setting Dewey up for your company? Install the `admin` plugin (`claude plugin install admin@dewey`) and run `/dewey-admin-setup`."*
 
 Then route based on their choice.
 
