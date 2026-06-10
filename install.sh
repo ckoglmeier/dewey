@@ -58,6 +58,19 @@ require() {
   command -v "$1" >/dev/null 2>&1 || die "Required command not found: $1"
 }
 
+# Verify a file against an expected SHA-256. sha256sum is coreutils (any
+# Linux); shasum is Perl (macOS, and most—but not minimal—Linux images).
+verify_sha256() {
+  local expected="$1" file="$2"
+  if command -v sha256sum >/dev/null 2>&1; then
+    echo "$expected  $file" | sha256sum -c - >/dev/null 2>&1
+  elif command -v shasum >/dev/null 2>&1; then
+    echo "$expected  $file" | shasum -a 256 -c - >/dev/null 2>&1
+  else
+    return 2
+  fi
+}
+
 # Guard: only allow destructive ops when the path looks like the canonical
 # Dewey cache. Cheap insurance against a malformed env var nuking something
 # unrelated.
@@ -102,10 +115,14 @@ fetch_and_install_snapshot() {
 
   if [ -n "$DEWEY_TARBALL_SHA256" ]; then
     say "Verifying tarball checksum"
-    if ! echo "$DEWEY_TARBALL_SHA256  $tmp_tarball" | shasum -a 256 -c - >/dev/null 2>&1; then
-      rm -rf "$tmp_root"
-      die "Checksum mismatch: expected $DEWEY_TARBALL_SHA256"
-    fi
+    verify_sha256 "$DEWEY_TARBALL_SHA256" "$tmp_tarball"
+    case $? in
+      0) : ;;
+      2) rm -rf "$tmp_root"
+         die "DEWEY_TARBALL_SHA256 is set but neither sha256sum nor shasum is available" ;;
+      *) rm -rf "$tmp_root"
+         die "Checksum mismatch: expected $DEWEY_TARBALL_SHA256" ;;
+    esac
   fi
 
   say "Extracting snapshot"
@@ -495,6 +512,17 @@ log() {
   printf '[%s] %s\n' "\$(date -u +%Y-%m-%dT%H:%M:%SZ)" "\$*" >> "\$LOG" 2>/dev/null || true
 }
 
+# Portable SHA-256 check: sha256sum (coreutils) first, shasum (Perl) fallback.
+verify_sha256() {
+  if command -v sha256sum >/dev/null 2>&1; then
+    echo "\$1  \$2" | sha256sum -c - >/dev/null 2>&1
+  elif command -v shasum >/dev/null 2>&1; then
+    echo "\$1  \$2" | shasum -a 256 -c - >/dev/null 2>&1
+  else
+    return 2
+  fi
+}
+
 # Disabled
 if [ "\$DEWEY_REFRESH_INTERVAL" = "-1" ]; then
   exit 0
@@ -547,8 +575,10 @@ if ! curl -fsSL "\$url" -o "\$tmp_tarball" 2>/dev/null; then
 fi
 
 if [ -n "\$DEWEY_TARBALL_SHA256" ]; then
-  if ! echo "\$DEWEY_TARBALL_SHA256  \$tmp_tarball" | shasum -a 256 -c - >/dev/null 2>&1; then
-    log "checksum mismatch"
+  if ! verify_sha256 "\$DEWEY_TARBALL_SHA256" "\$tmp_tarball"; then
+    # Covers both mismatch and no-checksum-tool: when a checksum was
+    # configured, never swap in content we couldn't verify.
+    log "checksum verification failed (mismatch or no sha256 tool)"
     rm -rf "\$tmp_root"
     exit 0
   fi

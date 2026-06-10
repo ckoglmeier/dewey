@@ -30,7 +30,11 @@ TARBALL_FILE="$TARBALL_DIR/dewey.tar.gz"
 check "test tarball was built" \
   "test -s '$TARBALL_FILE'"
 
-TARBALL_SHA=$(shasum -a 256 "$TARBALL_FILE" | awk '{print $1}')
+if command -v sha256sum >/dev/null 2>&1; then
+  TARBALL_SHA=$(sha256sum "$TARBALL_FILE" | awk '{print $1}')
+else
+  TARBALL_SHA=$(shasum -a 256 "$TARBALL_FILE" | awk '{print $1}')
+fi
 
 # Fresh sandbox with NO pre-populated DEWEY_DIR — install must download.
 TARBALL_SANDBOX="$(mktemp -d)"
