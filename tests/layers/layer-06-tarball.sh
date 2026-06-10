@@ -114,7 +114,10 @@ check "guard left the canary file untouched" \
 # Build a stripped PATH dir that excludes git but includes essentials.
 STRIP_DIR="$(mktemp -d)"
 TMPDIRS_TO_CLEAN+=("$STRIP_DIR")
-for tool in bash sh curl tar shasum python3 mktemp dirname rm mv mkdir cp ls cat date stat awk sed grep printf chmod cmp basename head touch find file; do
+# gzip is required on Linux: GNU tar execs it from PATH for -z, while
+# macOS bsdtar decompresses internally (which is why its absence only
+# shows up in CI). sha256sum/env/ln etc. round out the GNU userland.
+for tool in bash sh curl tar shasum sha256sum gzip gunzip python3 mktemp dirname rm mv mkdir cp ls cat date stat awk sed grep printf chmod cmp basename head touch find file env ln uname readlink sleep tr cut wc sort id tee; do
   src="$(command -v "$tool" 2>/dev/null || true)"
   if [ -n "$src" ]; then
     ln -sf "$src" "$STRIP_DIR/$tool" 2>/dev/null || true
