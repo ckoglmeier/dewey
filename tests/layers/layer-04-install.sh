@@ -116,3 +116,90 @@ assert 'dewey' in mk, 'dewey marketplace not registered'
 \"
 rm -rf \"\$SANDBOX2\"
 "
+
+# ---- License key tests -------------------------------------------------------
+
+# Install WITH a license key: file should be written mode 600 with exact content.
+check "install with DEWEY_LICENSE_KEY writes ~/.claude/dewey-license with correct content" \
+  "
+SANDBOX_LIC=\$(mktemp -d)
+SANDBOX_DEWEY_LIC=\"\$SANDBOX_LIC/.claude/dewey\"
+mkdir -p \"\$SANDBOX_DEWEY_LIC\"
+cp -R \"$REPO_ROOT/.\" \"\$SANDBOX_DEWEY_LIC/\"
+HOME=\"\$SANDBOX_LIC\" \
+DEWEY_DIR=\"\$SANDBOX_DEWEY_LIC\" \
+DEWEY_REPO=\"file://$REPO_ROOT\" \
+DEWEY_REF=main \
+DEWEY_USE_INPLACE=1 \
+DEWEY_LICENSE_KEY='dwy_aabbccdd11223344aabbccdd11223344' \
+  bash \"$REPO_ROOT/install.sh\" >/dev/null 2>&1
+test -f \"\$SANDBOX_LIC/.claude/dewey-license\"
+actual=\$(cat \"\$SANDBOX_LIC/.claude/dewey-license\")
+test \"\$actual\" = 'dwy_aabbccdd11223344aabbccdd11223344'
+perms=\$(stat -f '%Lp' \"\$SANDBOX_LIC/.claude/dewey-license\" 2>/dev/null || stat -c '%a' \"\$SANDBOX_LIC/.claude/dewey-license\" 2>/dev/null)
+test \"\$perms\" = '600'
+rm -rf \"\$SANDBOX_LIC\"
+"
+
+# Install WITHOUT a license key: no license file should be created.
+check "install without DEWEY_LICENSE_KEY creates no dewey-license file" \
+  "
+SANDBOX_NOLIC=\$(mktemp -d)
+SANDBOX_DEWEY_NOLIC=\"\$SANDBOX_NOLIC/.claude/dewey\"
+mkdir -p \"\$SANDBOX_DEWEY_NOLIC\"
+cp -R \"$REPO_ROOT/.\" \"\$SANDBOX_DEWEY_NOLIC/\"
+HOME=\"\$SANDBOX_NOLIC\" \
+DEWEY_DIR=\"\$SANDBOX_DEWEY_NOLIC\" \
+DEWEY_REPO=\"file://$REPO_ROOT\" \
+DEWEY_REF=main \
+DEWEY_USE_INPLACE=1 \
+  bash \"$REPO_ROOT/install.sh\" >/dev/null 2>&1
+test ! -f \"\$SANDBOX_NOLIC/.claude/dewey-license\"
+rm -rf \"\$SANDBOX_NOLIC\"
+"
+
+# Install with key but unreachable endpoint: still exits 0 (no license file check).
+check "install with key and unreachable endpoint exits 0" \
+  "
+SANDBOX_UNREACH=\$(mktemp -d)
+SANDBOX_DEWEY_UNREACH=\"\$SANDBOX_UNREACH/.claude/dewey\"
+mkdir -p \"\$SANDBOX_DEWEY_UNREACH\"
+cp -R \"$REPO_ROOT/.\" \"\$SANDBOX_DEWEY_UNREACH/\"
+HOME=\"\$SANDBOX_UNREACH\" \
+DEWEY_DIR=\"\$SANDBOX_DEWEY_UNREACH\" \
+DEWEY_REPO=\"file://$REPO_ROOT\" \
+DEWEY_REF=main \
+DEWEY_USE_INPLACE=1 \
+DEWEY_LICENSE_KEY='dwy_aabbccdd11223344aabbccdd11223344' \
+DEWEY_TELEMETRY_ENDPOINT='http://127.0.0.1:19999' \
+  bash \"$REPO_ROOT/install.sh\" >/dev/null 2>&1
+test -f \"\$SANDBOX_UNREACH/.claude/dewey-license\"
+rm -rf \"\$SANDBOX_UNREACH\"
+"
+
+# No-license no-degradation: emit + normal install + forward all exit 0.
+check "no-license no-degradation: emit + install + forward all exit 0" \
+  "
+SANDBOX_NODEG=\$(mktemp -d)
+SANDBOX_DEWEY_NODEG=\"\$SANDBOX_NODEG/.claude/dewey\"
+mkdir -p \"\$SANDBOX_DEWEY_NODEG\"
+cp -R \"$REPO_ROOT/.\" \"\$SANDBOX_DEWEY_NODEG/\"
+# Normal install with no license
+HOME=\"\$SANDBOX_NODEG\" \
+DEWEY_DIR=\"\$SANDBOX_DEWEY_NODEG\" \
+DEWEY_REPO=\"file://$REPO_ROOT\" \
+DEWEY_REF=main \
+DEWEY_USE_INPLACE=1 \
+  bash \"$REPO_ROOT/install.sh\" >/dev/null 2>&1
+# Emit an event
+DEWEY_DIR=\"\$SANDBOX_DEWEY_NODEG\" \
+DEWEY_LOG=\"\$SANDBOX_NODEG/.claude/dewey-analytics.log\" \
+  bash \"$REPO_ROOT/dewey-telemetry.sh\" emit event=test_no_lic
+# Forward (no endpoint, no license) → exit 0 silently
+DEWEY_DIR=\"\$SANDBOX_DEWEY_NODEG\" \
+DEWEY_LOG=\"\$SANDBOX_NODEG/.claude/dewey-analytics.log\" \
+HOME=\"\$SANDBOX_NODEG\" \
+DEWEY_TELEMETRY_ENDPOINT='' \
+  bash \"$REPO_ROOT/dewey-telemetry.sh\" forward
+rm -rf \"\$SANDBOX_NODEG\"
+"

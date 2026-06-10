@@ -65,6 +65,7 @@ Look at `$ARGUMENTS`. The first word (`$0`) is the subcommand. If empty, show th
 - `propose` → §10 Propose (open a PR to add or update a canonical skill)
 - `load` → §11 Load (load a canonical context bundle into the conversation on demand; `$1` = topic, optional)
 - `admin-setup` → tell the user to install and run the `dewey-admin-setup` skill: *"Setting Dewey up for your company? Install the `admin` plugin and run `/dewey-admin-setup`."*
+- `license` → §12 License (show status or activate a license key)
 - `schedule` → tell the user Dewey doesn't own scheduling. Use Claude Code's Routines (cloud) or Cowork's scheduled-tasks MCP (local) to schedule a Dewey skill. Point them at [docs/scheduling.md](https://github.com/ckoglmeier/dewey/blob/main/docs/scheduling.md). Don't try to schedule it yourself.
 - empty / anything else → show the menu below
 
@@ -83,8 +84,9 @@ Look at `$ARGUMENTS`. The first word (`$0`) is the subcommand. If empty, show th
 > 9. **Propose a canonical skill change** — Open a PR to add a new skill, update one you own, or promote a local extension upstream.
 > 10. **Load a context bundle** — Pull a canonical reference (battlecard, brand voice, strategy doc) into this conversation on demand.
 > 11. **Admin setup** — Set up Dewey for your company: fork the marketplace, seed canonical context, draft role paths, and invite the first wave of users.
+> 12. **License** — Check or activate your org's hosted-features license key.
 >
-> Reply with `1`–`11`.
+> Reply with `1`–`12`.
 >
 > *(Want to schedule a skill to run automatically? Dewey doesn't own scheduling — use Claude Code's Routines or Cowork's scheduled tasks. See [docs/scheduling.md](https://github.com/ckoglmeier/dewey/blob/main/docs/scheduling.md).)*
 
@@ -599,6 +601,54 @@ If the user runs a skill that already declares `requires-context:`, don't also p
 - **Don't auto-load a bundle the user didn't pick** based on the chat topic alone. The whole point of this flow is explicit invocation.
 - **Don't load multiple bundles at once** unless the user explicitly asks. Pick one at a time so the user can see what entered the context window.
 - **Don't load a bundle larger than 100KB** without warning the user about the token cost first.
+
+---
+
+## §12 License
+
+Dewey is open-core: everything local — the installer, the Guide, all plugins and skills — is free and fully functional with no license required. A license key activates the *hosted* features: telemetry forwarding to your org's analytics loop and the weekly usage digest. The key is org-scoped; one key covers your whole team.
+
+This subcommand has two modes. Look at `$1` (the word after `license`):
+- `status` (or no argument) → show the current license state
+- `activate <key>` → confirm and store a license key
+
+### Status (default)
+
+1. Check whether `~/.claude/dewey-license` exists:
+   ```bash
+   test -f ~/.claude/dewey-license && echo present || echo absent
+   ```
+2. Run the forward status helper to get endpoint/offset/pending-line counts:
+   ```bash
+   bash ~/.claude/dewey-telemetry.sh forward --status
+   ```
+3. Present the combined output in a readable way, for example:
+   > **Dewey license status**
+   >
+   > License key: present  *(or: not installed — hosted features inactive)*
+   > Endpoint: https://api.dewey.example.com  *(or: not configured)*
+   > Pending events to forward: 14
+   >
+   > Everything local is free and fully functional. The license enables your org's hosted analytics loop.
+
+If no license is present, tell the user: *"To activate hosted features, ask your org admin for the key, then run `/dewey license activate <key>`."*
+
+### Activate
+
+1. **Confirm before acting**:
+   > **About to do:** Store the license key to `~/.claude/dewey-license` (readable only by you).
+   >
+   > **Why:** This enables forwarding of your usage events to your org's hosted analytics loop.
+   >
+   > Say **yes** to proceed, **cancel** to stop.
+
+2. On approval, write the key with mode 600:
+   ```bash
+   printf '%s' '<key>' > ~/.claude/dewey-license && chmod 600 ~/.claude/dewey-license
+   ```
+3. Confirm: *"License key saved. Hosted features are now active — events will forward on your next session start."*
+
+Never print the key back to the user after storing it. If the user supplies the key inline in the `/dewey license activate` call, acknowledge the subcommand invocation and proceed to the confirm block.
 
 ---
 

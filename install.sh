@@ -35,6 +35,12 @@
 #   DEWEY_DIR             Where to place the cache (default: $HOME/.claude/dewey).
 #   DEWEY_USE_INPLACE     If 1, skip download and use whatever already exists at DEWEY_DIR.
 #                             Used by the test sandbox; not intended for end users.
+#   DEWEY_LICENSE_KEY     Optional org license key (format: dwy_ + 32 hex chars). When set,
+#                             the key is written to ~/.claude/dewey-license (chmod 600) so
+#                             dewey-telemetry.sh forward can authenticate against the hosted
+#                             ingest endpoint. If DEWEY_TELEMETRY_ENDPOINT is also set the
+#                             installer performs a best-effort validation call (max 5 s); an
+#                             unreachable endpoint or invalid key never fails the install.
 
 set -euo pipefail
 
@@ -52,6 +58,8 @@ _DEWEY_RELEASE_SHA256=""
 # Set by resolve_release() to indicate the install should use a release asset URL.
 _DEWEY_RELEASE_ASSET_URL=""
 DEWEY_SYNC_CODEX="${DEWEY_SYNC_CODEX:-auto}"  # auto | 1 | 0
+DEWEY_LICENSE_KEY="${DEWEY_LICENSE_KEY:-}"
+LICENSE_FILE="$HOME/.claude/dewey-license"
 SETTINGS_FILE="$HOME/.claude/settings.json"
 GUIDE_SKILL_DIR="$HOME/.claude/skills/dewey"
 HOOK_SCRIPT="$HOME/.claude/dewey-first-run.sh"
@@ -964,6 +972,44 @@ touch "\$MARKER"
 exit 0
 EOF
 chmod +x "$HOOK_SCRIPT"
+
+# ---- Step 6: store license key (if provided) --------------------------------
+if [ -n "$DEWEY_LICENSE_KEY" ]; then
+  printf "%s" "$DEWEY_LICENSE_KEY" > "$LICENSE_FILE"
+  chmod 600 "$LICENSE_FILE"
+  say "License key stored at $LICENSE_FILE"
+
+  # Best-effort validation — never fails the install.
+  _endpoint="${DEWEY_TELEMETRY_ENDPOINT:-}"
+  if [ -n "$_endpoint" ]; then
+    _validate_result="$(curl -s -o /tmp/dewey-validate-$$.json -w "%{http_code}" \
+      --max-time 5 \
+      -X POST \
+      -H "Content-Type: application/json" \
+      -d "{\"key\":\"${DEWEY_LICENSE_KEY}\"}" \
+      "${_endpoint%/}/v1/license/validate" 2>/dev/null)" || _validate_result=""
+    if [ "$_validate_result" = "200" ]; then
+      _valid="$(python3 -c "
+import json, sys
+try:
+    d = json.load(open('/tmp/dewey-validate-$$.json'))
+    print('true' if d.get('valid') else 'false')
+except Exception:
+    print('unknown')
+" 2>/dev/null || echo "unknown")"
+      if [ "$_valid" = "true" ]; then
+        say "License key validated — hosted features activated."
+      else
+        warn "License key was stored but the service returned valid=false. Check your key or contact support."
+      fi
+    elif [ -z "$_validate_result" ]; then
+      warn "Couldn't reach licensing service — key stored, will validate on first forward."
+    else
+      warn "License key stored but validation returned HTTP ${_validate_result}. Key stored; hosted features may not activate."
+    fi
+    rm -f "/tmp/dewey-validate-$$.json"
+  fi
+fi
 
 # ---- Done -------------------------------------------------------------------
 say "Dewey installed."
