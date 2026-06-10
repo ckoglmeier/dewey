@@ -2,7 +2,7 @@
 
 **Status:** Proposed, not started.
 **Date:** 2026-06-10
-**Scope:** everything to build before putting Dewey on the market. Supersedes nothing — composes [admin-onboarding.md](admin-onboarding.md), [hosted-dewey.md](hosted-dewey.md), and [skill-trigger-validation.md](skill-trigger-validation.md) Phase 3 into one delivery sequence with two new workstreams (supply-chain hardening, Guide eval harness).
+**Scope:** everything to build before putting Dewey on the market. Supersedes nothing — composes [admin-onboarding.md](admin-onboarding.md), [hosted-dewey.md](hosted-dewey.md), and [skill-trigger-validation.md](skill-trigger-validation.md) Phase 3 into one delivery sequence with three new workstreams (supply-chain hardening, Guide eval harness, purchase & entitlement).
 
 ## Framing
 
@@ -17,8 +17,9 @@ Going to market reorders priorities around two questions: *what does a stranger 
 | 3 | Guide + flow eval harness | ~1d | Sonnet harness; Haiku as the runtime eval model | WS1 (covers its flows too) |
 | 4 | Hosted Stage 1, demo-grade + telemetry org field | ~2d | Sonnet; strong-model review on the ingest schema | Gate G0 |
 | 5 | Cowork Browse Plugins walkthrough | ~0.5d human | none — this one is yours | — |
+| 6 | Purchase & entitlement: checkout → license → gated install | ~3.5d | Sonnet; strong-model review on entitlement API + installer changes | Gate G0 (items 4–5), WS2 |
 
-Critical path: WS1 → WS3. WS2 parallel from day one. WS4 starts when G0 clears. WS5 anytime, before launch.
+Critical path: WS1 → WS3, and G0 → WS4/WS6 (WS6 also needs WS2's release machinery). WS2 parallel from day one. WS5 anytime, before launch.
 
 ## Gate G0 — business decisions before WS4 architecture
 
@@ -26,6 +27,8 @@ Settle before WS4 starts, because they shape its architecture:
 1. **Where does hosted run** — your infra (multi-tenant SaaS) vs. customer VPC vs. both? Determines auth model and whether the ingest is one service or a deployable artifact.
 2. **Pricing surface** — is telemetry volume, seats, or orgs the metered unit? Determines what the event store must count reliably from day one.
 3. **Demo posture** — synthetic-data demo only, or a design-partner org live? Determines how production-grade Stage 1's ingest needs to be at launch.
+4. **What exactly is paid** — see WS6's framing decision: fully gated vs. open-core. Determines whether the installer needs entitlement at all or only the hosted features do.
+5. **Merchant of record** — Stripe (you handle global sales tax) vs. Paddle/Lemon Squeezy (they do, for a larger cut). A B2B product sold to companies in multiple jurisdictions strongly favors a merchant-of-record unless you already have tax operations.
 
 These are decisions, not designs — an afternoon of answers, captured as a short addendum to [hosted-dewey.md](hosted-dewey.md).
 
@@ -76,13 +79,50 @@ Model: Sonnet throughout; **strong-model review on the ingest event schema** —
 
 Pre-launch due diligence, not a backlog nit: open Cowork's Browse Plugins panel against the reference marketplace and verify categories, tags, multi-skill plugins, and path files render acceptably; screenshot everything into `docs/cowork-audit.md`. Any rendering defect is triaged as launch-blocking or cosmetic *then*, not discovered by a prospect. Half a day, requires a human (you).
 
+## WS6 — Purchase & entitlement
+
+The pipeline: **buy → receive a license key → one install command that works.** Friction anywhere in that chain is lost revenue; complexity anywhere in it is support burden. Design accordingly.
+
+### Framing decision first (G0 item 4): what does the license gate?
+
+- **Option A — fully gated:** the CLI tarball itself requires a valid license to download. Strongest control, but it complicates everything downstream: every refresh needs a live entitlement check, air-gapped installs break, and the convention's adoption story ("your whole team installs in minutes") now routes through a license server's uptime.
+- **Option B — open-core (recommended):** the local convention (installer, Guide, plugins, lint) stays freely installable; the license activates the *hosted* features — telemetry forwarding, the digest, and future stages. The thing being sold is the loop, which is genuinely hosted-side; the local CLI is the funnel, not the product. Gating the funnel shrinks it.
+
+The plan below is written for **B**, with the deltas for A noted at the end. If G0 lands on A, add ~1.5d.
+
+### Deliverables
+
+1. **Checkout** — hosted checkout page (Stripe Checkout or merchant-of-record equivalent per G0 item 5) for the org-level plan. Webhook → entitlement service. No custom payment UI in v1; the provider's hosted page is fine and PCI-scope-free.
+2. **Entitlement service** — small API alongside WS4's ingest (same deploy unit): issues org license keys on purchase webhook, validates keys (`POST /v1/license/validate`), tracks plan + status (active, past_due via dunning webhooks, canceled). Keys are org-scoped, not per-seat, in v1 — seat *counting* comes free from telemetry's per-user events; seat *enforcement* is deferred until there's evidence of abuse.
+3. **Post-purchase delivery** — confirmation page + email with exactly one copy-paste block: the install one-liner with `DEWEY_LICENSE_KEY=<key>` inline, plus a link to the admin-onboarding flow (WS1) as the very next step. Purchase lands the buyer at the top of the WS1 funnel, not at a dashboard.
+4. **CLI activation** — `install.sh` accepts `DEWEY_LICENSE_KEY` (env or flag): validates against the entitlement API, stores it in `~/.claude/dewey-license` (mode 600), and `dewey-telemetry.sh forward` (WS4) sends it as the auth bearer. No key → everything local still works; forwarding stays off and the Guide says why ("hosted features need a license — ask your admin for the key"). `/dewey license` subcommand shows status/activates later.
+5. **Team distribution** — the admin's install message (WS1 stage 6) carries the org key, so seats activate by installing. One key per org, rotatable via a `POST /v1/license/rotate` admin call.
+6. **Tests** — entitlement API contract tests; installer tests for key-present/key-absent/key-invalid paths (Layer 4 extensions, mocked endpoint); a no-network assertion that absence of a license never degrades local function.
+
+### Deltas if G0 chooses Option A (fully gated)
+
+Tarball downloads move behind signed URLs issued by the entitlement service; the refresh script must exchange the stored key for a short-lived download token each cycle (and must *not* brick the install when the entitlement check fails transiently — stale-but-working beats dead); WS2's public checksum publication changes to authenticated release manifests. ~1.5d extra, all in the two highest-risk files.
+
+### Model tiers
+
+| Piece | Model |
+|---|---|
+| Checkout integration + webhooks | **Sonnet** (provider SDKs are well-trodden; webhook idempotency is the only subtle part) |
+| Entitlement service + API | **Sonnet build, strong-model review** — auth, key storage, and the validate endpoint are security surface |
+| Installer/license integration | **Sonnet build, strong-model review** (touches install.sh — same rule as WS2) |
+| Delivery email/page copy | **Sonnet draft, you approve** — it's the first thing a paying customer reads |
+| Contract + installer tests | **Sonnet** |
+
+Effort ≈ 3.5d (option B). Depends on: G0 items 4–5 decided; WS2's release machinery (the post-purchase one-liner should point at a pinned release); WS4's service skeleton (shared deploy unit).
+
 ## Schedule shape
 
 Assuming roughly half-time attention:
 
 - **Week 1:** WS1 phases 1–3 ∥ WS2 items 1–3. WS5 whenever Cowork is open.
 - **Week 2:** WS1 phases 4–5 → WS3 ∥ WS2 items 4–5. G0 decisions settled mid-week.
-- **Week 3:** WS4. Launch-readiness review at the end: all five acceptance bars below.
+- **Week 3:** WS4, then WS6 items 1–3 on its service skeleton.
+- **Week 4:** WS6 items 4–6. Launch-readiness review at the end: all acceptance bars below.
 
 ## Launch-readiness checklist
 
@@ -91,6 +131,7 @@ Assuming roughly half-time attention:
 - [ ] Eval harness green at the launch bar on a pinned model; wired into CI (WS3)
 - [ ] The extension-loop digest demos from synthetic data; real ingest works end-to-end from one live event (WS4)
 - [ ] Cowork rendering verified and documented; defects triaged (WS5)
+- [ ] Test purchase → email → install → activated hosted features, end-to-end in ≤10 minutes with no human in the loop; a missing/invalid key never degrades local function (WS6, timed dry-run with a real test-mode payment)
 - [ ] Full offline suite green (383+ — each WS adds tests)
 
 ## Not building (and why)
