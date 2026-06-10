@@ -68,7 +68,8 @@ def confirm_plugin_resolves(root: str, expected_name: str, entry_name: str) -> N
 
     if os.path.exists(pj):
         try:
-            meta = json.load(open(pj))
+            with open(pj) as f:
+                meta = json.load(f)
         except Exception as e:
             die(f"{entry_name}: plugin.json is not valid JSON: {e}")
         if meta.get("name") != expected_name:
@@ -80,7 +81,8 @@ def confirm_plugin_resolves(root: str, expected_name: str, entry_name: str) -> N
 
     if os.path.exists(mj):
         try:
-            up = json.load(open(mj))
+            with open(mj) as f:
+                up = json.load(f)
         except Exception as e:
             die(f"{entry_name}: upstream marketplace.json is not valid JSON: {e}")
         plugins = up.get("plugins") or []

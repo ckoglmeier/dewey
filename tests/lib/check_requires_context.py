@@ -76,7 +76,8 @@ def collect_context_index() -> dict[str, dict]:
     """Build {id: {plugin, plugin_dir, surfaces, path, allow_large}} from all plugins."""
     index: dict[str, dict] = {}
     for pj in glob.glob("plugins/*/.claude-plugin/plugin.json"):
-        d = json.load(open(pj))
+        with open(pj) as f:
+            d = json.load(f)
         pname = d["name"]
         pdir = os.path.dirname(os.path.dirname(pj))
         plugin_surfaces = d.get("surfaces") or ["claude-code"]
@@ -107,7 +108,8 @@ def main() -> int:
 
     skill_md, plugin_dir, plugin_name = sys.argv[1], sys.argv[2], sys.argv[3]
 
-    text = open(skill_md).read()
+    with open(skill_md) as f:
+        text = f.read()
     m = re.match(r"^---\n(.*?)\n---\n(.*)", text, re.DOTALL)
     if not m:
         return 0  # No frontmatter — nothing to validate
@@ -121,7 +123,8 @@ def main() -> int:
     index = collect_context_index()
 
     plugin_pj = os.path.join(plugin_dir, ".claude-plugin", "plugin.json")
-    plugin_meta = json.load(open(plugin_pj))
+    with open(plugin_pj) as f:
+        plugin_meta = json.load(f)
     skill_surfaces = set(plugin_meta.get("surfaces") or ["claude-code"])
 
     total_size = 0

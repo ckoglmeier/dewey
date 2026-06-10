@@ -1,0 +1,3 @@
+# Dewey has no runtime Python dependencies.
+# The test suite (tests/run.sh and tests/lib/*.py) requires Python >= 3.8,
+# standard library only. This file exists to document that requirement.

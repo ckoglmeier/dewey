@@ -2,7 +2,7 @@
 
 ## Current state (2026-05-08)
 
-Dewey is a Claude Code / Cowork / OpenAI Codex plugin marketplace convention (renamed from Classroom in v2.0.0). Ships 7 in-tree plugins (28 skills total), the Guide skill (slash command `/dewey`), three shell helpers (sync-codex, telemetry, propose), 15 active test layers including Layer 4b (Classroom→Dewey migration) and Layer 8 (opt-in live validation of external entries — gated by `DEWEY_VALIDATE_EXTERNAL=1`). 381 tests passing.
+Dewey is a Claude Code / Cowork / OpenAI Codex plugin marketplace convention (renamed from Classroom in v2.0.0). Ships 7 in-tree plugins (26 skills total), the Guide skill (slash command `/dewey`), three shell helpers (sync-codex, telemetry, propose), 15 active test layers including Layer 4b (Classroom→Dewey migration) and Layer 8 (opt-in live validation of external entries — gated by `DEWEY_VALIDATE_EXTERNAL=1`). 381 tests passing.
 
 For the full status snapshot (Done / Partial / Deferred / Hosted bucket), the source of truth is now [`docs/roadmap.md`](docs/roadmap.md). This file holds session-level notes and open todos.
 
@@ -82,7 +82,7 @@ Not a backlog for this repo per se, but the local data pipe is built to feed it:
 
 ## Repo topology
 
-- `ckoglmeier/dewey` — this repo. Marketplace manifest, Guide skill, **7 in-tree plugins (28 skills total)** — these are **seed skills**: starting examples that an adopting org forks and replaces with their own. Plus three shell helpers (sync-codex, telemetry, propose), 13 active test layers, convention + decision docs.
+- `ckoglmeier/dewey` — this repo. Marketplace manifest, Guide skill, **7 in-tree plugins (26 skills total)** — these are **seed skills**: starting examples that an adopting org forks and replaces with their own. Plus three shell helpers (sync-codex, telemetry, propose), 13 active test layers, convention + decision docs.
 - `ckoglmeier/skills` — CK's personal/active skill library. `templates/`, `playbooks/`, `borrowed/`. Independent from Dewey — they evolve on their own track. The three plugins inlined into Dewey in v1.3.0 (`exec-feedback`, `research-assistant`, `template-strategy-feedback`) were used as starting points for the seed copies; both versions can drift independently from here without that being a problem.
 
 ## Quick orientation for a new session

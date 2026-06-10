@@ -83,6 +83,10 @@ There are three update channels, by design:
 
 Refresh failures are logged to `~/.claude/dewey-refresh.log` and never break a session.
 
+## Upgrading from Classroom
+
+Dewey v2.0.0 renamed the project from Classroom. If you had a Classroom install, the installer migrates it automatically: directories, helper scripts, settings entries, and the marketplace registration are hard-renamed from `classroom-*` to `dewey-*`. Your analytics log and any personal extensions are preserved. A record of every change is written to `~/.claude/dewey-migration.log`. No manual steps required — just run the install command above.
+
 ### Contributing
 
 If you're working on Dewey itself (editing the Guide, adding plugins, fixing the installer), use the dev installer instead — it sets up a live `git` checkout at `~/.claude/dewey` that you can `git pull` and edit:

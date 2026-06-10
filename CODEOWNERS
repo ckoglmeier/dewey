@@ -1,6 +1,6 @@
-# Classroom CODEOWNERS
+# Dewey CODEOWNERS
 #
-# This file declares the maintainer for each plugin in the Classroom reference
+# This file declares the maintainer for each plugin in the Dewey reference
 # repo. GitHub uses it to auto-request reviews on PRs that touch each path.
 #
 # Source of truth for ownership is here + the `owner` field in each plugin.json.
