@@ -1,10 +1,12 @@
 ---
 name: strategy-orchestrator
-description: >
-  Orchestrates multi-step strategy sessions using the plugin's full toolkit. Trigger
-  on: "strategy session", "full strategic analysis", "help me think through", "which
-  tool should I use", or any request spanning multiple analytical lenses. Primarily
-  a router - most questions need 1-2 skills, not a full session.
+description: "Orchestrates multi-step strategy sessions — use when you need a full strategic analysis or want routing help to the right council, framework, or competitive intel skill."
+triggers:
+  - "strategy session: help me think through this product pivot"
+  - "which strategy tool should I use for this pricing decision?"
+  - "full strategic analysis of this market opportunity"
+  - "help me think through this GTM decision end-to-end"
+  - "run a complete strategy session on this competitive threat"
 ---
 
 ## PURPOSE

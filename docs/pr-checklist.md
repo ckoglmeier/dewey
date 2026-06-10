@@ -10,13 +10,25 @@ Central skills are for problems **multiple teams** have. If only one team needs 
 
 Test: can you name three teams that would install this on day one? If not, send it back.
 
-### 2. Is the description specific?
+### 2. Is the description specific? *(partially lint-enforced)*
 
-Skill discovery in Claude Code depends on the `description` frontmatter field. Generic descriptions ("helps with sales tasks") never get auto-loaded by the model. The description should:
+Skill discovery in Claude Code depends on the `description` frontmatter field. Generic descriptions ("helps with sales tasks") never get auto-loaded by the model.
 
-- Front-load the **specific use case** in the first sentence (truncation kicks in at 250 chars)
-- Include the **trigger words** a real user would say ("when the user mentions a customer interview", "when prepping for a deal where a competitor is named")
-- Avoid vague verbs like "helps", "supports", "provides" — use the action ("drafts", "analyzes", "recaps")
+**The lint now enforces** (Layer 15, `tests/lib/check_description_quality.py` — a violating PR fails CI):
+
+- Description length 50–250 chars (truncation kicks in at 250)
+- First sentence must not lead with a vague verb ("helps", "assists", "supports", "provides")
+
+**Reviewers still judge:**
+
+- Does the first sentence front-load the **specific use case**, not just pass the verb check?
+- Does it include the **trigger words** a real user would say? (The lint only warns on missing "use when" language.)
+
+### 2b. Does it declare realistic triggers? *(lint-enforced)*
+
+Every user-invocable skill needs a `triggers:` frontmatter field with 3–5 example user utterances. See [skill-triggers.md](skill-triggers.md) for the format and what makes a good trigger. The lint (`tests/lib/check_triggers.py`) fails a PR with no triggers, triggers over 200 chars, or triggers sharing zero significant words with the description; it warns below 3. Skills marked `user-invocable: false` must **not** have triggers — routing to them goes through their orchestrator.
+
+**Reviewers still judge:** are the triggers things a real user would actually type, and do they route to *this* skill rather than a sibling? The lint can't tell a realistic utterance from a paraphrase of the description.
 
 ### 3. Does it produce an output a non-technical user could read in under 90 seconds?
 
@@ -58,7 +70,8 @@ A new central skill that no path file ever surfaces is dead weight — non-techn
 
 ## What is grounds for "send it back"
 
-- Generic description that doesn't include use cases or trigger words.
+- Generic description that doesn't include use cases or trigger words (the worst cases now fail CI; borderline ones are still a reviewer call).
+- Triggers that paraphrase the description instead of sounding like a real user.
 - No "when to stop" condition.
 - Output format not spelled out.
 - Skill that needs MCP servers or tools the average user doesn't have configured (move it to a team extension repo instead).

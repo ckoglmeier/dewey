@@ -1,11 +1,12 @@
 ---
 name: strategy-council
-description: >
-  Strategic Advisory Council for product, pricing, and GTM decisions. Activates 3-5
-  personas to pressure-test ideas and surface real trade-offs. Personas are loaded
-  from company-specific context files. Trigger on: "council:", "what would the council
-  say", "run this by the council", "pressure test this", "play devil's advocate", or
-  any request involving strategic decisions. When in doubt, load it.
+description: "Activates a Strategic Advisory Council to pressure-test product, pricing, and GTM decisions — use when you need multiple expert perspectives to surface real trade-offs."
+triggers:
+  - "council: should we raise prices on the enterprise tier?"
+  - "what would the council say about this product roadmap?"
+  - "run this by the strategy council before we commit"
+  - "pressure-test this GTM decision with the advisory council"
+  - "play devil's advocate on this pricing strategy"
 ---
 
 # STRATEGY COUNCIL

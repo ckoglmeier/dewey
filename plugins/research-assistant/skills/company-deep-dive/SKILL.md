@@ -1,11 +1,12 @@
 ---
 name: company-deep-dive
-description: >
-  Deep dive on a company's business model, strategy, and competitive position - no
-  financials, pure business understanding. Use when someone asks "tell me about [company]",
-  "how does [company] work", "deep dive on [company]", "what does [company] actually do",
-  or any request for business comprehension rather than financial analysis. Can be invoked
-  directly or via the research orchestrator.
+description: Deep dive on a company's business model, strategy, and competitive position - no financials, pure business understanding. Use when asked to truly understand how a company works, explain its moat, or prepare to speak intelligently about a business.
+triggers:
+  - "deep dive on Palantir — how does the business actually work"
+  - "help me truly understand Snowflake's business model before my meeting"
+  - "what does this company actually do and who are their customers"
+  - "I need to be able to speak intelligently about Shopify's competitive position"
+  - "give me a deep business understanding of ServiceNow — model, moat, and what management has been saying"
 ---
 
 # Company Deep Dive - Business Understanding Report

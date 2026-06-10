@@ -1,20 +1,12 @@
 ---
 name: exec-feedback
-description: >
-  Delivers first-pass document feedback in a specific executive's voice — the kind of review
-  they'd give on a brief, strategy doc, proposal, deck, or any written work product shared
-  with them. Applies their principles, pattern-matches against their known pushback areas,
-  and generates specific inline-style comments the way they actually write them.
-
-  SETUP REQUIRED: After installing, tell Claude "Help me set up this feedback skill for
-  [Leader Name]" and Claude will walk you through providing source materials, customizing
-  all 6 sections, and calibrating with doc evals. Then rename this skill to
-  "[initials]-feedback" (e.g., "ck-feedback", "js-feedback").
-
-  Trigger automatically for requests like: "review this doc", "give me [name]'s feedback",
-  "what would [name] say about this", "feedback on this brief", "review this proposal",
-  "first-pass feedback", "doc review", or any request where someone wants this leader's
-  perspective on a written work product. When in doubt, load it.
+description: "Delivers first-pass document feedback in a specific executive's voice — use when you want inline-style comments on a brief, proposal, deck, or strategy doc the way a real leader would write them."
+triggers:
+  - "give me feedback on this doc the way a tough exec would"
+  - "what would Sarah say about this proposal?"
+  - "give me first-pass feedback on this brief before I send it to the exec"
+  - "doc review — be brutal"
+  - "review this strategy proposal and tell me what the executive would push back on"
 ---
 
 # Executive Feedback Skill

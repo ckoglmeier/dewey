@@ -1,20 +1,12 @@
 ---
 name: research
-description: >
-  Run deep, multi-agent research on any strategic question. Handles the full workflow:
-  internal recon (Slack + internal docs), parallel web research agents, progress monitoring,
-  and synthesis into a polished prose document.
-
-  Trigger automatically for requests like: "research X", "dig into Y", "do a competitive
-  analysis of Z", "help me size the market for", "should we build/buy/partner for", "pull
-  together everything we know about", "I need a landscape on", "what do we know about
-  [company]", "find companies similar to X", "who else has solved this", "who should I be
-  talking to in this space", "find analogs to our model", "build a list of companies worth
-  getting introduced to", "map the ecosystem for [market]", "due diligence on [company]",
-  "prep me for a meeting with [person]", "what tools exist for [category]", "regulatory
-  requirements for [industry]", or any request to investigate a topic, market, or strategic
-  question. When in doubt, load it - structured multi-agent research almost always beats
-  ad hoc searching.
+description: Run deep multi-agent research on any strategic question - internal recon, parallel web agents, and synthesis into a polished prose document. Use when asked to research, dig into, or investigate any market, company, or strategic topic.
+triggers:
+  - "research the competitive landscape for sales engagement software"
+  - "dig into what's happening in the vertical SaaS market"
+  - "I need a deep investigation into the HR tech market"
+  - "pull together everything we know about this company before the meeting"
+  - "help me size the market for AI-powered workflow automation"
 ---
 
 # Research - Multi-Agent Research Orchestrator

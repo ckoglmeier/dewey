@@ -1,11 +1,12 @@
 ---
 name: eval
-description: >
-  Evaluate research output quality against structured rubrics. Two modes: (1) Run a
-  research type end-to-end and score the output, or (2) Score an existing research
-  document. Use when someone asks "eval this research type", "test [type]", "score this
-  output", "benchmark [type]", "quality check this research", or any request to measure
-  research quality. Can be invoked directly.
+description: Evaluate research output quality against structured rubrics. Two modes: run a research type end-to-end and score it, or score an existing document. Use when asked to eval, benchmark, or quality-check a research output or research type.
+triggers:
+  - "eval this research output against the rubric"
+  - "score the quality of this company deep dive"
+  - "test the analog-mapping research type end-to-end and benchmark the output"
+  - "quality check this market sizing report — does it meet the standard"
+  - "run the eval harness on our due diligence output and tell me what's missing"
 ---
 
 # Research Eval Harness

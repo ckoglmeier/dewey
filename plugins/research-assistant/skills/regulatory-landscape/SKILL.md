@@ -1,12 +1,12 @@
 ---
 name: regulatory-landscape
-description: >
-  Map the regulatory environment for a market, product, or activity. Use when someone
-  asks "what are the regulations for [industry]", "compliance requirements for [product]",
-  "how is [activity] regulated", "regulatory risk for [market]", "what legislation is
-  pending for [topic]", or any request to understand the legal and regulatory landscape
-  before entering a market or launching a product. Can be invoked directly or via the
-  research orchestrator.
+description: Map the regulatory environment for a market, product, or activity - rules, enforcement, and compliance burden. Use when asked about regulations, compliance requirements, regulatory risk, or pending legislation affecting a product or market.
+triggers:
+  - "what are the compliance requirements for selling HR software to US school districts"
+  - "map the regulatory landscape for fintech lending in the EU"
+  - "what legislation is pending that could affect our AI product"
+  - "what's the regulatory risk if we enter the healthcare data market"
+  - "how is data brokering regulated and what compliance burden does that create"
 ---
 
 # Regulatory Landscape Research Type

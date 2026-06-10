@@ -1,10 +1,12 @@
 ---
 name: market-sizing
-description: >
-  Size a market - TAM/SAM/SOM estimates, territory analysis, opportunity sizing. Use
-  when someone asks "how big is the market for", "what's the TAM", "size the opportunity",
-  "how many potential buyers", or any request to quantify an addressable market. Can be
-  invoked directly or via the research orchestrator.
+description: Size a market with TAM/SAM/SOM estimates, territory analysis, and opportunity sizing. Use when asked how big a market is, what the addressable opportunity is, how many potential buyers exist, or to build a market size estimate.
+triggers:
+  - "size the TAM for vertical SaaS in logistics"
+  - "how big is the market for this product"
+  - "build a SAM/SOM estimate for our new territory in the Southeast"
+  - "how many mid-market companies could we realistically sell to"
+  - "what's the addressable opportunity for AI-powered HR software in the US"
 ---
 
 # Market Sizing Research Type
