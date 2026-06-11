@@ -2,7 +2,7 @@
 # LAYER 16: HOSTED API CONTRACT (mock)
 #
 # All checks run against tests/lib/contract_mock_server.py — a stdlib-only
-# Python mock that implements docs/hosted-api.md v1.0 exactly.  No real
+# Python mock that implements docs/hosted-api.md v1.1 exactly.  No real
 # service is contacted; no API keys are required.
 # ============================================================================
 section "Layer 16 — Hosted API contract (mock)"
@@ -18,8 +18,11 @@ check "Layer 16: contract_mock_server.py exists" \
 check "Layer 16: docs/hosted-api.md exists" \
   "test -f '$REPO_ROOT/docs/hosted-api.md'"
 
-check "Layer 16: docs/hosted-api.md mentions v1.0" \
-  "grep -q 'v1.0' '$REPO_ROOT/docs/hosted-api.md'"
+check "Layer 16: docs/hosted-api.md mentions v1.1 (current contract version)" \
+  "grep -q 'v1.1' '$REPO_ROOT/docs/hosted-api.md'"
+
+check "Layer 16: docs/hosted-api.md notes v1.0 clients remain valid" \
+  "grep -q 'v1.0 clients' '$REPO_ROOT/docs/hosted-api.md'"
 
 # ---- Shared mock-key values used across the live tests ---------------------
 # These are the two keys the mock recognises.

@@ -102,7 +102,7 @@ Events are appended to `~/.claude/dewey-analytics.log` as JSONL. The events are:
 | `skill_invoke` | Guide routed to a specific skill |
 | `extension_created` | User created a local skill extension via `/dewey extend` |
 
-Fields carried: timestamps, skill/plugin names, path identifiers. No personally identifiable information is captured by default.
+Fields carried: timestamps, skill/plugin names, path identifiers. No personally identifiable information is captured by default. Note that once forwarding is enabled, the stable `install_id` (below) joined with skill names and timestamps makes the stream *pseudonymous*, not anonymous — in a small org, usage patterns can be re-identifying. Forwarding is off by default and license-gated.
 
 ### Three-tier opt-out
 
@@ -113,6 +113,16 @@ Privacy is enforced at three layers, evaluated in order:
 2. **Per-plugin / per-skill opt-out** (`telemetry: false` in `plugin.json` or SKILL.md frontmatter): skill authors can mark individual skills or entire plugins as off-limits. Events about those scopes are not written even if global telemetry is on. Intended for HR, legal, medical-adjacent, or otherwise sensitive workflows.
 
 3. **Body-forwarding opt-in** (`DEWEY_TELEMETRY_FORWARD_BODIES=1`): the `extension_created` event carries two prose fields — `additions` (the user-authored extension body) and `user_intent` (their one-line description). These fields are logged locally but stripped before any forwarding. They only leave the machine if you explicitly set this env var.
+
+### Pseudonymous install ID
+
+Every install generates a pseudonymous install ID: 16 lowercase hex characters produced by a CSPRNG (`python3 -c "import secrets; print(secrets.token_hex(8))"`). The ID is stored in `~/.claude/dewey-install-id` (mode 0600) and included as `install_id` on every emitted telemetry event.
+
+**What it is NOT**: the ID is not derived from the hostname, username, MAC address, or any other machine-identifying information. It is purely random. If you delete `~/.claude/dewey-install-id` and reinstall, a completely different ID is generated — the new ID cannot be linked to the old one.
+
+**Opt-out behaviour**: all three opt-out tiers (`DEWEY_TELEMETRY=0`, per-plugin `telemetry: false`, per-skill `telemetry: false`) suppress the entire event. The install ID never travels alone — it is only present when the rest of the event is permitted to be emitted. Hand-built environments that lack the file simply emit no `install_id` field.
+
+**Purpose**: the hosted aggregator uses distinct `install_id` counts per org per billing period for seat measurement, enabling per-seat recurring pricing without collecting names, emails, hostnames, or usernames. The ID is pseudonymous rather than anonymous: it is stable per install, so forwarded events from one machine are linkable to each other (that linkage is what makes seat counting possible).
 
 ### Forwarding to a central endpoint
 

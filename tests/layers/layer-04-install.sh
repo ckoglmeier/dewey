@@ -177,6 +177,58 @@ test -f \"\$SANDBOX_UNREACH/.claude/dewey-license\"
 rm -rf \"\$SANDBOX_UNREACH\"
 "
 
+# ---- Install ID tests --------------------------------------------------------
+
+# Fresh install creates ~/.claude/dewey-install-id, 16 hex chars, mode 600.
+check "fresh install creates dewey-install-id with 16 hex chars, mode 600" \
+  "
+SANDBOX_ID=\$(mktemp -d)
+SANDBOX_DEWEY_ID=\"\$SANDBOX_ID/.claude/dewey\"
+mkdir -p \"\$SANDBOX_DEWEY_ID\"
+cp -R \"$REPO_ROOT/.\" \"\$SANDBOX_DEWEY_ID/\"
+HOME=\"\$SANDBOX_ID\" \
+DEWEY_DIR=\"\$SANDBOX_DEWEY_ID\" \
+DEWEY_REPO=\"file://$REPO_ROOT\" \
+DEWEY_REF=main \
+DEWEY_USE_INPLACE=1 \
+  bash \"$REPO_ROOT/install.sh\" >/dev/null 2>&1
+# File must exist
+test -f \"\$SANDBOX_ID/.claude/dewey-install-id\"
+# Content must be exactly 16 lowercase hex chars
+_id=\$(cat \"\$SANDBOX_ID/.claude/dewey-install-id\")
+echo \"\$_id\" | grep -qE '^[0-9a-f]{16}\$'
+# Mode must be 600
+_perms=\$(stat -f '%Lp' \"\$SANDBOX_ID/.claude/dewey-install-id\" 2>/dev/null || stat -c '%a' \"\$SANDBOX_ID/.claude/dewey-install-id\" 2>/dev/null)
+test \"\$_perms\" = '600'
+rm -rf \"\$SANDBOX_ID\"
+"
+
+# Re-install preserves existing install ID (idempotent).
+check "re-install preserves existing dewey-install-id (idempotent)" \
+  "
+SANDBOX_IDEM=\$(mktemp -d)
+SANDBOX_DEWEY_IDEM=\"\$SANDBOX_IDEM/.claude/dewey\"
+mkdir -p \"\$SANDBOX_DEWEY_IDEM\"
+cp -R \"$REPO_ROOT/.\" \"\$SANDBOX_DEWEY_IDEM/\"
+HOME=\"\$SANDBOX_IDEM\" \
+DEWEY_DIR=\"\$SANDBOX_DEWEY_IDEM\" \
+DEWEY_REPO=\"file://$REPO_ROOT\" \
+DEWEY_REF=main \
+DEWEY_USE_INPLACE=1 \
+  bash \"$REPO_ROOT/install.sh\" >/dev/null 2>&1
+_id_first=\$(cat \"\$SANDBOX_IDEM/.claude/dewey-install-id\")
+# Second run
+HOME=\"\$SANDBOX_IDEM\" \
+DEWEY_DIR=\"\$SANDBOX_DEWEY_IDEM\" \
+DEWEY_REPO=\"file://$REPO_ROOT\" \
+DEWEY_REF=main \
+DEWEY_USE_INPLACE=1 \
+  bash \"$REPO_ROOT/install.sh\" >/dev/null 2>&1
+_id_second=\$(cat \"\$SANDBOX_IDEM/.claude/dewey-install-id\")
+test \"\$_id_first\" = \"\$_id_second\"
+rm -rf \"\$SANDBOX_IDEM\"
+"
+
 # No-license no-degradation: emit + normal install + forward all exit 0.
 check "no-license no-degradation: emit + install + forward all exit 0" \
   "
