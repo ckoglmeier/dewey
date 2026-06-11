@@ -2,7 +2,7 @@
 
 ## Current state (2026-06-10)
 
-Dewey is a Claude Code / Cowork / OpenAI Codex plugin marketplace convention (renamed from Classroom in v2.0.0). Ships 7 in-tree plugins (26 skills total), the Guide skill (slash command `/dewey`), three shell helpers (sync-codex, telemetry, propose), 15 active test layers including Layer 4b (Classroom→Dewey migration) and Layer 8 (opt-in live validation of external entries — gated by `DEWEY_VALIDATE_EXTERNAL=1`). 383 tests passing. The test suite is split into per-layer files under `tests/layers/` with a thin `tests/run.sh` harness; CI now runs the full suite on every push/PR via `.github/workflows/test.yml`.
+Dewey is a Claude Code / Cowork / OpenAI Codex plugin marketplace convention (renamed from Classroom in v2.0.0). Ships 8 in-tree plugins (27 skills total), the Guide skill (slash command `/dewey`), three shell helpers (sync-codex, telemetry, propose), 17 active test layers including Layer 4b (Classroom→Dewey migration) and Layer 8 (opt-in live validation of external entries — gated by `DEWEY_VALIDATE_EXTERNAL=1`). 455 tests passing, plus a separate 54-test hosted Python unit suite. The test suite is split into per-layer files under `tests/layers/` with a thin `tests/run.sh` harness; CI now runs the full suite on every push/PR via `.github/workflows/test.yml`. Dewey is now a buyable open-core product: the local convention is free; an org license key activates hosted features (telemetry forwarding + weekly digest). See docs/plans/go-to-market.md.
 
 For the full status snapshot (Done / Partial / Deferred / Hosted bucket), the source of truth is now [`docs/roadmap.md`](docs/roadmap.md). This file holds session-level notes and open todos.
 
@@ -17,6 +17,12 @@ Work the user already flagged or that came up mid-session:
 - **Phase 3 trigger eval (optional)** — model-based routing eval per docs/plans/skill-trigger-validation.md Phase 3. Opt-in like Layer 8, needs API credits (~$0.10/run on Haiku). Decide after living with the Layer 15 lint for a while.
 - **Argument-hint backfill** on ~10 high-traffic skills — pending the open question of whether argument-hint matters for plugin skills (vs. only the Guide).
 - **Cowork Browse Plugins UI walkthrough** — still needs a human to verify how categories/tags/multi-skill-plugins/path-files render in Cowork's Browse Plugins panel (unchanged).
+
+### GTM follow-ups (post-merge)
+- **Cowork Browse Plugins walkthrough** — still needs a human (WS5).
+- **Connect a real payment provider account** (Stripe/Paddle) — human step; service implements the webhook contract, no live payments until then. See hosted/RUNBOOK.md.
+- **Run the full eval** (DEWEY_EVAL=1 + a backend) pre-release; it costs API credits and is not in PR CI.
+- **Hosted stages 2-5** (analyzer, MCP push, publisher mode, UI) — gated per docs/plans/hosted-dewey.md.
 
 ### Strategic / design — discussed, parked
 1. **Multi-organization context — Dewey isn't built for it.** Design doc: `docs/decisions/multi-org-context.md`. Today Dewey assumes one canonical org; real users (consultants, portfolio operators) need per-org context resolution. The same skill needs to resolve to different canonical context depending on which org is active. Bigger than a feature — closer to a v2 architectural question.
@@ -49,6 +55,8 @@ Not a backlog for this repo per se, but the local data pipe is built to feed it:
 
 ## Resolved this session
 
+- **Go-to-market build (PR #4).** Shipped a working, buyable open-core Dewey across five workstreams: (1) admin onboarding plugin `dewey-admin-setup` with fork-less trial; (2) supply-chain hardening — install/refresh now pin to checksum-verified GitHub releases by default, docs/security.md for buyers; (3) hosted service under hosted/ (stdlib-only Python: SQLite store with hashed-at-rest license keys, HMAC Stripe-shaped checkout webhook, bearer-auth event ingest, per-org weekly digest, synthetic demo seed); (4) CLI open-core licensing — install.sh accepts DEWEY_LICENSE_KEY, dewey-telemetry.sh forward pushes batches; the open-core guarantee (no license ever degrades local function) is test-asserted; (5) eval harness under evals/ run on the advanced model: routing 93.8% / flows 100%.
+- **Adversarial security review of the money path.** Returned NO-SHIP on two HIGH issues (webhook replay via missing event id; validate endpoint leaking org/plan/status) — both fixed and regression-tested before PR #4. Verified the full purchase→install→forward→digest loop end-to-end.
 - **Repo audit + remediation (PR #2, merged).** Full audit graded B+. Fixed: CI for the test suite (`.github/workflows/test.yml` — previously the 381 tests never ran in CI), 6 Python file-handle leaks in `tests/lib/`, stale Classroom references (CODEOWNERS header, skill counts), README 'Upgrading from Classroom' section, `requirements.txt`.
 - **Layer 15: triggers + description quality lint (Phases 1+2 of the skill-trigger plan).** All 25 user-invocable skills now declare 3–5 realistic `triggers:`. New lints: `check_triggers.py` (missing/overlong/zero-overlap triggers fail; <3 warns) and `check_description_quality.py` (length 50–250, no vague-verb leads). The description lint caught a latent bug: folded `description: >` blocks bypassed Layer 2's length check — 20 over-length descriptions rewritten, embedded trigger prose moved into `triggers:` fields. `synthesis` is `user-invocable: false` and exempt (lint fails it if triggers appear — routing must go via the orchestrator). `docs/skill-triggers.md` is the author reference; `pr-checklist.md` now distinguishes lint-enforced rules from reviewer judgment calls.
 - **tests/run.sh split into per-layer files** under `tests/layers/` (16 files), sourced by a ~110-line harness. Verified identical: 383/383, zero test-name drift, failures still propagate (red-test), missing layer file aborts FATAL.
@@ -56,7 +64,7 @@ Not a backlog for this repo per se, but the local data pipe is built to feed it:
 
 ## Repo topology
 
-- `ckoglmeier/dewey` — this repo. Marketplace manifest, Guide skill, **7 in-tree plugins (26 skills total)** — these are **seed skills**: starting examples that an adopting org forks and replaces with their own. Plus three shell helpers (sync-codex, telemetry, propose), 15 active test layers, convention + decision docs.
+- `ckoglmeier/dewey` — this repo. Marketplace manifest, Guide skill, **8 in-tree plugins (27 skills total)** — these are **seed skills**: starting examples that an adopting org forks and replaces with their own. Plus three shell helpers (sync-codex, telemetry, propose), 17 active test layers, convention + decision docs.
 - `ckoglmeier/skills` — CK's personal/active skill library. `templates/`, `playbooks/`, `borrowed/`. Independent from Dewey — they evolve on their own track. The three plugins inlined into Dewey in v1.3.0 (`exec-feedback`, `research-assistant`, `template-strategy-feedback`) were used as starting points for the seed copies; both versions can drift independently from here without that being a problem.
 
 ## Quick orientation for a new session
