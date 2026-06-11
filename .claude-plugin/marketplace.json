@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "Reference implementation of the Dewey convention: a Claude-native skill marketplace organized by problem domain, with a Guide that helps non-technical users discover, install, and extend skills.",
-    "version": "2.0.0"
+    "version": "2.1.0"
   },
   "plugins": [
     {
