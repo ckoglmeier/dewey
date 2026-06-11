@@ -134,3 +134,57 @@ check "install.sh runs with git absent from PATH" \
 
 check "no-git install populated guide/SKILL.md" \
   "test -f '$NOGIT_SANDBOX/.claude/dewey/guide/SKILL.md'"
+
+# ---- Release resolution — unit tests (no network) ----------------------------
+# These tests exercise resolve_release() and the parse_release.py helper
+# against canned API JSON fixtures. No network is used.
+
+FIXTURE_DIR="$REPO_ROOT/tests/fixtures/release-api"
+PARSE_PY="$FIXTURE_DIR/parse_release.py"
+RUN_RESOLVE="$FIXTURE_DIR/run_resolve.sh"
+
+# Create the companion .sha256 file that resolve_release() looks for in test mode.
+# Use the real checksum of our test tarball so a later end-to-end test can verify it.
+echo "$TARBALL_SHA  dewey-v99.0.0.tar.gz" > "$FIXTURE_DIR/dewey-v99.0.0.tar.gz.sha256"
+
+check "parse_release.py extracts tag from fixture" \
+  "out=\$(python3 '$PARSE_PY' '$FIXTURE_DIR/release-latest.json'); echo \"\$out\" | grep -q 'tag=v99.0.0'"
+
+check "parse_release.py extracts asset_url from fixture" \
+  "out=\$(python3 '$PARSE_PY' '$FIXTURE_DIR/release-latest.json'); echo \"\$out\" | grep -q 'asset_url=https://example.invalid/dewey-v99.0.0.tar.gz'"
+
+check "parse_release.py extracts sha256_url from fixture" \
+  "out=\$(python3 '$PARSE_PY' '$FIXTURE_DIR/release-latest.json'); echo \"\$out\" | grep -q 'sha256_url=https://example.invalid/dewey-v99.0.0.tar.gz.sha256'"
+
+check "parse_release.py returns empty asset_url when no assets" \
+  "out=\$(python3 '$PARSE_PY' '$FIXTURE_DIR/release-no-assets.json'); echo \"\$out\" | grep -q 'asset_url='"
+
+check "run_resolve.sh sets DEWEY_REF from fixture" \
+  "out=\$(bash '$RUN_RESOLVE' '$REPO_ROOT/install.sh' '$FIXTURE_DIR/release-latest.json' 2>/dev/null); echo \"\$out\" | grep -q 'DEWEY_REF=v99.0.0'"
+
+check "run_resolve.sh sets _DEWEY_RELEASE_ASSET_URL from fixture" \
+  "out=\$(bash '$RUN_RESOLVE' '$REPO_ROOT/install.sh' '$FIXTURE_DIR/release-latest.json' 2>/dev/null); echo \"\$out\" | grep -q '_DEWEY_RELEASE_ASSET_URL=https://example.invalid/dewey-v99.0.0.tar.gz'"
+
+check "run_resolve.sh sets _DEWEY_RELEASE_SHA256 from sibling .sha256 file" \
+  "out=\$(bash '$RUN_RESOLVE' '$REPO_ROOT/install.sh' '$FIXTURE_DIR/release-latest.json' 2>/dev/null); echo \"\$out\" | grep -q '_DEWEY_RELEASE_SHA256=$TARBALL_SHA'"
+
+check "run_resolve.sh leaves asset URL empty when no assets in fixture" \
+  "out=\$(bash '$RUN_RESOLVE' '$REPO_ROOT/install.sh' '$FIXTURE_DIR/release-no-assets.json' 2>/dev/null); echo \"\$out\" | grep -q '_DEWEY_RELEASE_ASSET_URL=\$'"
+
+check "run_resolve.sh falls back to main when fixture has empty JSON" \
+  "empty_fix=\$(mktemp); echo '{}' > \"\$empty_fix\"; out=\$(bash '$RUN_RESOLVE' '$REPO_ROOT/install.sh' \"\$empty_fix\" 2>/dev/null); echo \"\$out\" | grep -q 'DEWEY_REF=main'; rm -f \"\$empty_fix\""
+
+# ---- Checksum-required failure: release-asset install with wrong .sha256 -----
+# When DEWEY_TARBALL and DEWEY_TARBALL_SHA256 are both set and the hash is wrong,
+# install must abort with a non-zero exit and leave DEWEY_DIR empty.
+BADSHA_SANDBOX="$(mktemp -d)"
+TMPDIRS_TO_CLEAN+=("$BADSHA_SANDBOX")
+check "release-asset install with wrong SHA-256 must abort" \
+  "HOME='$BADSHA_SANDBOX' \
+   DEWEY_DIR='$BADSHA_SANDBOX/.claude/dewey' \
+   DEWEY_TARBALL='file://$TARBALL_FILE' \
+   DEWEY_TARBALL_SHA256='0000000000000000000000000000000000000000000000000000000000000000' \
+   bash '$REPO_ROOT/install.sh' >/dev/null 2>&1; test \$? -ne 0"
+
+check "release-asset abort left DEWEY_DIR empty" \
+  "test ! -f '$BADSHA_SANDBOX/.claude/dewey/guide/SKILL.md'"

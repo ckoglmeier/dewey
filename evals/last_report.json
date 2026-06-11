@@ -1,0 +1,66 @@
+{
+  "trigger_routing": {
+    "accuracy": 0.9384615384615385,
+    "correct": 122,
+    "total": 130,
+    "misroutes": [
+      {
+        "trigger": "how does Gong compare to our product in competitive deals",
+        "expected": "research-competitive-analysis",
+        "got": "competitive-analysis"
+      },
+      {
+        "trigger": "what would a buyer choose instead of us in a competitive deal, and why",
+        "expected": "research-competitive-analysis",
+        "got": "competitive-analysis"
+      },
+      {
+        "trigger": "research the competitive landscape for sales engagement software",
+        "expected": "research",
+        "got": "research-competitive-analysis"
+      },
+      {
+        "trigger": "dig into what's happening in the vertical SaaS market",
+        "expected": "research",
+        "got": "industry-trend"
+      },
+      {
+        "trigger": "pull together everything we know about this company before the meeting",
+        "expected": "research",
+        "got": "company-deep-dive"
+      },
+      {
+        "trigger": "help me size the market for AI-powered workflow automation",
+        "expected": "research",
+        "got": "market-sizing"
+      },
+      {
+        "trigger": "map the customer data platform landscape for us",
+        "expected": "technology-landscape",
+        "got": "ecosystem-map"
+      },
+      {
+        "trigger": "which strategy tool should I use for this pricing decision?",
+        "expected": "strategy-orchestrator",
+        "got": "strategy-frameworks"
+      }
+    ],
+    "bar": 0.9,
+    "pass": true
+  },
+  "guide_flows": {
+    "assertions_total": 32,
+    "assertions_pass": 32,
+    "rate": 1.0,
+    "bar": 1.0,
+    "pass": true,
+    "failures": [],
+    "note": "install-flow surface-filter gap found and fixed; re-eval confirmed pass"
+  },
+  "model": "opus (advanced) via Agent judges, blind to expected answers",
+  "summary": {
+    "trigger_routing": "93.8% (bar 90%) PASS",
+    "guide_flows": "100% (bar 100%) PASS",
+    "overall": "PASS"
+  }
+}

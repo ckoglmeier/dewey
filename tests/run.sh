@@ -76,6 +76,8 @@ LAYERS=(
   layer-13-propose.sh
   layer-14-context.sh
   layer-15-triggers.sh
+  layer-16-hosted.sh
+  layer-17-eval.sh
 )
 
 for layer in "${LAYERS[@]}"; do

@@ -22,23 +22,44 @@
 #
 # Env overrides:
 #   DEWEY_REPO            Repo URL (default: example GitHub URL). Used to derive tarball URL.
-#   DEWEY_REF             Branch or tag to install (default: main). Tags are supported — use them to pin.
-#   DEWEY_TARBALL         Full tarball URL. Overrides the derived ${DEWEY_REPO}/archive/... URL.
-#   DEWEY_TARBALL_SHA256  Optional SHA-256. If set, the downloaded tarball must match.
+#   DEWEY_REF             Branch or tag to install. If unset, the installer resolves the latest
+#                             published release automatically (see resolve_release below). Set this
+#                             to "main" to opt out of release resolution and track main.
+#   DEWEY_TARBALL         Full tarball URL. Overrides both release resolution and the derived
+#                             ${DEWEY_REPO}/archive/... URL. Also bypasses checksum enforcement
+#                             (for dev/test use with DEWEY_USE_INPLACE=1 or local file URLs).
+#   DEWEY_TARBALL_SHA256  SHA-256 of the tarball. If set, the downloaded tarball must match.
+#                             When installing from a release asset, the checksum is fetched from
+#                             the release and verified automatically — this env is for manual
+#                             overrides only.
 #   DEWEY_DIR             Where to place the cache (default: $HOME/.claude/dewey).
 #   DEWEY_USE_INPLACE     If 1, skip download and use whatever already exists at DEWEY_DIR.
 #                             Used by the test sandbox; not intended for end users.
+#   DEWEY_LICENSE_KEY     Optional org license key (format: dwy_ + 32 hex chars). When set,
+#                             the key is written to ~/.claude/dewey-license (chmod 600) so
+#                             dewey-telemetry.sh forward can authenticate against the hosted
+#                             ingest endpoint. If DEWEY_TELEMETRY_ENDPOINT is also set the
+#                             installer performs a best-effort validation call (max 5 s); an
+#                             unreachable endpoint or invalid key never fails the install.
 
 set -euo pipefail
 
 # ---- Configurable -----------------------------------------------------------
 DEWEY_REPO="${DEWEY_REPO:-https://github.com/ckoglmeier/dewey}"
-DEWEY_REF="${DEWEY_REF:-main}"
+# DEWEY_REF left unset deliberately — resolve_release() fills it, or falls
+# back to "main". Callers may still set it explicitly to skip release resolution.
+DEWEY_REF="${DEWEY_REF:-}"
 DEWEY_DIR="${DEWEY_DIR:-$HOME/.claude/dewey}"
 DEWEY_TARBALL="${DEWEY_TARBALL:-}"
 DEWEY_TARBALL_SHA256="${DEWEY_TARBALL_SHA256:-}"
 DEWEY_USE_INPLACE="${DEWEY_USE_INPLACE:-0}"
+# Set by resolve_release() when a release asset with a bundled checksum file is found.
+_DEWEY_RELEASE_SHA256=""
+# Set by resolve_release() to indicate the install should use a release asset URL.
+_DEWEY_RELEASE_ASSET_URL=""
 DEWEY_SYNC_CODEX="${DEWEY_SYNC_CODEX:-auto}"  # auto | 1 | 0
+DEWEY_LICENSE_KEY="${DEWEY_LICENSE_KEY:-}"
+LICENSE_FILE="$HOME/.claude/dewey-license"
 SETTINGS_FILE="$HOME/.claude/settings.json"
 GUIDE_SKILL_DIR="$HOME/.claude/skills/dewey"
 HOOK_SCRIPT="$HOME/.claude/dewey-first-run.sh"
@@ -81,10 +102,121 @@ assert_safe_dewey_dir() {
   esac
 }
 
+# Query the GitHub releases API and resolve the latest release tag.
+# Sets DEWEY_REF, _DEWEY_RELEASE_ASSET_URL, and _DEWEY_RELEASE_SHA256 as
+# side effects, or falls back to DEWEY_REF=main with a warning.
+#
+# Accepts the JSON on stdin when DEWEY_RESOLVE_RELEASE_JSON is set to a
+# file path — used by tests to unit-test parsing without network access.
+resolve_release() {
+  local repo_path api_url json tag asset_url sha256_url sha256_val
+
+  # Extract "owner/repo" from the repo URL for the API call.
+  repo_path="$(echo "${DEWEY_REPO%.git}" | sed 's|.*github\.com/||')"
+  api_url="https://api.github.com/repos/${repo_path}/releases/latest"
+
+  # Allow tests to inject a canned JSON response via a file path.
+  if [ -n "${DEWEY_RESOLVE_RELEASE_JSON:-}" ]; then
+    json="$(cat "$DEWEY_RESOLVE_RELEASE_JSON")"
+  else
+    json="$(curl -fsSL --max-time 10 "$api_url" 2>/dev/null)" || json=""
+  fi
+
+  if [ -z "$json" ]; then
+    warn "no published release found — installing from main, unverified"
+    DEWEY_REF="main"
+    return
+  fi
+
+  tag="$(printf '%s' "$json" | python3 -c "
+import json, sys
+try:
+    d = json.load(sys.stdin)
+    t = d.get('tag_name','')
+    print(t)
+except Exception:
+    pass
+")"
+
+  if [ -z "$tag" ]; then
+    warn "no published release found — installing from main, unverified"
+    DEWEY_REF="main"
+    return
+  fi
+
+  DEWEY_REF="$tag"
+
+  # Look for a release asset named dewey-<tag>.tar.gz and its .sha256 companion.
+  local expected_asset="dewey-${tag}.tar.gz"
+  local expected_sha256_asset="dewey-${tag}.tar.gz.sha256"
+  asset_url="$(printf '%s' "$json" | python3 -c "
+import json, sys
+name = sys.argv[1]
+try:
+    d = json.load(sys.stdin)
+    for a in d.get('assets', []):
+        if a.get('name') == name:
+            print(a.get('browser_download_url',''))
+            break
+except Exception:
+    pass
+" "$expected_asset")"
+
+  sha256_url="$(printf '%s' "$json" | python3 -c "
+import json, sys
+name = sys.argv[1]
+try:
+    d = json.load(sys.stdin)
+    for a in d.get('assets', []):
+        if a.get('name') == name:
+            print(a.get('browser_download_url',''))
+            break
+except Exception:
+    pass
+" "$expected_sha256_asset")"
+
+  local repo_base="${DEWEY_REPO%.git}"
+
+  if [ -n "$asset_url" ]; then
+    _DEWEY_RELEASE_ASSET_URL="$asset_url"
+
+    if [ -n "$sha256_url" ]; then
+      # Fetch the .sha256 file to get the expected hash.
+      if [ -n "${DEWEY_RESOLVE_RELEASE_JSON:-}" ]; then
+        # Test mode: look for a sibling .sha256 file next to the JSON fixture.
+        local fixture_dir sha256_file
+        fixture_dir="$(dirname "$DEWEY_RESOLVE_RELEASE_JSON")"
+        sha256_file="${fixture_dir}/${expected_sha256_asset}"
+        if [ -f "$sha256_file" ]; then
+          sha256_val="$(cat "$sha256_file" | awk '{print $1}')"
+        fi
+      else
+        sha256_val="$(curl -fsSL --max-time 10 "$sha256_url" 2>/dev/null | awk '{print $1}')" || sha256_val=""
+      fi
+      if [ -n "$sha256_val" ]; then
+        _DEWEY_RELEASE_SHA256="$sha256_val"
+      else
+        warn "release checksum file unavailable — release asset install cannot be verified; using archive URL instead"
+        _DEWEY_RELEASE_ASSET_URL=""
+      fi
+    else
+      warn "no checksum asset found for release ${tag} — release asset install cannot be verified; using archive URL instead"
+      _DEWEY_RELEASE_ASSET_URL=""
+    fi
+  fi
+  # If no verified asset URL, DEWEY_TARBALL stays empty and derive_tarball_url
+  # will fall through to the GitHub archive URL for the tag.
+}
+
 # Derive tarball URL from repo + ref if the user didn't override.
 derive_tarball_url() {
   if [ -n "$DEWEY_TARBALL" ]; then
     echo "$DEWEY_TARBALL"
+    return
+  fi
+  # If resolve_release found a verified asset, use it.
+  if [ -n "$_DEWEY_RELEASE_ASSET_URL" ]; then
+    echo "$_DEWEY_RELEASE_ASSET_URL"
     return
   fi
   local repo="${DEWEY_REPO%.git}"
@@ -113,15 +245,23 @@ fetch_and_install_snapshot() {
     die "Download failed: $url"
   fi
 
-  if [ -n "$DEWEY_TARBALL_SHA256" ]; then
+  # Determine the effective checksum to enforce.
+  # Priority: explicit env override > release-resolved checksum.
+  local _effective_sha256="${DEWEY_TARBALL_SHA256:-${_DEWEY_RELEASE_SHA256:-}}"
+  # When installing from a release asset, a checksum is MANDATORY.
+  if [ -n "$_DEWEY_RELEASE_ASSET_URL" ] && [ -z "$_effective_sha256" ]; then
+    rm -rf "$tmp_root"
+    die "Release asset install requires a checksum but none was available (this should not happen — file a bug)"
+  fi
+  if [ -n "$_effective_sha256" ]; then
     say "Verifying tarball checksum"
-    verify_sha256 "$DEWEY_TARBALL_SHA256" "$tmp_tarball"
+    verify_sha256 "$_effective_sha256" "$tmp_tarball"
     case $? in
       0) : ;;
       2) rm -rf "$tmp_root"
-         die "DEWEY_TARBALL_SHA256 is set but neither sha256sum nor shasum is available" ;;
+         die "Checksum: neither sha256sum nor shasum is available" ;;
       *) rm -rf "$tmp_root"
-         die "Checksum mismatch: expected $DEWEY_TARBALL_SHA256" ;;
+         die "Checksum mismatch: expected $_effective_sha256" ;;
     esac
   fi
 
@@ -178,6 +318,21 @@ say "Dewey installer starting"
 require curl
 require tar
 require python3
+
+# ---- Release resolution -----------------------------------------------------
+# Resolve the latest published release unless the caller has already specified
+# an explicit ref, tarball, or inplace override. This keeps every existing test
+# green: tests always set at least one of these three env vars.
+if [ -z "$DEWEY_REF" ] && [ -z "$DEWEY_TARBALL" ] && [ "$DEWEY_USE_INPLACE" != "1" ]; then
+  say "Resolving latest Dewey release"
+  resolve_release
+  if [ "$DEWEY_REF" != "main" ]; then
+    say "Pinning to release $DEWEY_REF"
+  fi
+elif [ -z "$DEWEY_REF" ]; then
+  # Caller set DEWEY_TARBALL or DEWEY_USE_INPLACE but not DEWEY_REF — default ref to main.
+  DEWEY_REF="main"
+fi
 
 if ! command -v claude >/dev/null 2>&1; then
   warn "Claude Code CLI ('claude') not found on PATH."
@@ -494,15 +649,22 @@ cat > "$REFRESH_SCRIPT" <<REFRESH_EOF
 # Pulls the latest snapshot of the Dewey reference repo if the local cache
 # is older than DEWEY_REFRESH_INTERVAL hours (default 24). Background-safe,
 # lock-protected, atomic swap. Always exits 0 — never breaks a session.
+#
+# Channels:
+#   DEWEY_REFRESH_CHANNEL=release (default) — upgrades tag-to-tag via the
+#       GitHub releases API; verifies the release checksum asset; declines the
+#       swap if the checksum file is absent or mismatched.
+#   DEWEY_REFRESH_CHANNEL=main — tracks the main branch without checksum
+#       enforcement (dev / CI use only).
 
 set -u
 
 DEWEY_REPO="\${DEWEY_REPO:-$DEWEY_REPO}"
-DEWEY_REF="\${DEWEY_REF:-$DEWEY_REF}"
 DEWEY_DIR="\${DEWEY_DIR:-$DEWEY_DIR}"
 DEWEY_TARBALL="\${DEWEY_TARBALL:-${DEWEY_TARBALL}}"
 DEWEY_TARBALL_SHA256="\${DEWEY_TARBALL_SHA256:-${DEWEY_TARBALL_SHA256}}"
 DEWEY_REFRESH_INTERVAL="\${DEWEY_REFRESH_INTERVAL:-24}"
+DEWEY_REFRESH_CHANNEL="\${DEWEY_REFRESH_CHANNEL:-release}"
 
 LOCK_FILE="\$HOME/.claude/dewey-refresh.lock"
 MARKER="\$HOME/.claude/dewey-last-refresh"
@@ -556,34 +718,150 @@ case "\$DEWEY_DIR" in
   *) log "refusing unsafe DEWEY_DIR=\$DEWEY_DIR"; exit 0 ;;
 esac
 
-if [ -n "\$DEWEY_TARBALL" ]; then
-  url="\$DEWEY_TARBALL"
-else
-  repo="\${DEWEY_REPO%.git}"
-  url="\${repo}/archive/\${DEWEY_REF}.tar.gz"
+# ---- Channel resolution -----------------------------------------------------
+# Resolve the download URL and (for release channel) the expected checksum.
+_ref=""
+_url=""
+_expected_sha256=""
+
+# Record the currently-installed version for the log transition message.
+_old_version=""
+if [ -f "\$DEWEY_DIR/.claude-plugin/marketplace.json" ]; then
+  _old_version="\$(python3 -c "
+import json, sys
+try:
+    d = json.load(open(sys.argv[1]))
+    print(d.get('metadata', {}).get('version', ''))
+except Exception:
+    pass
+" "\$DEWEY_DIR/.claude-plugin/marketplace.json" 2>/dev/null || true)"
 fi
 
+if [ -n "\$DEWEY_TARBALL" ]; then
+  # Explicit tarball override — honor it regardless of channel.
+  _url="\$DEWEY_TARBALL"
+  _ref="override"
+elif [ "\$DEWEY_REFRESH_CHANNEL" = "main" ]; then
+  repo="\${DEWEY_REPO%.git}"
+  _url="\${repo}/archive/main.tar.gz"
+  _ref="main"
+else
+  # release channel: resolve the latest published tag via the GitHub API.
+  repo_path="\$(echo "\${DEWEY_REPO%.git}" | sed 's|.*github\.com/||')"
+  api_url="https://api.github.com/repos/\${repo_path}/releases/latest"
+
+  # Allow tests to inject a canned response.
+  if [ -n "\${DEWEY_RESOLVE_RELEASE_JSON:-}" ]; then
+    _api_json="\$(cat "\$DEWEY_RESOLVE_RELEASE_JSON")"
+  else
+    _api_json="\$(curl -fsSL --max-time 10 "\$api_url" 2>/dev/null)" || _api_json=""
+  fi
+
+  if [ -z "\$_api_json" ]; then
+    log "release API unavailable — skipping refresh"
+    exit 0
+  fi
+
+  _ref="\$(printf '%s' "\$_api_json" | python3 -c "
+import json, sys
+try:
+    d = json.load(sys.stdin)
+    print(d.get('tag_name',''))
+except Exception:
+    pass
+")"
+
+  if [ -z "\$_ref" ]; then
+    log "release API returned no tag — skipping refresh"
+    exit 0
+  fi
+
+  # Find the release asset and its checksum companion.
+  _asset_name="dewey-\${_ref}.tar.gz"
+  _sha256_asset_name="dewey-\${_ref}.tar.gz.sha256"
+
+  _asset_url="\$(printf '%s' "\$_api_json" | python3 -c "
+import json, sys
+name = sys.argv[1]
+try:
+    d = json.load(sys.stdin)
+    for a in d.get('assets', []):
+        if a.get('name') == name:
+            print(a.get('browser_download_url',''))
+            break
+except Exception:
+    pass
+" "\$_asset_name")"
+
+  _sha256_asset_url="\$(printf '%s' "\$_api_json" | python3 -c "
+import json, sys
+name = sys.argv[1]
+try:
+    d = json.load(sys.stdin)
+    for a in d.get('assets', []):
+        if a.get('name') == name:
+            print(a.get('browser_download_url',''))
+            break
+except Exception:
+    pass
+" "\$_sha256_asset_name")"
+
+  if [ -z "\$_asset_url" ] || [ -z "\$_sha256_asset_url" ]; then
+    log "release \$_ref: asset or checksum file absent — declining swap (channel=release requires verification)"
+    exit 0
+  fi
+
+  # Fetch the checksum.
+  if [ -n "\${DEWEY_RESOLVE_RELEASE_JSON:-}" ]; then
+    # Test mode: look for sibling .sha256 file.
+    _fixture_dir="\$(dirname "\$DEWEY_RESOLVE_RELEASE_JSON")"
+    _sha256_file="\${_fixture_dir}/\${_sha256_asset_name}"
+    if [ -f "\$_sha256_file" ]; then
+      _expected_sha256="\$(awk '{print \$1}' "\$_sha256_file")"
+    fi
+  else
+    _expected_sha256="\$(curl -fsSL --max-time 10 "\$_sha256_asset_url" 2>/dev/null | awk '{print \$1}')" || _expected_sha256=""
+  fi
+
+  if [ -z "\$_expected_sha256" ]; then
+    log "release \$_ref: could not fetch checksum — declining swap"
+    exit 0
+  fi
+
+  _url="\$_asset_url"
+fi
+
+# ---- Download ---------------------------------------------------------------
 tmp_root=\$(mktemp -d 2>/dev/null) || { log "mktemp failed"; exit 0; }
 tmp_tarball="\$tmp_root/dewey.tar.gz"
 stage="\$tmp_root/stage"
 mkdir -p "\$stage"
 
-if ! curl -fsSL "\$url" -o "\$tmp_tarball" 2>/dev/null; then
-  log "download failed: \$url"
+if ! curl -fsSL "\$_url" -o "\$tmp_tarball" 2>/dev/null; then
+  log "download failed: \$_url"
   rm -rf "\$tmp_root"
   exit 0
 fi
 
-if [ -n "\$DEWEY_TARBALL_SHA256" ]; then
-  if ! verify_sha256 "\$DEWEY_TARBALL_SHA256" "\$tmp_tarball"; then
-    # Covers both mismatch and no-checksum-tool: when a checksum was
-    # configured, never swap in content we couldn't verify.
-    log "checksum verification failed (mismatch or no sha256 tool)"
+# ---- Checksum ---------------------------------------------------------------
+# In release channel, _expected_sha256 was populated above (or we already exited).
+# For the main channel, DEWEY_TARBALL_SHA256 may still be set explicitly.
+_check_sha="\${_expected_sha256:-\${DEWEY_TARBALL_SHA256:-}}"
+
+if [ -n "\$_check_sha" ]; then
+  if ! verify_sha256 "\$_check_sha" "\$tmp_tarball"; then
+    log "checksum verification failed — declining swap"
     rm -rf "\$tmp_root"
     exit 0
   fi
+elif [ "\$DEWEY_REFRESH_CHANNEL" = "release" ] && [ -z "\$DEWEY_TARBALL" ]; then
+  # Should never reach here: we would have exited above if no checksum.
+  log "release channel: no checksum available — declining swap"
+  rm -rf "\$tmp_root"
+  exit 0
 fi
 
+# ---- Extract + validate + swap ----------------------------------------------
 if ! tar -xzf "\$tmp_tarball" --strip-components=1 -C "\$stage" 2>/dev/null; then
   log "extract failed"
   rm -rf "\$tmp_root"
@@ -618,7 +896,22 @@ fi
 
 rm -rf "\$tmp_root"
 touch "\$MARKER"
-log "refreshed from \$url"
+
+# Detect the new version for the transition log line.
+_new_version="\$(python3 -c "
+import json, sys
+try:
+    d = json.load(open(sys.argv[1]))
+    print(d.get('metadata', {}).get('version', ''))
+except Exception:
+    pass
+" "\$DEWEY_DIR/.claude-plugin/marketplace.json" 2>/dev/null || true)"
+
+if [ -n "\$_old_version" ] && [ -n "\$_new_version" ] && [ "\$_old_version" != "\$_new_version" ]; then
+  log "refreshed \$_old_version -> \$_new_version from \$_url"
+else
+  log "refreshed from \$_url (ref=\${_ref})"
+fi
 
 # Post-refresh: mirror updated skills to Codex if available
 SYNC_SCRIPT="\$HOME/.claude/dewey-sync-codex.sh"
@@ -679,6 +972,50 @@ touch "\$MARKER"
 exit 0
 EOF
 chmod +x "$HOOK_SCRIPT"
+
+# ---- Step 6: store license key (if provided) --------------------------------
+if [ -n "$DEWEY_LICENSE_KEY" ]; then
+  printf "%s" "$DEWEY_LICENSE_KEY" > "$LICENSE_FILE"
+  chmod 600 "$LICENSE_FILE"
+  say "License key stored at $LICENSE_FILE"
+
+  # Best-effort validation — never fails the install.
+  _endpoint="${DEWEY_TELEMETRY_ENDPOINT:-}"
+  if [ -n "$_endpoint" ]; then
+    # Temp file: mktemp + 600 so the response is never world-readable, and
+    # the request body goes over stdin (--data @-) rather than argv, so the
+    # key never appears in `ps`/`/proc/<pid>/cmdline`.
+    _validate_tmp="$(mktemp "${TMPDIR:-/tmp}/dewey-validate.XXXXXX")"
+    chmod 600 "$_validate_tmp"
+    _validate_result="$(printf '{"key":"%s"}' "$DEWEY_LICENSE_KEY" | curl -s \
+      -o "$_validate_tmp" -w "%{http_code}" \
+      --max-time 5 \
+      -X POST \
+      -H "Content-Type: application/json" \
+      --data @- \
+      "${_endpoint%/}/v1/license/validate" 2>/dev/null)" || _validate_result=""
+    if [ "$_validate_result" = "200" ]; then
+      _valid="$(python3 -c "
+import json
+try:
+    d = json.load(open('$_validate_tmp'))
+    print('true' if d.get('valid') else 'false')
+except Exception:
+    print('unknown')
+" 2>/dev/null || echo "unknown")"
+      if [ "$_valid" = "true" ]; then
+        say "License key validated — hosted features activated."
+      else
+        warn "License key was stored but the service returned valid=false. Check your key or contact support."
+      fi
+    elif [ -z "$_validate_result" ]; then
+      warn "Couldn't reach licensing service — key stored, will validate on first forward."
+    else
+      warn "License key stored but validation returned HTTP ${_validate_result}. Key stored; hosted features may not activate."
+    fi
+    rm -f "$_validate_tmp"
+  fi
+fi
 
 # ---- Done -------------------------------------------------------------------
 say "Dewey installed."

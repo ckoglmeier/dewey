@@ -32,6 +32,7 @@ The richest event is `extension_created`, emitted by the Guide's `/dewey extend`
 |---|---|---|
 | `ts` | yes | UTC ISO-8601 timestamp |
 | `event` | yes | Always `extension_created` for this event type |
+| `org` | yes | Org identifier — resolved from `$DEWEY_ORG` env var if set, else the first line of `~/.claude/dewey-active-org` if that file exists, else `"default"`. Present on every emitted event; used by the hosted aggregator to segregate data across orgs. |
 | `parent` | yes | Name of the parent skill being extended |
 | `parent_plugin` | yes | Plugin the parent lives in |
 | `parent_marketplace` | yes | Always `dewey` (this is the filter that gates the emission) |

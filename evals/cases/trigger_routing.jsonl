@@ -1,0 +1,130 @@
+{"skill": "dewey-admin-setup", "plugin": "admin", "trigger": "set up Dewey for my company", "expect_skill": "dewey-admin-setup"}
+{"skill": "dewey-admin-setup", "plugin": "admin", "trigger": "I'm the ops lead — get my team onto Dewey", "expect_skill": "dewey-admin-setup"}
+{"skill": "dewey-admin-setup", "plugin": "admin", "trigger": "onboard our sales org to Dewey", "expect_skill": "dewey-admin-setup"}
+{"skill": "dewey-admin-setup", "plugin": "admin", "trigger": "help me fork Dewey and configure it for our team", "expect_skill": "dewey-admin-setup"}
+{"skill": "dewey-admin-setup", "plugin": "admin", "trigger": "walk me through adopting Dewey as an admin", "expect_skill": "dewey-admin-setup"}
+{"skill": "competitive-analysis", "plugin": "competitive-intelligence", "trigger": "give me a competitive analysis of Salesforce", "expect_skill": "competitive-analysis"}
+{"skill": "competitive-analysis", "plugin": "competitive-intelligence", "trigger": "battlecard on Notion before my deal call tomorrow", "expect_skill": "competitive-analysis"}
+{"skill": "competitive-analysis", "plugin": "competitive-intelligence", "trigger": "what's HubSpot's pricing and where do they lose to us?", "expect_skill": "competitive-analysis"}
+{"skill": "competitive-analysis", "plugin": "competitive-intelligence", "trigger": "pull a quick competitor brief on Outreach and how we position against them", "expect_skill": "competitive-analysis"}
+{"skill": "competitive-analysis", "plugin": "competitive-intelligence", "trigger": "I'm going up against Gong in a deal — pull their recent moves and how we differ", "expect_skill": "competitive-analysis"}
+{"skill": "customer-interview-prep", "plugin": "customer-research", "trigger": "help me prep for my customer interview with Acme tomorrow", "expect_skill": "customer-interview-prep"}
+{"skill": "customer-interview-prep", "plugin": "customer-research", "trigger": "I have a discovery call with a new prospect, get me ready", "expect_skill": "customer-interview-prep"}
+{"skill": "customer-interview-prep", "plugin": "customer-research", "trigger": "prep me for a win/loss interview with the buyer who churned last month", "expect_skill": "customer-interview-prep"}
+{"skill": "customer-interview-prep", "plugin": "customer-research", "trigger": "what should I ask in my churn call with Sarah?", "expect_skill": "customer-interview-prep"}
+{"skill": "customer-interview-prep", "plugin": "customer-research", "trigger": "I'm doing a research interview with a customer this afternoon — draft the brief", "expect_skill": "customer-interview-prep"}
+{"skill": "exec-feedback", "plugin": "exec-feedback", "trigger": "give me feedback on this doc the way a tough exec would", "expect_skill": "exec-feedback"}
+{"skill": "exec-feedback", "plugin": "exec-feedback", "trigger": "what would Sarah say about this proposal?", "expect_skill": "exec-feedback"}
+{"skill": "exec-feedback", "plugin": "exec-feedback", "trigger": "give me first-pass feedback on this brief before I send it to the exec", "expect_skill": "exec-feedback"}
+{"skill": "exec-feedback", "plugin": "exec-feedback", "trigger": "doc review — be brutal", "expect_skill": "exec-feedback"}
+{"skill": "exec-feedback", "plugin": "exec-feedback", "trigger": "review this strategy proposal and tell me what the executive would push back on", "expect_skill": "exec-feedback"}
+{"skill": "meeting-prep", "plugin": "ops-essentials", "trigger": "prep me for my meeting with the leadership team this afternoon", "expect_skill": "meeting-prep"}
+{"skill": "meeting-prep", "plugin": "ops-essentials", "trigger": "I have a 1:1 with my manager in 20 minutes — quick meeting prep", "expect_skill": "meeting-prep"}
+{"skill": "meeting-prep", "plugin": "ops-essentials", "trigger": "draft an agenda for tomorrow's quarterly review with the exec team", "expect_skill": "meeting-prep"}
+{"skill": "meeting-prep", "plugin": "ops-essentials", "trigger": "help me prep for a sync", "expect_skill": "meeting-prep"}
+{"skill": "meeting-prep", "plugin": "ops-essentials", "trigger": "I have an upcoming kickoff meeting with a new client, what should I bring?", "expect_skill": "meeting-prep"}
+{"skill": "weekly-status-update", "plugin": "ops-essentials", "trigger": "write my weekly status update for the engineering team", "expect_skill": "weekly-status-update"}
+{"skill": "weekly-status-update", "plugin": "ops-essentials", "trigger": "Friday wrap-up time, draft my update", "expect_skill": "weekly-status-update"}
+{"skill": "weekly-status-update", "plugin": "ops-essentials", "trigger": "help me write a weekly report for my manager covering the Acme project", "expect_skill": "weekly-status-update"}
+{"skill": "weekly-status-update", "plugin": "ops-essentials", "trigger": "draft my async standup for this week", "expect_skill": "weekly-status-update"}
+{"skill": "weekly-status-update", "plugin": "ops-essentials", "trigger": "I need to send a weekly status to the exec team — help me draft it", "expect_skill": "weekly-status-update"}
+{"skill": "analog-mapping", "plugin": "research-assistant", "trigger": "find companies structurally similar to Stripe in other industries", "expect_skill": "analog-mapping"}
+{"skill": "analog-mapping", "plugin": "research-assistant", "trigger": "who else has solved this kind of problem in a different domain", "expect_skill": "analog-mapping"}
+{"skill": "analog-mapping", "plugin": "research-assistant", "trigger": "map analog companies for our B2B2C marketplace model", "expect_skill": "analog-mapping"}
+{"skill": "analog-mapping", "plugin": "research-assistant", "trigger": "build a list of companies worth getting introduced to that have cracked recurring revenue from physical assets", "expect_skill": "analog-mapping"}
+{"skill": "analog-mapping", "plugin": "research-assistant", "trigger": "find analogs to our model outside our industry", "expect_skill": "analog-mapping"}
+{"skill": "build-buy-partner", "plugin": "research-assistant", "trigger": "should we build or buy a data enrichment capability", "expect_skill": "build-buy-partner"}
+{"skill": "build-buy-partner", "plugin": "research-assistant", "trigger": "evaluate M&A targets we could acquire for workflow automation", "expect_skill": "build-buy-partner"}
+{"skill": "build-buy-partner", "plugin": "research-assistant", "trigger": "what are our partnership options for payments infrastructure", "expect_skill": "build-buy-partner"}
+{"skill": "build-buy-partner", "plugin": "research-assistant", "trigger": "help me think through the build vs. buy vs. partner decision for our analytics layer", "expect_skill": "build-buy-partner"}
+{"skill": "build-buy-partner", "plugin": "research-assistant", "trigger": "is there a strategic partner or acquisition that could fill this capability gap faster than building", "expect_skill": "build-buy-partner"}
+{"skill": "company-deep-dive", "plugin": "research-assistant", "trigger": "deep dive on Palantir — how does the business actually work", "expect_skill": "company-deep-dive"}
+{"skill": "company-deep-dive", "plugin": "research-assistant", "trigger": "help me truly understand Snowflake's business model before my meeting", "expect_skill": "company-deep-dive"}
+{"skill": "company-deep-dive", "plugin": "research-assistant", "trigger": "what does this company actually do and who are their customers", "expect_skill": "company-deep-dive"}
+{"skill": "company-deep-dive", "plugin": "research-assistant", "trigger": "I need to be able to speak intelligently about Shopify's competitive position", "expect_skill": "company-deep-dive"}
+{"skill": "company-deep-dive", "plugin": "research-assistant", "trigger": "give me a deep business understanding of ServiceNow — model, moat, and what management has been saying", "expect_skill": "company-deep-dive"}
+{"skill": "company-financials", "plugin": "research-assistant", "trigger": "pull the financials on Datadog and summarize what matters", "expect_skill": "company-financials"}
+{"skill": "company-financials", "plugin": "research-assistant", "trigger": "earnings summary for Salesforce last quarter", "expect_skill": "company-financials"}
+{"skill": "company-financials", "plugin": "research-assistant", "trigger": "is HubSpot a good acquisition target — valuation and financial analysis", "expect_skill": "company-financials"}
+{"skill": "company-financials", "plugin": "research-assistant", "trigger": "what are MongoDB's revenue trends and margins over the last four quarters", "expect_skill": "company-financials"}
+{"skill": "company-financials", "plugin": "research-assistant", "trigger": "profile Veeva as an M&A target with financial analysis", "expect_skill": "company-financials"}
+{"skill": "due-diligence", "plugin": "research-assistant", "trigger": "run due diligence on Acme Corp before we invest", "expect_skill": "due-diligence"}
+{"skill": "due-diligence", "plugin": "research-assistant", "trigger": "should we acquire SkillsEngine — full diligence", "expect_skill": "due-diligence"}
+{"skill": "due-diligence", "plugin": "research-assistant", "trigger": "assess Notion as a partnership target — what are the risks", "expect_skill": "due-diligence"}
+{"skill": "due-diligence", "plugin": "research-assistant", "trigger": "we're evaluating a Series B investment in this company, give me a go/no-go assessment", "expect_skill": "due-diligence"}
+{"skill": "due-diligence", "plugin": "research-assistant", "trigger": "evaluate this vendor as an acquisition target and flag any deal breakers", "expect_skill": "due-diligence"}
+{"skill": "ecosystem-map", "plugin": "research-assistant", "trigger": "map the ecosystem around the Salesforce AppExchange", "expect_skill": "ecosystem-map"}
+{"skill": "ecosystem-map", "plugin": "research-assistant", "trigger": "who are the key players we should know in the HR tech space", "expect_skill": "ecosystem-map"}
+{"skill": "ecosystem-map", "plugin": "research-assistant", "trigger": "partnership landscape for the data infrastructure market", "expect_skill": "ecosystem-map"}
+{"skill": "ecosystem-map", "plugin": "research-assistant", "trigger": "where does power sit in the healthcare data ecosystem and who should we be talking to", "expect_skill": "ecosystem-map"}
+{"skill": "ecosystem-map", "plugin": "research-assistant", "trigger": "map the value chain for construction tech — players, relationships, and where leverage sits", "expect_skill": "ecosystem-map"}
+{"skill": "eval", "plugin": "research-assistant", "trigger": "eval this research output against the rubric", "expect_skill": "eval"}
+{"skill": "eval", "plugin": "research-assistant", "trigger": "score the quality of this company deep dive", "expect_skill": "eval"}
+{"skill": "eval", "plugin": "research-assistant", "trigger": "test the analog-mapping research type end-to-end and benchmark the output", "expect_skill": "eval"}
+{"skill": "eval", "plugin": "research-assistant", "trigger": "quality check this market sizing report — does it meet the standard", "expect_skill": "eval"}
+{"skill": "eval", "plugin": "research-assistant", "trigger": "run the eval harness on our due diligence output and tell me what's missing", "expect_skill": "eval"}
+{"skill": "industry-trend", "plugin": "research-assistant", "trigger": "what's happening in the vertical SaaS market right now", "expect_skill": "industry-trend"}
+{"skill": "industry-trend", "plugin": "research-assistant", "trigger": "how is AI changing workforce development technology", "expect_skill": "industry-trend"}
+{"skill": "industry-trend", "plugin": "research-assistant", "trigger": "what are the big trends shaping B2B fintech in 2026", "expect_skill": "industry-trend"}
+{"skill": "industry-trend", "plugin": "research-assistant", "trigger": "what's the state of the CDP industry post-consolidation", "expect_skill": "industry-trend"}
+{"skill": "industry-trend", "plugin": "research-assistant", "trigger": "pull together what's happening with usage-based pricing as a trend", "expect_skill": "industry-trend"}
+{"skill": "market-sizing", "plugin": "research-assistant", "trigger": "size the TAM for vertical SaaS in logistics", "expect_skill": "market-sizing"}
+{"skill": "market-sizing", "plugin": "research-assistant", "trigger": "how big is the market for this product", "expect_skill": "market-sizing"}
+{"skill": "market-sizing", "plugin": "research-assistant", "trigger": "build a SAM/SOM estimate for our new territory in the Southeast", "expect_skill": "market-sizing"}
+{"skill": "market-sizing", "plugin": "research-assistant", "trigger": "how many mid-market companies could we realistically sell to", "expect_skill": "market-sizing"}
+{"skill": "market-sizing", "plugin": "research-assistant", "trigger": "what's the addressable opportunity for AI-powered HR software in the US", "expect_skill": "market-sizing"}
+{"skill": "person-profile", "plugin": "research-assistant", "trigger": "profile the CEO of Vercel before our meeting tomorrow", "expect_skill": "person-profile"}
+{"skill": "person-profile", "plugin": "research-assistant", "trigger": "who is Sarah Guo and what does she care about", "expect_skill": "person-profile"}
+{"skill": "person-profile", "plugin": "research-assistant", "trigger": "prep me for a call with the new head of procurement at Salesforce", "expect_skill": "person-profile"}
+{"skill": "person-profile", "plugin": "research-assistant", "trigger": "background on Jensen Huang — what should I know before our investor meeting", "expect_skill": "person-profile"}
+{"skill": "person-profile", "plugin": "research-assistant", "trigger": "what has this person said publicly about AI regulation", "expect_skill": "person-profile"}
+{"skill": "regulatory-landscape", "plugin": "research-assistant", "trigger": "what are the compliance requirements for selling HR software to US school districts", "expect_skill": "regulatory-landscape"}
+{"skill": "regulatory-landscape", "plugin": "research-assistant", "trigger": "map the regulatory landscape for fintech lending in the EU", "expect_skill": "regulatory-landscape"}
+{"skill": "regulatory-landscape", "plugin": "research-assistant", "trigger": "what legislation is pending that could affect our AI product", "expect_skill": "regulatory-landscape"}
+{"skill": "regulatory-landscape", "plugin": "research-assistant", "trigger": "what's the regulatory risk if we enter the healthcare data market", "expect_skill": "regulatory-landscape"}
+{"skill": "regulatory-landscape", "plugin": "research-assistant", "trigger": "how is data brokering regulated and what compliance burden does that create", "expect_skill": "regulatory-landscape"}
+{"skill": "research-competitive-analysis", "plugin": "research-assistant", "trigger": "do a competitive analysis of the sales engagement software landscape", "expect_skill": "research-competitive-analysis"}
+{"skill": "research-competitive-analysis", "plugin": "research-assistant", "trigger": "who are we up against in mid-market HRIS", "expect_skill": "research-competitive-analysis"}
+{"skill": "research-competitive-analysis", "plugin": "research-assistant", "trigger": "how does Gong compare to our product in competitive deals", "expect_skill": "research-competitive-analysis"}
+{"skill": "research-competitive-analysis", "plugin": "research-assistant", "trigger": "what would a buyer choose instead of us in a competitive deal, and why", "expect_skill": "research-competitive-analysis"}
+{"skill": "research-competitive-analysis", "plugin": "research-assistant", "trigger": "run a competitive landscape on the data observability space", "expect_skill": "research-competitive-analysis"}
+{"skill": "research", "plugin": "research-assistant", "trigger": "research the competitive landscape for sales engagement software", "expect_skill": "research"}
+{"skill": "research", "plugin": "research-assistant", "trigger": "dig into what's happening in the vertical SaaS market", "expect_skill": "research"}
+{"skill": "research", "plugin": "research-assistant", "trigger": "I need a deep investigation into the HR tech market", "expect_skill": "research"}
+{"skill": "research", "plugin": "research-assistant", "trigger": "pull together everything we know about this company before the meeting", "expect_skill": "research"}
+{"skill": "research", "plugin": "research-assistant", "trigger": "help me size the market for AI-powered workflow automation", "expect_skill": "research"}
+{"skill": "technology-landscape", "plugin": "research-assistant", "trigger": "map the customer data platform landscape for us", "expect_skill": "technology-landscape"}
+{"skill": "technology-landscape", "plugin": "research-assistant", "trigger": "what tools exist for data observability and how do they compare", "expect_skill": "technology-landscape"}
+{"skill": "technology-landscape", "plugin": "research-assistant", "trigger": "we need a product analytics capability — what are our options", "expect_skill": "technology-landscape"}
+{"skill": "technology-landscape", "plugin": "research-assistant", "trigger": "evaluate the top MLOps platforms for a mid-market engineering team", "expect_skill": "technology-landscape"}
+{"skill": "technology-landscape", "plugin": "research-assistant", "trigger": "what should we use for workflow automation and how mature are the vendors", "expect_skill": "technology-landscape"}
+{"skill": "stakeholder-followup", "plugin": "sales-enablement", "trigger": "I just got off a call with Acme — write the follow-up", "expect_skill": "stakeholder-followup"}
+{"skill": "stakeholder-followup", "plugin": "sales-enablement", "trigger": "draft a recap for the meeting with Brian", "expect_skill": "stakeholder-followup"}
+{"skill": "stakeholder-followup", "plugin": "sales-enablement", "trigger": "send a follow-up to Sarah after our demo call today", "expect_skill": "stakeholder-followup"}
+{"skill": "stakeholder-followup", "plugin": "sales-enablement", "trigger": "I finished a sales call, help me draft the next steps message", "expect_skill": "stakeholder-followup"}
+{"skill": "stakeholder-followup", "plugin": "sales-enablement", "trigger": "write a follow-up email that recaps what we discussed and pushes for a next meeting", "expect_skill": "stakeholder-followup"}
+{"skill": "buyer-persona-council", "plugin": "template-strategy-feedback", "trigger": "persona council: how would our buyers react to this pricing page?", "expect_skill": "buyer-persona-council"}
+{"skill": "buyer-persona-council", "plugin": "template-strategy-feedback", "trigger": "pressure-test this pitch against our buyer personas", "expect_skill": "buyer-persona-council"}
+{"skill": "buyer-persona-council", "plugin": "template-strategy-feedback", "trigger": "how would a buyer react to this outbound message?", "expect_skill": "buyer-persona-council"}
+{"skill": "buyer-persona-council", "plugin": "template-strategy-feedback", "trigger": "review this copy from a buyer's perspective", "expect_skill": "buyer-persona-council"}
+{"skill": "buyer-persona-council", "plugin": "template-strategy-feedback", "trigger": "run the persona council on this GTM campaign", "expect_skill": "buyer-persona-council"}
+{"skill": "competitive-intel", "plugin": "template-strategy-feedback", "trigger": "what competitive intel do we have on this company?", "expect_skill": "competitive-intel"}
+{"skill": "competitive-intel", "plugin": "template-strategy-feedback", "trigger": "update competitive intel with what we learned at the conference", "expect_skill": "competitive-intel"}
+{"skill": "competitive-intel", "plugin": "template-strategy-feedback", "trigger": "pull up the competitive landscape before the strategy council", "expect_skill": "competitive-intel"}
+{"skill": "competitive-intel", "plugin": "template-strategy-feedback", "trigger": "recent strategic decisions we've made — what's the context?", "expect_skill": "competitive-intel"}
+{"skill": "competitive-intel", "plugin": "template-strategy-feedback", "trigger": "set up a new company context for competitive intel", "expect_skill": "competitive-intel"}
+{"skill": "strategy-council", "plugin": "template-strategy-feedback", "trigger": "council: should we raise prices on the enterprise tier?", "expect_skill": "strategy-council"}
+{"skill": "strategy-council", "plugin": "template-strategy-feedback", "trigger": "what would the council say about this product roadmap?", "expect_skill": "strategy-council"}
+{"skill": "strategy-council", "plugin": "template-strategy-feedback", "trigger": "run this by the strategy council before we commit", "expect_skill": "strategy-council"}
+{"skill": "strategy-council", "plugin": "template-strategy-feedback", "trigger": "pressure-test this GTM decision with the advisory council", "expect_skill": "strategy-council"}
+{"skill": "strategy-council", "plugin": "template-strategy-feedback", "trigger": "play devil's advocate on this pricing strategy", "expect_skill": "strategy-council"}
+{"skill": "strategy-frameworks", "plugin": "template-strategy-feedback", "trigger": "what framework should I use to analyze this pricing decision?", "expect_skill": "strategy-frameworks"}
+{"skill": "strategy-frameworks", "plugin": "template-strategy-feedback", "trigger": "run 7 Powers analysis on our competitive position", "expect_skill": "strategy-frameworks"}
+{"skill": "strategy-frameworks", "plugin": "template-strategy-feedback", "trigger": "use Porter's Five Forces on this market entry strategy", "expect_skill": "strategy-frameworks"}
+{"skill": "strategy-frameworks", "plugin": "template-strategy-feedback", "trigger": "Minto this argument before I take it to the board", "expect_skill": "strategy-frameworks"}
+{"skill": "strategy-frameworks", "plugin": "template-strategy-feedback", "trigger": "MECE this problem — help me structure the analysis", "expect_skill": "strategy-frameworks"}
+{"skill": "strategy-orchestrator", "plugin": "template-strategy-feedback", "trigger": "strategy session: help me think through this product pivot", "expect_skill": "strategy-orchestrator"}
+{"skill": "strategy-orchestrator", "plugin": "template-strategy-feedback", "trigger": "which strategy tool should I use for this pricing decision?", "expect_skill": "strategy-orchestrator"}
+{"skill": "strategy-orchestrator", "plugin": "template-strategy-feedback", "trigger": "full strategic analysis of this market opportunity", "expect_skill": "strategy-orchestrator"}
+{"skill": "strategy-orchestrator", "plugin": "template-strategy-feedback", "trigger": "help me think through this GTM decision end-to-end", "expect_skill": "strategy-orchestrator"}
+{"skill": "strategy-orchestrator", "plugin": "template-strategy-feedback", "trigger": "run a complete strategy session on this competitive threat", "expect_skill": "strategy-orchestrator"}

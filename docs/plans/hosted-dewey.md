@@ -73,3 +73,13 @@ Chat distribution and org-managed scheduled distribution (one team lead schedule
 - **Before Stage 1:** is there at least one org (besides CK) forwarding events? If not, the digest has one reader and the local analytics file already serves them. Don't build a service for an audience of one.
 - **Before Stage 3:** has Stage 2 produced ≥1 accepted canonical PR? If maintainers reject the analyzer's proposals, fix that before widening the funnel.
 - **Before Stage 5:** does any adopting org have non-technical authors asking for it? UI is the most expensive stage and the easiest to build for nobody.
+
+## G0 decisions (recorded 2026-06-10)
+
+Per [go-to-market.md](go-to-market.md) Gate G0:
+
+1. **Hosting locus:** deployable artifact — a dependency-free Python (stdlib + SQLite) service in `ckoglmeier/dewey-cloud` (private), runnable on any infra. No multi-tenant SaaS commitment yet; the artifact keeps both doors open.
+2. **Pricing surface:** org-level flat plan. Seats are counted (telemetry) but not enforced or billed in v1.
+3. **Demo posture:** synthetic-data demo. The seed generator ships with the service; demo mode is clearly labeled.
+4. **What the license gates:** open-core. The local convention is freely installable; the license key activates hosted features (forwarding, digest, future stages). A missing or invalid key never degrades local function.
+5. **Merchant of record:** deferred to account setup. The entitlement service implements a Stripe-shaped webhook contract (HMAC-verified, test-mode); switching to a merchant-of-record provider changes the webhook adapter only. No live payment processing exists until a human creates and connects the account — see dewey-cloud RUNBOOK.

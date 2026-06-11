@@ -189,12 +189,9 @@ A full status snapshot — what's done, what's partial (built but not validated 
 
 ## Adopting Dewey for your company
 
-1. Fork this repo as `<your-company>-dewey`.
-2. Edit `.claude-plugin/marketplace.json`: change `name`, `owner`, and the plugin list.
-3. Replace the seed skills in `plugins/` with skills your teams actually use.
-4. Replace the path files in `paths/` with role bundles your team leads curate.
-5. Update `install.sh` (or set `DEWEY_REPO` env var) to point at your fork.
-6. Send your team `curl ... | bash`.
+Install the `admin` plugin and run `/dewey-admin-setup` — it walks you through forking the repo, seeding canonical context, drafting role paths, and inviting your first wave of users in one conversation. No engineering background required.
+
+Full walkthrough: [docs/admin-onboarding-guide.md](docs/admin-onboarding-guide.md).
 
 ## License
 
