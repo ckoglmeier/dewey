@@ -12,3 +12,15 @@ jobs:
       - uses: actions/checkout@v4
       - name: Run test suite
         run: bash tests/run.sh
+      - name: Hosted service unit tests
+        run: cd hosted && python3 -m unittest discover -s tests -q
+
+  eval:
+    # Eval harness smoke test in skip mode (no backend, no API credits).
+    # The real eval (DEWEY_EVAL=1 + backend) runs manually/pre-release.
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Eval harness smoke (skip mode)
+        run: python3 evals/run_eval.py || [ $? -eq 77 ]

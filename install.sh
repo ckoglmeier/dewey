@@ -982,17 +982,23 @@ if [ -n "$DEWEY_LICENSE_KEY" ]; then
   # Best-effort validation — never fails the install.
   _endpoint="${DEWEY_TELEMETRY_ENDPOINT:-}"
   if [ -n "$_endpoint" ]; then
-    _validate_result="$(curl -s -o /tmp/dewey-validate-$$.json -w "%{http_code}" \
+    # Temp file: mktemp + 600 so the response is never world-readable, and
+    # the request body goes over stdin (--data @-) rather than argv, so the
+    # key never appears in `ps`/`/proc/<pid>/cmdline`.
+    _validate_tmp="$(mktemp "${TMPDIR:-/tmp}/dewey-validate.XXXXXX")"
+    chmod 600 "$_validate_tmp"
+    _validate_result="$(printf '{"key":"%s"}' "$DEWEY_LICENSE_KEY" | curl -s \
+      -o "$_validate_tmp" -w "%{http_code}" \
       --max-time 5 \
       -X POST \
       -H "Content-Type: application/json" \
-      -d "{\"key\":\"${DEWEY_LICENSE_KEY}\"}" \
+      --data @- \
       "${_endpoint%/}/v1/license/validate" 2>/dev/null)" || _validate_result=""
     if [ "$_validate_result" = "200" ]; then
       _valid="$(python3 -c "
-import json, sys
+import json
 try:
-    d = json.load(open('/tmp/dewey-validate-$$.json'))
+    d = json.load(open('$_validate_tmp'))
     print('true' if d.get('valid') else 'false')
 except Exception:
     print('unknown')
@@ -1007,7 +1013,7 @@ except Exception:
     else
       warn "License key stored but validation returned HTTP ${_validate_result}. Key stored; hosted features may not activate."
     fi
-    rm -f "/tmp/dewey-validate-$$.json"
+    rm -f "$_validate_tmp"
   fi
 fi
 
