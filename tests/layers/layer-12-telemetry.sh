@@ -155,6 +155,115 @@ assert o[\"org\"] == \"task-engineering\", repr(o.get(\"org\"))
 '
 "
 
+# ---- install_id field tests --------------------------------------------------
+
+# Emitted event carries install_id when the file is present.
+TELEM_LOG_INSTID="$TELEM_SANDBOX/log-install-id"
+TELEM_FAKE_HOME_INSTID="$TELEM_SANDBOX/fake-home-instid"
+mkdir -p "$TELEM_FAKE_HOME_INSTID/.claude"
+printf 'deadbeef12345678\n' > "$TELEM_FAKE_HOME_INSTID/.claude/dewey-install-id"
+chmod 600 "$TELEM_FAKE_HOME_INSTID/.claude/dewey-install-id"
+check "emitted event contains install_id matching the file when file is present" \
+  "
+HOME='$TELEM_FAKE_HOME_INSTID' DEWEY_DIR='$TELEM_CACHE' DEWEY_LOG='$TELEM_LOG_INSTID' \
+  bash '$TELEMETRY_SRC' emit event=test_instid plugin=demo parent=foo
+python3 -c '
+import json
+line = open(\"$TELEM_LOG_INSTID\").read().splitlines()[-1]
+o = json.loads(line)
+assert o.get(\"install_id\") == \"deadbeef12345678\", repr(o.get(\"install_id\"))
+'
+"
+
+# Emitted event omits install_id when the file is absent.
+TELEM_LOG_NOID="$TELEM_SANDBOX/log-no-install-id"
+TELEM_FAKE_HOME_NOID="$TELEM_SANDBOX/fake-home-noid"
+mkdir -p "$TELEM_FAKE_HOME_NOID/.claude"
+# No dewey-install-id file created.
+check "emitted event omits install_id when file is absent" \
+  "
+HOME='$TELEM_FAKE_HOME_NOID' DEWEY_DIR='$TELEM_CACHE' DEWEY_LOG='$TELEM_LOG_NOID' \
+  bash '$TELEMETRY_SRC' emit event=test_noid plugin=demo parent=foo
+python3 -c '
+import json
+line = open(\"$TELEM_LOG_NOID\").read().splitlines()[-1]
+o = json.loads(line)
+assert \"install_id\" not in o, \"unexpected install_id: \" + repr(o.get(\"install_id\"))
+'
+"
+
+# DEWEY_TELEMETRY=0 still suppresses everything (install_id present in home).
+TELEM_LOG_SUPPID="$TELEM_SANDBOX/log-suppress-instid"
+check "DEWEY_TELEMETRY=0 suppresses event even when install_id file is present" \
+  "
+DEWEY_TELEMETRY=0 HOME='$TELEM_FAKE_HOME_INSTID' DEWEY_DIR='$TELEM_CACHE' DEWEY_LOG='$TELEM_LOG_SUPPID' \
+  bash '$TELEMETRY_SRC' emit event=test_suppress plugin=demo
+test ! -e '$TELEM_LOG_SUPPID'
+"
+
+# Forwarded batch carries install_id.
+check "forwarded batch carries install_id field when file is present" \
+  "
+FWD_ID_HOME=\$(mktemp -d)
+FWD_ID_LOG=\"\$FWD_ID_HOME/.claude/dewey-analytics.log\"
+FWD_ID_LICENSE=\"\$FWD_ID_HOME/.claude/dewey-license\"
+FWD_ID_CAPTURE=\"\$FWD_ID_HOME/capture\"
+mkdir -p \"\$FWD_ID_HOME/.claude\"
+# Write an event that already has install_id (as emit would produce).
+printf '{\"ts\":\"2026-01-01T00:00:00Z\",\"event\":\"skill_invoke\",\"install_id\":\"abcd1234abcd1234\"}\n' > \"\$FWD_ID_LOG\"
+printf 'dwy_aabbccdd11223344aabbccdd11223344' > \"\$FWD_ID_LICENSE\"
+chmod 600 \"\$FWD_ID_LICENSE\"
+
+python3 -c \"
+import http.server, sys
+
+capture_path = sys.argv[1]
+
+class Handler(http.server.BaseHTTPRequestHandler):
+    def do_POST(self):
+        length = int(self.headers.get('Content-Length', 0))
+        body = self.rfile.read(length)
+        open(capture_path, 'wb').write(body)
+        self.send_response(200)
+        self.send_header('Content-Type', 'application/json')
+        self.end_headers()
+        self.wfile.write(b'{\\\"accepted\\\":1}')
+    def log_message(self, *a):
+        pass
+
+server = http.server.HTTPServer(('127.0.0.1', 0), Handler)
+port = server.server_address[1]
+print(port, flush=True)
+server.handle_request()
+\" \"\$FWD_ID_CAPTURE\" > \"\$FWD_ID_HOME/port\" 2>/dev/null &
+MOCK_ID_PID=\$!
+trap 'kill \$MOCK_ID_PID 2>/dev/null || true' EXIT
+
+sleep 0.3
+MOCK_ID_PORT=\$(cat \"\$FWD_ID_HOME/port\" 2>/dev/null || echo 0)
+test \"\$MOCK_ID_PORT\" -gt 0
+
+HOME=\"\$FWD_ID_HOME\" \
+DEWEY_LOG=\"\$FWD_ID_LOG\" \
+DEWEY_TELEMETRY_ENDPOINT=\"http://127.0.0.1:\$MOCK_ID_PORT\" \
+  bash '$TELEMETRY_SRC' forward
+sleep 0.3
+
+python3 -c \"
+import json
+body = open('\$FWD_ID_CAPTURE', 'rb').read()
+for line in body.split(b'\n'):
+    line = line.strip()
+    if not line:
+        continue
+    obj = json.loads(line)
+    assert obj.get('install_id') == 'abcd1234abcd1234', 'install_id missing or wrong: ' + repr(obj)
+\"
+
+kill \$MOCK_ID_PID 2>/dev/null || true
+rm -rf \"\$FWD_ID_HOME\"
+"
+
 # install.sh installs dewey-telemetry.sh
 INSTALLED_TELEM="$SANDBOX/.claude/dewey-telemetry.sh"
 check "install.sh installs dewey-telemetry.sh to \$HOME/.claude" \

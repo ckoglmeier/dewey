@@ -32,6 +32,7 @@ The richest event is `extension_created`, emitted by the Guide's `/dewey extend`
 |---|---|---|
 | `ts` | yes | UTC ISO-8601 timestamp |
 | `event` | yes | Always `extension_created` for this event type |
+| `install_id` | no | Pseudonymous install identifier — 16 lowercase hex chars, generated once at install time by CSPRNG. Not derived from hostname, username, or any machine-identifying data. Absent when `~/.claude/dewey-install-id` does not exist. Used by the hosted aggregator for per-seat counting. |
 | `org` | yes | Org identifier — resolved from `$DEWEY_ORG` env var if set, else the first line of `~/.claude/dewey-active-org` if that file exists, else `"default"`. Present on every emitted event; used by the hosted aggregator to segregate data across orgs. |
 | `parent` | yes | Name of the parent skill being extended |
 | `parent_plugin` | yes | Plugin the parent lives in |

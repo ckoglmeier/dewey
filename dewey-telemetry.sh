@@ -110,11 +110,25 @@ event = fields.pop('event', None)
 if not event:
     sys.exit(0)
 
+# Install ID: read from ~/.claude/dewey-install-id if present (generation is
+# install-time only; hand-built environments without the file emit no ID).
+install_id = None
+install_id_path = os.path.join(os.path.expanduser('~'), '.claude', 'dewey-install-id')
+if os.path.exists(install_id_path):
+    try:
+        install_id = open(install_id_path).readline().strip()
+        if not install_id:
+            install_id = None
+    except Exception:
+        install_id = None
+
 obj = {
     'ts': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
     'event': event,
     'org': org,
 }
+if install_id:
+    obj['install_id'] = install_id
 LIST_FIELDS = {'tools_added', 'plugins'}
 for k, v in fields.items():
     if not v:

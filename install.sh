@@ -640,6 +640,16 @@ if [ "$DEWEY_TELEMETRY" != "0" ] && [ ! -f "$ANALYTICS_LOG" ]; then
   touch "$ANALYTICS_LOG"
 fi
 
+# ---- Step 4e: generate pseudonymous install ID (idempotent) -----------------
+INSTALL_ID_FILE="$HOME/.claude/dewey-install-id"
+if [ ! -f "$INSTALL_ID_FILE" ]; then
+  _new_id="$(python3 -c 'import secrets; print(secrets.token_hex(8))')"
+  # umask 077 so the file is 600 from creation — never momentarily readable
+  # by other local users between write and chmod.
+  ( umask 077; printf '%s\n' "$_new_id" > "$INSTALL_ID_FILE" )
+  chmod 600 "$INSTALL_ID_FILE"
+fi
+
 # ---- Step 5: write the refresh script ---------------------------------------
 say "Writing refresh script to $REFRESH_SCRIPT"
 cat > "$REFRESH_SCRIPT" <<REFRESH_EOF

@@ -1,4 +1,4 @@
-# Dewey Hosted API — Wire Contract v1.0
+# Dewey Hosted API — Wire Contract v1.1
 
 This document is the normative specification for the HTTP interface between the
 open-source Dewey CLI and the commercial Dewey Hosted service. Both sides MUST
@@ -19,7 +19,8 @@ out-of-contract and MUST NOT be relied on by the CLI.
   `/v1/webhooks/checkout` and `/v1/admin/*` are service-internal and out of
   contract (§8).
 
-**Contract version**: v1.0. The base path `/v1/` is the version discriminator.
+**Contract version**: v1.1. The base path `/v1/` is the version discriminator.
+v1.0 clients (no `install_id` field) remain valid — `install_id` is optional.
 
 ---
 
@@ -69,6 +70,7 @@ Events are JSONL: one JSON object per line, UTF-8, newline-terminated.
 
 | Field | Type | Description |
 |---|---|---|
+| `install_id` | string | Pseudonymous install identifier. Exactly 16 lowercase hex characters. Generated once at install time via CSPRNG (`secrets.token_hex(8)`); stored in `~/.claude/dewey-install-id` (mode 0600). Never derived from hostname, username, MAC address, or any other machine-identifying information. Absent when the file does not exist (e.g. hand-built environments). The server MAY use distinct `install_id` counts per org per billing period for seat measurement. |
 | `org` | string | Org identifier (see resolution order below). Overridden server-side. |
 | `skill` | string | Skill name |
 | `plugin` | string | Plugin name |
