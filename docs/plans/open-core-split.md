@@ -1,17 +1,17 @@
 # Plan: Open-core split — public convention, private per-seat SaaS
 
-**Status:** Approved direction (CK, 2026-06-10); execution not started.
+**Status:** Phase 1 DONE (steps 1.1–1.3 complete; step 1.4 conformance test in dewey-cloud is the remaining item). Phase 2 and 3 not yet started.
 **Amends:** [hosted-dewey.md](hosted-dewey.md) G0 decision #2 (pricing: org-flat → **per-seat recurring**) and the WS4/WS6 repo layout in [go-to-market.md](go-to-market.md).
 
 ## Context
 
-PR #4 currently carries both products in one branch: the open convention *and* the commercial hosted service (`hosted/`). The `dewey` repo is intended to be public open-source, and public git history is permanent — so the commercial code must come off the branch **before** #4 merges, not after. The architectural boundary is already clean (the only coupling is the HTTP contract); this plan makes the repo layout match it, then upgrades the commercial side from org-flat to per-seat recurring.
+PR #4 carried both products in one branch: the open convention *and* the commercial hosted service (previously under `hosted/`). The commercial code was extracted to `ckoglmeier/dewey-cloud` (private) before #4 merges. The architectural boundary is clean — the only coupling is the HTTP contract in `docs/hosted-api.md`; this plan makes the repo layout match it, then upgrades the commercial side from org-flat to per-seat recurring.
 
 ## Target state
 
 | | `ckoglmeier/dewey` (public, MIT) | `ckoglmeier/dewey-cloud` (private, commercial) |
 |---|---|---|
-| Contents | Installer, Guide, 8 plugins, templates, release machinery, eval harness, CLI licensing **client** (`DEWEY_LICENSE_KEY`, `forward`, Guide §12), `docs/hosted-api.md` (the contract) | `dewey_hosted/` service, RUNBOOK, purchase/checkout templates, 54-test unit suite, billing + seat logic, future stages 2–5 |
+| Contents | Installer, Guide, 8 plugins, templates, release machinery, eval harness, CLI licensing **client** (`DEWEY_LICENSE_KEY`, `forward`, Guide §12), `docs/hosted-api.md` (the contract) | `dewey_hosted/` service, dewey-cloud RUNBOOK, purchase/checkout templates, unit suite, billing + seat logic, future stages 2–5 |
 | Tests | Suite incl. a **contract-mock** Layer 16 (stdlib mock server implementing `docs/hosted-api.md`; asserts the CLI client speaks the contract) | Unit suite + a **contract-conformance** job that runs the *same* contract cases against the real service |
 | The license a buyer needs | none — everything here is free, forever | required for forwarding, digest, and all hosted features |
 

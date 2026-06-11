@@ -130,4 +130,4 @@ There is no vendor SDK. The endpoint is any HTTP service that accepts a JSONL PO
 
 Dewey's local function (installer, Guide skill, plugins, lint, refresh) does not require a license key. There is no license check, no call-home on install, and no degraded mode for unlicensed installs. A missing or invalid license key never breaks local Dewey.
 
-License keys are reserved for future hosted features (telemetry aggregation, digest emails). If a key is present, it is stored at `~/.claude/dewey-license` (mode 0600) and sent as an auth bearer when forwarding telemetry. It is never logged or echoed.
+License keys are reserved for future hosted features (telemetry aggregation, digest emails). If a key is present, it is stored at `~/.claude/dewey-license` (mode 0600) and sent as an auth bearer when forwarding telemetry. It is never logged or echoed. The full wire contract (key format, endpoint semantics, batch limits, client requirements) is specified in [`docs/hosted-api.md`](hosted-api.md).

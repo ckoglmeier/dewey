@@ -42,7 +42,7 @@ A working snapshot of what's done, what's partial, and what's deferred. Updated 
 - Events: `first_run`, `refresh_success`, `refresh_failure`, `guide_recommend`, `skill_install`, `skill_invoke`, `extension_created` (enriched with parent_plugin, additions, tools_added, user_intent)
 - Three-tier opt-out: `DEWEY_TELEMETRY=0` global, plugin-level `telemetry: false`, skill-level `telemetry: false`
 - Body-forwarding gate: `DEWEY_TELEMETRY_FORWARD_BODIES=1` opt-in to forward `additions` and `user_intent`; default-strip via `dewey-telemetry.sh strip-bodies`
-- `DEWEY_TELEMETRY_ENDPOINT` contract for forwarding (no implementation; documented for future hosted aggregator to consume)
+- `DEWEY_TELEMETRY_ENDPOINT` contract for forwarding (no implementation; documented for future hosted aggregator to consume); full wire contract in [`docs/hosted-api.md`](hosted-api.md)
 
 ### PR authoring
 - `dewey-propose.sh`: clone-or-refresh working dir, branch, lint via `tests/run.sh`, push, open PR via `gh`. Auto-forks if no write access.

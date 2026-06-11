@@ -78,8 +78,8 @@ Chat distribution and org-managed scheduled distribution (one team lead schedule
 
 Per [go-to-market.md](go-to-market.md) Gate G0:
 
-1. **Hosting locus:** deployable artifact — a dependency-free Python (stdlib + SQLite) service under `hosted/`, runnable on any infra. No multi-tenant SaaS commitment yet; the artifact keeps both doors open.
+1. **Hosting locus:** deployable artifact — a dependency-free Python (stdlib + SQLite) service in `ckoglmeier/dewey-cloud` (private), runnable on any infra. No multi-tenant SaaS commitment yet; the artifact keeps both doors open.
 2. **Pricing surface:** org-level flat plan. Seats are counted (telemetry) but not enforced or billed in v1.
 3. **Demo posture:** synthetic-data demo. The seed generator ships with the service; demo mode is clearly labeled.
 4. **What the license gates:** open-core. The local convention is freely installable; the license key activates hosted features (forwarding, digest, future stages). A missing or invalid key never degrades local function.
-5. **Merchant of record:** deferred to account setup. The entitlement service implements a Stripe-shaped webhook contract (HMAC-verified, test-mode); switching to a merchant-of-record provider changes the webhook adapter only. No live payment processing exists until a human creates and connects the account — see hosted/RUNBOOK.md.
+5. **Merchant of record:** deferred to account setup. The entitlement service implements a Stripe-shaped webhook contract (HMAC-verified, test-mode); switching to a merchant-of-record provider changes the webhook adapter only. No live payment processing exists until a human creates and connects the account — see dewey-cloud RUNBOOK.
