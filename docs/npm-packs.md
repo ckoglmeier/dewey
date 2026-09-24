@@ -99,7 +99,9 @@ For private registries, set `"publishConfig": { "registry": "https://npm.pkg.git
 |---|---|
 | `./plugins/<name>` | In-tree plugins (this repo owns the skill) |
 | `npm` | Versioned, team-distributed skills via a registry |
-| `git-subdir` | External repo skills (blocked by Claude Code validator bug — see CLAUDE.md) |
+| `git-subdir` | A sub-directory of an external git repo (sparse clone; Claude Code 2.1.280+ — the 2.1.47 validator rejected it) |
+| `archive` | A zip over HTTPS with optional `sha256` (Claude Code 2.1.224+) |
+| `command` | A local tool prints the plugin path (Claude Code 2.1.229+) |
 | `github` | Public GitHub repos with pinned SHA |
 | `url` | Arbitrary tarballs |
 

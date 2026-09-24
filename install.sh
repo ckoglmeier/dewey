@@ -8,7 +8,8 @@
 #   4. Installs the Codex sync helper to ~/.claude/dewey-sync-codex.sh
 #   5. Installs the telemetry helper to ~/.claude/dewey-telemetry.sh
 #   6. Installs the propose helper to ~/.claude/dewey-propose.sh
-#   7. If Codex is detected (~/.codex/ or codex on PATH), mirrors skills to ~/.codex/skills/
+#   7. If Codex is detected ($CODEX_HOME or ~/.codex, or codex on PATH), registers the
+#      cache as a Codex plugin marketplace and installs its plugins (see dewey-sync-codex.sh)
 #   8. Initializes the analytics log at ~/.claude/dewey-analytics.log
 #   9. Installs a refresh + first-run hook on Claude Code SessionStart
 #
@@ -620,13 +621,13 @@ fi
 
 # ---- Step 4c: run initial Codex sync if Codex is detected -------------------
 _codex_detected=0
-if [ -d "$HOME/.codex" ] || command -v codex >/dev/null 2>&1; then
+if [ -d "${CODEX_HOME:-$HOME/.codex}" ] || command -v codex >/dev/null 2>&1; then
   _codex_detected=1
 fi
 
 if [ "$DEWEY_SYNC_CODEX" = "1" ] || { [ "$DEWEY_SYNC_CODEX" = "auto" ] && [ "$_codex_detected" -eq 1 ]; }; then
   if [ -x "$SYNC_CODEX_SCRIPT" ]; then
-    say "Codex detected — syncing Dewey skills to ~/.codex/skills/"
+    say "Codex detected — making Dewey available in Codex (see ~/.claude/dewey-sync-codex.sh --status)"
     if ! DEWEY_DIR="$DEWEY_DIR" bash "$SYNC_CODEX_SCRIPT" 2>/dev/null; then
       warn "Codex skill sync failed — run /dewey sync manually to retry"
     fi
@@ -926,7 +927,7 @@ fi
 # Post-refresh: mirror updated skills to Codex if available
 SYNC_SCRIPT="\$HOME/.claude/dewey-sync-codex.sh"
 if [ -x "\$SYNC_SCRIPT" ]; then
-  if [ -d "\$HOME/.codex" ] || command -v codex >/dev/null 2>&1; then
+  if [ -d "\${CODEX_HOME:-\$HOME/.codex}" ] || command -v codex >/dev/null 2>&1; then
     if ! DEWEY_DIR="\$DEWEY_DIR" bash "\$SYNC_SCRIPT" >/dev/null 2>&1; then
       log "codex sync failed after refresh (non-fatal)"
     else
@@ -944,18 +945,26 @@ say "Writing first-run hook to $HOOK_SCRIPT"
 cat > "$HOOK_SCRIPT" <<EOF
 #!/usr/bin/env bash
 # Dewey SessionStart hook
-# Two jobs:
+# Three jobs:
 #   1. On the first ever run, print a welcome message that nudges the user to /dewey.
 #   2. Kick off refresh.sh in the background (lock-protected, 24h-gated, never blocks).
+#   3. Forward queued telemetry in the background (license-gated; exits 0 silently
+#      unless DEWEY_TELEMETRY_ENDPOINT and a license key are configured).
 
 set -e
 
 MARKER="$FIRST_RUN_MARKER"
 REFRESH="$REFRESH_SCRIPT"
+TELEMETRY="$TELEMETRY_SCRIPT"
 
 # Background refresh — portable subshell so we don't depend on \`disown\`.
 if [ -x "\$REFRESH" ]; then
   ( "\$REFRESH" >/dev/null 2>&1 & )
+fi
+
+# Background telemetry forward (see docs/hosted-api.md §7 — never prints, never blocks).
+if [ -f "\$TELEMETRY" ]; then
+  ( bash "\$TELEMETRY" forward >/dev/null 2>&1 & )
 fi
 
 if [ -f "\$MARKER" ]; then

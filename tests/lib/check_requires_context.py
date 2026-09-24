@@ -29,6 +29,19 @@ WARN = 80 * 1024
 FAIL = 300 * 1024
 
 
+def dewey_field(manifest: dict, key: str):
+    """Read a Dewey-specific plugin.json field.
+
+    Dewey keys (surfaces, context, telemetry) live under the official free-form
+    `metadata` object so `claude plugin validate --strict` stays clean. Manifests
+    written before Dewey 2.3 carried them at the top level; accept that too.
+    """
+    meta = manifest.get("metadata") or {}
+    if key in meta:
+        return meta.get(key)
+    return manifest.get(key)
+
+
 def parse_requires_context(fm_text: str, skill_md: str) -> list[str]:
     """Extract requires-context: list from a SKILL.md frontmatter block.
 
@@ -80,8 +93,8 @@ def collect_context_index() -> dict[str, dict]:
             d = json.load(f)
         pname = d["name"]
         pdir = os.path.dirname(os.path.dirname(pj))
-        plugin_surfaces = d.get("surfaces") or ["claude-code"]
-        for entry in d.get("context") or []:
+        plugin_surfaces = dewey_field(d, "surfaces") or ["claude-code"]
+        for entry in dewey_field(d, "context") or []:
             index[entry["id"]] = {
                 "plugin": pname,
                 "plugin_dir": pdir,
@@ -125,7 +138,7 @@ def main() -> int:
     plugin_pj = os.path.join(plugin_dir, ".claude-plugin", "plugin.json")
     with open(plugin_pj) as f:
         plugin_meta = json.load(f)
-    skill_surfaces = set(plugin_meta.get("surfaces") or ["claude-code"])
+    skill_surfaces = set(dewey_field(plugin_meta, "surfaces") or ["claude-code"])
 
     total_size = 0
     all_allow_large = True

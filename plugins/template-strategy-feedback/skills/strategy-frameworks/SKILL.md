@@ -7,6 +7,12 @@ triggers:
   - "use Porter's Five Forces on this market entry strategy"
   - "Minto this argument before I take it to the board"
   - "MECE this problem — help me structure the analysis"
+when_to_use: >-
+  Example requests: "what framework should I use to analyze this pricing decision?";
+  "run 7 Powers analysis on our competitive position";
+  "use Porter's Five Forces on this market entry strategy";
+  "Minto this argument before I take it to the board";
+  "MECE this problem — help me structure the analysis".
 ---
 
 # Strategy Frameworks Skill

@@ -30,17 +30,21 @@ A "bundle" is a logical unit of canonical context — usually a single markdown 
   "description": "...",
   "version": "0.1.0",
   "author": { "name": "CK", "contact": "@ck" },
-  "surfaces": ["claude-code", "cowork", "codex", "chat"],
-  "context": [
-    {
-      "id": "competitive-intelligence/positioning",
-      "path": "context/positioning/positioning.md",
-      "title": "Positioning reference",
-      "description": "Canonical positioning, differentiators, non-fit segments, banned phrases."
-    }
-  ]
+  "metadata": {
+    "surfaces": ["claude-code", "cowork", "codex", "chat"],
+    "context": [
+      {
+        "id": "competitive-intelligence/positioning",
+        "path": "context/positioning/positioning.md",
+        "title": "Positioning reference",
+        "description": "Canonical positioning, differentiators, non-fit segments, banned phrases."
+      }
+    ]
+  }
 }
 ```
+
+`surfaces` and `context` live under `metadata` — Claude Code's documented free-form object — so `claude plugin validate --strict` stays clean (see [surfaces.md](surfaces.md)).
 
 Required fields per entry: `id`, `path`, `title`. Optional: `description`, `surfaces` (defaults to the plugin's surfaces), `allow-large-context: true` (overrides the size lint — use sparingly).
 
@@ -69,7 +73,7 @@ Then in the skill body, include a "First, load:" section that references the sam
 - Stable ID: `competitive-intelligence/positioning`
 - Look for it at one of these paths (read whichever exists):
   - `~/.claude/dewey/plugins/competitive-intelligence/context/positioning/positioning.md` (Claude Code or Cowork)
-  - `~/.codex/context/competitive-intelligence/positioning/positioning.md` (standalone Codex)
+  - `context/positioning/positioning.md` relative to the plugin root, two directories up from the skill (Codex installs Dewey plugins as copies, `context/` included)
 
 Read the file in full. If neither path exists, stop and tell the user the plugin appears to be incomplete.
 ```
@@ -78,7 +82,7 @@ The lint enforces that every declared `requires-context:` ID literally appears i
 
 ## Why two paths?
 
-Cowork shares `~/.claude/` with Claude Code, so the first path covers both. Standalone Codex uses `~/.codex/` and Dewey's sync mirrors context bundles to `~/.codex/context/<plugin>/`. Skills should reference both paths so they work in either environment.
+Cowork shares `~/.claude/` with Claude Code, so the first path covers both — and it also works in Codex on any machine where Dewey is installed, because the Codex marketplace points at the same cache. The plugin-relative path covers Codex installs that copied the plugin into Codex's own plugin cache. Skills should reference both. (Dewey ≤ 2.2 mirrored context to `~/.codex/context/`; that directory is not a Codex concept and is no longer used.)
 
 ## Extending canonical context
 

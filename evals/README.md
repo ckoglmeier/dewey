@@ -57,7 +57,7 @@ Launch bar: **100% of assertions pass**.
 pip install anthropic
 export DEWEY_EVAL=1
 export ANTHROPIC_API_KEY=sk-ant-...
-# Optional: override the model (default: claude-sonnet-4-6)
+# Optional: override the model (default: claude-sonnet-5)
 export DEWEY_EVAL_MODEL=claude-haiku-4-5
 python3 evals/run_eval.py
 ```
@@ -70,7 +70,7 @@ inside the API path — it is never loaded during the hermetic test suite.
 ```bash
 export DEWEY_EVAL=1
 export DEWEY_EVAL_BACKEND=cmd
-export DEWEY_EVAL_CMD="my-model-cli --model claude-opus-4-5"
+export DEWEY_EVAL_CMD="my-model-cli --model claude-opus-5"
 python3 evals/run_eval.py
 ```
 

@@ -7,6 +7,12 @@ triggers:
   - "onboard our sales org to Dewey"
   - "help me fork Dewey and configure it for our team"
   - "walk me through adopting Dewey as an admin"
+when_to_use: >-
+  Example requests: "set up Dewey for my company";
+  "I'm the ops lead — get my team onto Dewey";
+  "onboard our sales org to Dewey";
+  "help me fork Dewey and configure it for our team";
+  "walk me through adopting Dewey as an admin".
 argument-hint: "[stage]"
 allowed-tools: Bash(gh *) Bash(git *) Bash(bash *) Bash(cat *) Bash(ls *) Bash(mkdir *) Read Write Edit
 ---
@@ -217,7 +223,7 @@ Goal: give the admin a "wow" moment. Install one skill and run it live.
 
 2. **Check if `ops-essentials` is installed:**
    ```bash
-   ls ~/.claude/plugins/cache/ops-essentials/ 2>/dev/null && echo "installed" || echo "not installed"
+   { claude plugin list --json 2>/dev/null; cat ~/.claude/settings.json 2>/dev/null; } | grep -q '"ops-essentials@dewey"' && echo "installed" || echo "not installed"
    ```
 
 3. **If not installed**, show the install plan and confirm:
@@ -229,6 +235,7 @@ Goal: give the admin a "wow" moment. Install one skill and run it live.
    ```bash
    claude plugin install ops-essentials@dewey
    ```
+   Then run `/reload-plugins` so the skill is available in this session (Dewey plugins load in place from `~/.claude/dewey/plugins/`; they are never copied to `~/.claude/plugins/cache/`).
 
 4. **Run the skill with the admin as the subject.** Ask:
    > Let's draft your own weekly update to use as the demo. Quick three questions:

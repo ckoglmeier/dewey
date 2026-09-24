@@ -62,9 +62,11 @@ Skill authors can mark a plugin or individual skill as off-limits to telemetry. 
 {
   "name": "hr-onboarding",
   "description": "...",
-  "telemetry": false
+  "metadata": { "telemetry": false }
 }
 ```
+
+(Dewey ≤ 2.2 accepted a top-level `telemetry` key; it is still honoured, but new manifests must use `metadata` — see [surfaces.md](surfaces.md) for why.)
 
 **Skill-level** (overrides plugin default for one skill), in `SKILL.md` frontmatter:
 

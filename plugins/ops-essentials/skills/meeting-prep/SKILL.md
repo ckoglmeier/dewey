@@ -7,6 +7,12 @@ triggers:
   - "draft an agenda for tomorrow's quarterly review with the exec team"
   - "help me prep for a sync"
   - "I have an upcoming kickoff meeting with a new client, what should I bring?"
+when_to_use: >-
+  Example requests: "prep me for my meeting with the leadership team this afternoon";
+  "I have a 1:1 with my manager in 20 minutes — quick meeting prep";
+  "draft an agenda for tomorrow's quarterly review with the exec team";
+  "help me prep for a sync";
+  "I have an upcoming kickoff meeting with a new client, what should I bring?".
 argument-hint: "[meeting topic or attendees]"
 ---
 

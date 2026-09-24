@@ -48,11 +48,11 @@ check "external plugin sources declare a source type accepted by 'claude plugin 
   "python3 -c '
 import json
 m = json.load(open(\".claude-plugin/marketplace.json\"))
-# Verified accepted by Claude Code v2.1.47: github, url, npm.
-# Verified rejected: git, git-subdir (the latter was grandfathered for the
-# official marketplace and is no longer accepted for new ones).
+# Verified with claude plugin validate on Claude Code 2.1.280 (2026-09-24):
+# github, url, npm, git-subdir, archive, command are accepted; git is rejected.
+# (2.1.47 rejected git-subdir; that restriction is gone.)
 # See docs/decisions/external-plugin-distribution.md.
-ACCEPTED = {\"github\", \"url\", \"npm\"}
+ACCEPTED = {\"github\", \"url\", \"npm\", \"git-subdir\", \"archive\", \"command\"}
 for p in m[\"plugins\"]:
     src = p[\"source\"]
     if isinstance(src, dict):
@@ -81,6 +81,37 @@ for p in m[\"plugins\"]:
         assert src.get(\"ref\") or src.get(\"sha\"), p[\"name\"] + \": url needs ref or sha\"
 '"
 
+check "external git-subdir sources have url + path" \
+  "python3 -c '
+import json
+m = json.load(open(\".claude-plugin/marketplace.json\"))
+for p in m[\"plugins\"]:
+    src = p[\"source\"]
+    if isinstance(src, dict) and src.get(\"source\") == \"git-subdir\":
+        assert src.get(\"url\"), p[\"name\"] + \": git-subdir source missing url\"
+        assert src.get(\"path\"), p[\"name\"] + \": git-subdir source missing path\"
+'"
+
+check "external archive sources have an https url (sha256 recommended)" \
+  "python3 -c '
+import json
+m = json.load(open(\".claude-plugin/marketplace.json\"))
+for p in m[\"plugins\"]:
+    src = p[\"source\"]
+    if isinstance(src, dict) and src.get(\"source\") == \"archive\":
+        assert str(src.get(\"url\", \"\")).startswith(\"https://\"), p[\"name\"] + \": archive source needs an https url\"
+'"
+
+check "external command sources have a command" \
+  "python3 -c '
+import json
+m = json.load(open(\".claude-plugin/marketplace.json\"))
+for p in m[\"plugins\"]:
+    src = p[\"source\"]
+    if isinstance(src, dict) and src.get(\"source\") == \"command\":
+        assert src.get(\"command\"), p[\"name\"] + \": command source missing command\"
+'"
+
 check "external npm sources have package" \
   "python3 -c '
 import json
@@ -90,6 +121,11 @@ for p in m[\"plugins\"]:
     if isinstance(src, dict) and src.get(\"source\") == \"npm\":
         assert src.get(\"package\"), p[\"name\"] + \": npm source missing package\"
 '"
+
+# Codex marketplace manifest (.agents/plugins/marketplace.json) is generated from
+# the Claude one and must not drift — see scripts/sync-codex-marketplace.py.
+check ".agents/plugins/marketplace.json exists and matches .claude-plugin/marketplace.json" \
+  "python3 '$REPO_ROOT/scripts/sync-codex-marketplace.py' --check"
 
 # Path files reference only plugins that exist
 check "paths/sales-ae.md only references real plugin names" \

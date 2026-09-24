@@ -21,8 +21,11 @@ This document is written for security reviewers evaluating Dewey for adoption. I
 | `~/.claude/dewey-propose.sh` | Skill proposal helper (wraps `gh pr create`). Mode 0755. |
 | `~/.claude/dewey-analytics.log` | Local event log (JSONL). Created only if `DEWEY_TELEMETRY != 0`. |
 | `~/.claude/dewey-migration.log` | Written only if a prior Classroom install is detected and migrated. |
+| `~/.claude/dewey-install-id` | Pseudonymous install ID (see Telemetry). Mode 0600. |
+| `~/.agents/skills/dewey` | Only if Codex is detected: a directory symlink to the Guide (`~/.claude/dewey/guide`). On Codex builds without `codex plugin`, one symlink per skill is added here too. |
+| `${CODEX_HOME:-~/.codex}/config.toml`, `.../plugins/cache/dewey/` | Only if Codex is detected: written by Codex's own `codex plugin marketplace add` / `codex plugin add`, which the sync helper invokes. |
 
-No files are written outside `~/.claude/` and (if Codex is detected) `~/.codex/skills/`. No system directories are touched.
+No files are written outside `~/.claude/`, plus — only when Codex is detected — `~/.agents/skills/` and Codex's own config and plugin cache under `${CODEX_HOME:-~/.codex}`. No system directories are touched.
 
 ### Permissions
 
@@ -38,10 +41,11 @@ If `DEWEY_TARBALL` is set (e.g. for air-gapped or test installs), no network req
 
 ### SessionStart hook (`~/.claude/dewey-first-run.sh`)
 
-Runs once per Claude Code session, via the `SessionStart` hook registered in `settings.json`. Does two things:
+Runs once per Claude Code session, via the `SessionStart` hook registered in `settings.json`. Does three things:
 
 1. **First-run welcome.** On the very first session after install, prints a one-time welcome message prompting `Type /dewey to get started`. Writes a marker file (`~/.claude/dewey-onboarded`) so this message is never shown again.
 2. **Background refresh.** Launches `~/.claude/dewey-refresh.sh` in a fire-and-forget subshell (`( ... & )`). The session is never blocked. If the refresh script is not executable, the launch is silently skipped.
+3. **Background telemetry forward.** Launches `~/.claude/dewey-telemetry.sh forward` the same way. It exits immediately and silently unless `DEWEY_TELEMETRY_ENDPOINT` and a license key are both configured (see Telemetry below).
 
 ### Background refresh (`~/.claude/dewey-refresh.sh`)
 
@@ -132,7 +136,7 @@ Forwarding is **off by default** and requires explicit configuration:
 export DEWEY_TELEMETRY_ENDPOINT=https://your-internal-analytics.example.com/dewey
 ```
 
-When set, the Guide POSTs the local log to this endpoint at session end, then truncates the local log. The forwarder runs `~/.claude/dewey-telemetry.sh strip-bodies` before sending — this removes `additions` and `user_intent` from `extension_created` events unless `DEWEY_TELEMETRY_FORWARD_BODIES=1` is also set.
+When set and a license key is present, the `SessionStart` hook runs `~/.claude/dewey-telemetry.sh forward` in the background: it POSTs the events after the last forwarded byte offset in batches of at most 500 lines / 900 KB, advances the offset only on a `200`, and never truncates the local log. The forwarder runs `strip-bodies` before sending — this removes `additions` and `user_intent` from `extension_created` events unless `DEWEY_TELEMETRY_FORWARD_BODIES=1` is also set. The full client contract is in [`docs/hosted-api.md`](hosted-api.md) §7.
 
 There is no vendor SDK. The endpoint is any HTTP service that accepts a JSONL POST. Dewey does not contact any Anthropic-operated endpoint.
 
@@ -140,4 +144,4 @@ There is no vendor SDK. The endpoint is any HTTP service that accepts a JSONL PO
 
 Dewey's local function (installer, Guide skill, plugins, lint, refresh) does not require a license key. There is no license check, no call-home on install, and no degraded mode for unlicensed installs. A missing or invalid license key never breaks local Dewey.
 
-License keys are reserved for future hosted features (telemetry aggregation, digest emails). If a key is present, it is stored at `~/.claude/dewey-license` (mode 0600) and sent as an auth bearer when forwarding telemetry. It is never logged or echoed. The full wire contract (key format, endpoint semantics, batch limits, client requirements) is specified in [`docs/hosted-api.md`](hosted-api.md).
+License keys unlock the hosted features (telemetry forwarding, aggregation, digest emails). If a key is present, it is stored at `~/.claude/dewey-license` (mode 0600) and sent as an auth bearer when forwarding telemetry. It is never logged or echoed. The full wire contract (key format, endpoint semantics, batch limits, client requirements) is specified in [`docs/hosted-api.md`](hosted-api.md).

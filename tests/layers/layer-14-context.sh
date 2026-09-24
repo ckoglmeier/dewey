@@ -9,7 +9,7 @@ for plugin_dir in plugins/*/; do
   plugin_name=$(basename "$plugin_dir")
   manifest="$plugin_dir.claude-plugin/plugin.json"
 
-  check "[$plugin_name] context entries are well-formed (if present)" \
+  check "[$plugin_name] metadata.context entries are well-formed (if present)" \
     "python3 -c '
 import json, os, re, sys
 manifest = \"$manifest\"
@@ -17,8 +17,9 @@ plugin_dir = \"$plugin_dir\"
 plugin_name = \"$plugin_name\"
 p = json.load(open(manifest))
 valid_surfaces = {\"claude-code\", \"cowork\", \"codex\", \"chat\"}
-plugin_surfaces = p.get(\"surfaces\") or [\"claude-code\"]
-ctx = p.get(\"context\")
+meta = p.get(\"metadata\") or {}
+plugin_surfaces = meta.get(\"surfaces\") or [\"claude-code\"]
+ctx = meta.get(\"context\")
 if ctx is None: sys.exit(0)
 assert isinstance(ctx, list), \"context must be a list\"
 seen = set()
@@ -58,7 +59,7 @@ import json, os, sys
 manifest = \"$manifest\"
 plugin_dir = \"$plugin_dir\"
 p = json.load(open(manifest))
-ctx = p.get(\"context\") or []
+ctx = (p.get(\"metadata\") or {}).get(\"context\") or []
 WARN = 20 * 1024
 FAIL = 100 * 1024
 def files_under(root):
@@ -104,7 +105,7 @@ mkdir -p "$LAYER14_FIXTURES/plugins/demo/.claude-plugin" \
          "$LAYER14_FIXTURES/plugins/demo/skills/foo" \
          "$LAYER14_FIXTURES/plugins/demo/context/bar"
 printf '%s\n' \
-  '{"name":"demo","surfaces":["claude-code","cowork","codex","chat"],"context":[{"id":"demo/bar","path":"context/bar/bar.md","title":"Bar"}]}' \
+  '{"name":"demo","metadata":{"surfaces":["claude-code","cowork","codex","chat"],"context":[{"id":"demo/bar","path":"context/bar/bar.md","title":"Bar"}]}}' \
   > "$LAYER14_FIXTURES/plugins/demo/.claude-plugin/plugin.json"
 printf '%s\n' "stub bar context" > "$LAYER14_FIXTURES/plugins/demo/context/bar/bar.md"
 

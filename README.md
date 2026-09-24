@@ -2,7 +2,7 @@
 
 **The canonical record for your team's skills and context — across Claude Code, Cowork, and OpenAI Codex.**
 
-Like the Dewey Decimal System for shared agent capabilities: one place to file what works, organized so anyone on the team can find what they need and put what they discover back. Dewey distributes two things teams share with their agents — **skills** (procedures: how to do something) and **canonical context** (reference content: battlecards, brand voice, ICP definitions, strategy docs). Both are authored once in standard markdown and run in any of the three agents. Cowork shares Claude Code's `~/.claude/` directory — same install, no extra step. When Codex is also installed, Dewey mirrors its skills and context into `~/.codex/` as symlinks — see [docs/codex-sync.md](docs/codex-sync.md).
+Like the Dewey Decimal System for shared agent capabilities: one place to file what works, organized so anyone on the team can find what they need and put what they discover back. Dewey distributes two things teams share with their agents — **skills** (procedures: how to do something) and **canonical context** (reference content: battlecards, brand voice, ICP definitions, strategy docs). Both are authored once in standard markdown and run in any of the three agents. Cowork shares Claude Code's `~/.claude/` directory — same install, no extra step. When Codex is also installed, Dewey registers itself as a native Codex plugin marketplace (older Codex builds get skill symlinks) — see [docs/codex-sync.md](docs/codex-sync.md).
 
 ## Why this exists
 
@@ -55,11 +55,11 @@ curl -fsSL https://raw.githubusercontent.com/ckoglmeier/dewey/main/install.sh | 
 This:
 1. Downloads a snapshot of the Dewey reference repo to `~/.claude/dewey` (atomic swap — readers never see a half-written cache)
 2. Installs the Guide as a personal skill at `~/.claude/skills/dewey`
-3. Adds the Dewey marketplace to `~/.claude/settings.json`
+3. Registers the Dewey marketplace in Claude Code's plugin registry (`~/.claude/plugins/known_marketplaces.json`)
 4. Installs a `SessionStart` hook that prints a welcome on first run and kicks off a background refresh
-5. If OpenAI Codex is detected (`~/.codex/` or `codex` on PATH), mirrors all skills into `~/.codex/skills/` as symlinks so Codex picks them up too
+5. If OpenAI Codex is detected (`$CODEX_HOME` / `~/.codex/`, or `codex` on PATH), registers the cache as a Codex plugin marketplace and installs the plugins with `codex plugin add`; older Codex builds get skill-directory symlinks under `~/.agents/skills/`
 
-Then open Claude Code (or Codex) and type `/dewey`.
+Then open Claude Code and type `/dewey` (in Codex: `$dewey`).
 
 > **Note:** the install script downloads from `$DEWEY_REPO` (default: a placeholder GitHub URL). If you're forking this repo for your own company, set `DEWEY_REPO` to your fork's URL before running the script.
 
@@ -78,7 +78,7 @@ Then open Claude Code (or Codex) and type `/dewey`.
 There are three update channels, by design:
 
 1. **Reference cache** (`~/.claude/dewey/`) — refreshed in the background by `~/.claude/dewey-refresh.sh` on every session start, gated to once per 24h, lock-protected, atomic swap, never blocks. So when central adds a new plugin or updates a path file, you see it within a day with no user action.
-2. **Installed plugins** — Claude Code's per-marketplace `autoUpdate` toggle handles updates to plugins you've actually installed via `/dewey install`.
+2. **Installed plugins** — Dewey's marketplace is a local directory, so Claude Code loads its plugins in place from `~/.claude/dewey/plugins/`; the cache refresh above *is* the plugin update. Run `/reload-plugins` (or start a new session) to pick up a refresh mid-session. Codex gets the same refresh through the sync the refresh script runs afterwards.
 3. **The Guide skill itself** (`~/.claude/skills/dewey/SKILL.md`) — only updates when you opt in. Run `/dewey update` and confirm. The Guide is the one thing actively running on your skill calls, so changing it silently in the background is the wrong default.
 
 Refresh failures are logged to `~/.claude/dewey-refresh.log` and never break a session.
@@ -113,7 +113,7 @@ Run `bash tests/run.sh` from the repo root to validate any change.
 | `sync` | Mirror Dewey skills + canonical context to OpenAI Codex |
 | `propose` | Open a PR against canonical (six sub-flows: new-skill / update / promote, plus parallel new-context / update-context / promote-context-extension) |
 
-**Multi-agent reach.** Same install reaches Claude Code (native), Cowork (shares `~/.claude/`), and standalone Codex (mirrored via symlink). `surfaces:` field in `plugin.json` declares which agents a plugin supports; Guide filters recommendations to the current surface.
+**Multi-agent reach.** Same install reaches Claude Code (native), Cowork (shares `~/.claude/`), and Codex (native plugin marketplace; skills invoked with `$name`). `metadata.surfaces` in `plugin.json` declares which agents a plugin supports; Guide filters recommendations to the current surface.
 
 **Canonical context.** Plugins ship reference content (battlecards, brand voice, strategy docs) alongside skills. Skills declare `requires-context:` to depend on stable IDs. Layer 14 lint enforces schema, ID resolution, frontmatter/body alignment, surface compatibility, and size limits. See [docs/canonical-context.md](docs/canonical-context.md).
 
@@ -157,6 +157,8 @@ dewey/
 ├── dewey-propose.sh          # propose helper: opens PRs against canonical (installed to ~/.claude/ by install.sh)
 ├── guide/SKILL.md                # the Guide skill (copied to ~/.claude/skills/dewey/ on install)
 ├── .claude-plugin/marketplace.json   # plugin catalog (Claude Code marketplace)
+├── .agents/plugins/marketplace.json  # same catalog for Codex (generated — scripts/sync-codex-marketplace.py)
+├── scripts/                      # generators: sync-codex-marketplace.py, sync-when-to-use.py, build-release.sh
 ├── plugins/                      # in-tree problem-domain plugins
 │   ├── competitive-intelligence/
 │   │   ├── .claude-plugin/plugin.json
@@ -170,7 +172,7 @@ dewey/
 │   └── ops-analyst.md
 ├── docs/                         # convention + reference docs (see "What's shipped")
 └── tests/
-    ├── run.sh                    # full lint + integration suite (213+ tests across 14 layers)
+    ├── run.sh                    # full lint + integration suite (500+ tests across 18 layers)
     └── lib/check_requires_context.py   # Python validator extracted from inline bash
 ```
 
@@ -179,7 +181,7 @@ dewey/
 Dewey's marketplace supports two kinds of plugin entries in `.claude-plugin/marketplace.json`:
 
 1. **In-tree plugins** (relative `source` like `"./plugins/competitive-intelligence"`) — live in this repo. Code-owned here, validated end-to-end by the test suite, shipped as part of the install tarball.
-2. **External plugins** (object `source` with `git-subdir` / `github` / `url` / `npm`) — live in another repo and are cloned by Claude Code at `plugin install` time. Dewey only validates their schema in the manifest; the upstream repo owns the plugin content.
+2. **External plugins** (object `source` with `github` / `url` / `git-subdir` / `npm` / `archive` / `command`) — live in another repo and are fetched by Claude Code at `plugin install` time. Dewey only validates their schema in the manifest; the upstream repo owns the plugin content.
 
 Adding an external plugin is a one-line PR: append an entry to the `plugins` array. The `tests/run.sh` suite validates the source schema (correct type, required fields, ref pinning) offline.
 

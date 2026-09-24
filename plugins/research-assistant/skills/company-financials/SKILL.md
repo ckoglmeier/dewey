@@ -7,6 +7,12 @@ triggers:
   - "is HubSpot a good acquisition target — valuation and financial analysis"
   - "what are MongoDB's revenue trends and margins over the last four quarters"
   - "profile Veeva as an M&A target with financial analysis"
+when_to_use: >-
+  Example requests: "pull the financials on Datadog and summarize what matters";
+  "earnings summary for Salesforce last quarter";
+  "is HubSpot a good acquisition target — valuation and financial analysis";
+  "what are MongoDB's revenue trends and margins over the last four quarters";
+  "profile Veeva as an M&A target with financial analysis".
 ---
 
 # Company Financial Analysis Research Type

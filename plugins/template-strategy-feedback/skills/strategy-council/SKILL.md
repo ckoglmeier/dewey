@@ -7,6 +7,12 @@ triggers:
   - "run this by the strategy council before we commit"
   - "pressure-test this GTM decision with the advisory council"
   - "play devil's advocate on this pricing strategy"
+when_to_use: >-
+  Example requests: "council: should we raise prices on the enterprise tier?";
+  "what would the council say about this product roadmap?";
+  "run this by the strategy council before we commit";
+  "pressure-test this GTM decision with the advisory council";
+  "play devil's advocate on this pricing strategy".
 ---
 
 # STRATEGY COUNCIL

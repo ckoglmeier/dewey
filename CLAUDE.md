@@ -1,8 +1,8 @@
 # Dewey — session notes
 
-## Current state (2026-06-10)
+## Current state (2026-09-24)
 
-Dewey is a Claude Code / Cowork / OpenAI Codex plugin marketplace convention (renamed from Classroom in v2.0.0). Ships 8 in-tree plugins (27 skills total), the Guide skill (slash command `/dewey`), three shell helpers (sync-codex, telemetry, propose), 17 active test layers including Layer 4b (Classroom→Dewey migration) and Layer 8 (opt-in live validation of external entries — gated by `DEWEY_VALIDATE_EXTERNAL=1`). The test suite is split into per-layer files under `tests/layers/` with a thin `tests/run.sh` harness; CI runs the full suite on every push/PR via `.github/workflows/test.yml`. Dewey is now a buyable open-core product: the local convention is free; an org license key activates hosted features (telemetry forwarding + weekly digest). The hosted service is a separate commercial product in the private `ckoglmeier/dewey-cloud` repo; the public contract is `docs/hosted-api.md`. See docs/plans/go-to-market.md.
+Dewey is a Claude Code / Cowork / OpenAI Codex plugin marketplace convention (renamed from Classroom in v2.0.0). Ships 8 in-tree plugins (27 skills total), the Guide skill (slash command `/dewey`), three shell helpers (sync-codex, telemetry, propose), 18 active test layers including Layer 4b (Classroom→Dewey migration) and Layer 8 (opt-in live validation of external entries — gated by `DEWEY_VALIDATE_EXTERNAL=1`). The test suite is split into per-layer files under `tests/layers/` with a thin `tests/run.sh` harness; CI runs the full suite on every push/PR via `.github/workflows/test.yml`. Dewey is now a buyable open-core product: the local convention is free; an org license key activates hosted features (telemetry forwarding + weekly digest). The hosted service is a separate commercial product in the private `ckoglmeier/dewey-cloud` repo; the public contract is `docs/hosted-api.md`. See docs/plans/go-to-market.md.
 
 For the full status snapshot (Done / Partial / Deferred / Hosted bucket), the source of truth is now [`docs/roadmap.md`](docs/roadmap.md). This file holds session-level notes and open todos.
 
@@ -17,6 +17,8 @@ Work the user already flagged or that came up mid-session:
 - **Phase 3 trigger eval (optional)** — model-based routing eval per docs/plans/skill-trigger-validation.md Phase 3. Opt-in like Layer 8, needs API credits (~$0.10/run on Haiku). Decide after living with the Layer 15 lint for a while.
 - **Argument-hint backfill** on ~10 high-traffic skills — pending the open question of whether argument-hint matters for plugin skills (vs. only the Guide).
 - **Cowork Browse Plugins UI walkthrough** — still needs a human to verify how categories/tags/multi-skill-plugins/path-files render in Cowork's Browse Plugins panel (unchanged).
+- **Codex live check before releases** — run `DEWEY_TEST_CODEX_PLUGIN=1 bash tests/run.sh` on a machine with `codex` installed (the default suite never calls the real CLI). Confirm how Codex names plugin skills in the `$` picker and update Guide §9 wording if it is `$plugin:skill`.
+- **CI `validate` job** — flip `continue-on-error` off in `.github/workflows/test.yml` once the Claude Code installer proves stable on runners.
 
 ### GTM follow-ups (post-merge)
 - **Cowork Browse Plugins walkthrough** — still needs a human (WS5).
@@ -43,17 +45,30 @@ Not a backlog for this repo per se, but the local data pipe is built to feed it:
 ## Major decisions / context (current)
 
 - **Three-tier extension model.** Central canonical → company customization (`dewey-extensions-<team>`) → personal extension (`~/.claude/skills/`). Convention-based composition via `extends:` and `extends-context:`.
-- **Surfaces are first-class.** `surfaces:` field in `plugin.json` declares Claude Code / Cowork / Codex / Chat support. Lint enforces compatibility down the dependency graph. Layer 11.
-- **Canonical context is co-located in plugins.** `context: []` in `plugin.json` declares stable `<plugin>/<bundle>` IDs. Skills declare `requires-context:` and the Guide install flow resolves dependencies before confirming. Convention-based loading (skill body explicitly Reads), no runtime mediator. Three-tier privacy on telemetry. Spec: `docs/canonical-context-design.md`. v1 implementation: Layer 14.
+- **Surfaces are first-class.** `metadata.surfaces` in `plugin.json` declares Claude Code / Cowork / Codex / Chat support. Lint enforces compatibility down the dependency graph. Layer 11. All Dewey-specific plugin.json keys (`surfaces`, `context`, `telemetry`) live under `metadata` so `claude plugin validate --strict` (Layer 18) passes.
+- **Canonical context is co-located in plugins.** `metadata.context` in `plugin.json` declares stable `<plugin>/<bundle>` IDs. Skills declare `requires-context:` and the Guide install flow resolves dependencies before confirming. Convention-based loading (skill body explicitly Reads), no runtime mediator. Three-tier privacy on telemetry. Spec: `docs/canonical-context-design.md`. v1 implementation: Layer 14.
 - **Local Dewey captures and forwards data only.** No analysis, no recommendations, no PRs from telemetry. Aggregation happens in the future hosted version. Three-tier opt-out (global env, plugin flag, skill flag) plus body-forwarding gate. Spec: `docs/extension-telemetry.md`.
 - **Cowork shares `~/.claude/` with Claude Code.** Verified in a live install. Zero extra work for Cowork support.
-- **Codex sync uses symlinks, not copies.** Cache refresh propagates automatically. Skills + canonical context both mirrored. `docs/codex-sync.md`.
+- **Codex integration is the native plugin marketplace** (`codex plugin marketplace add ~/.claude/dewey` + `codex plugin add <plugin>@dewey`, driven by `dewey-sync-codex.sh`), with skill-directory symlinks under `~/.agents/skills/` as the fallback for old Codex builds. Codex never discovers symlinked `SKILL.md` *files* (the ≤ 2.2 mirror was inert) and `~/.codex/context/` is not a Codex concept. Skills are `$name` in Codex. `docs/codex-sync.md`.
 - **Propose flow is GitHub-backed.** `gh` does the PR; CODEOWNERS routes review. Auto-forks if no write access. Hosted version will layer richer governance on top — not in this repo.
 - **`ref: main` pinning** for external references. Simplicity over determinism. SHA pinning deferred unless we see breakage.
 - **`author` not `owner`** in `plugin.json`. Claude Code's schema requires it. Layer 5 enforces.
 - **Marketplace registry is `~/.claude/plugins/known_marketplaces.json`** with a `"directory"` source entry, not `extraKnownMarketplaces` in `settings.json`. `install.sh` writes both — settings.json is for hooks only.
 
-## Resolved this session
+## Resolved 2026-09-24 — platform drift review
+
+Reviewed against Claude Code 2.1.280 (docs + `claude plugin validate`), Codex CLI 0.149.1 (`codex plugin`, sandboxed `CODEX_HOME`), and current claude.ai/Codex docs. Fixed:
+- Installed-plugin checks (Guide §2/§3, admin Stage 5) no longer look in `~/.claude/plugins/cache/` — directory-marketplace plugins load in place and never appear there; they use `claude plugin list --json` / `enabledPlugins`.
+- Codex sync rewritten: native plugin marketplace (Codex reads `.claude-plugin/*` directly; standard `.agents/plugins/marketplace.json` generated by `scripts/sync-codex-marketplace.py`), symlink fallback uses directory symlinks under `~/.agents/skills/`, `$skill` syntax, AGENTS.md generator removed, `~/.codex/context/` mirror removed, `CODEX_HOME` honoured, legacy symlink cleanup. Opt-in live test `DEWEY_TEST_CODEX_PLUGIN=1`.
+- `/dewey owners` read `owner`; manifests use `author`.
+- Telemetry `forward` is now invoked by the SessionStart hook (nothing called it before).
+- Layer 3b accepts `git-subdir` / `archive` / `command` again (2.1.280 validator); docs reconciled.
+- Dewey plugin.json keys moved under `metadata`; Layer 11 rejects legacy top-level keys; Layer 18 runs `claude plugin validate --strict` when a capable CLI is present (CI job non-blocking for now).
+- `when_to_use` generated from `triggers:` (`scripts/sync-when-to-use.py`, Layer 15 drift check) so trigger prose reaches Claude Code's router.
+- Guide/docs: skills hot-reload (`/reload-plugins` for plugins), Codex automations in scheduling, Skills API GA + claude.ai→Code sync in the research doc, security/telemetry docs describe the real forwarding path.
+- Eval runner picks the first `text` block and handles `refusal` (thinking-on models); default model `claude-sonnet-5`.
+
+## Resolved 2026-06 (v2.2.0)
 
 - **Go-to-market build (PR #4).** Shipped a working, buyable open-core Dewey across five workstreams: (1) admin onboarding plugin `dewey-admin-setup` with fork-less trial; (2) supply-chain hardening — install/refresh now pin to checksum-verified GitHub releases by default, docs/security.md for buyers; (3) hosted service (stdlib-only Python: SQLite store with hashed-at-rest license keys, HMAC Stripe-shaped checkout webhook, bearer-auth event ingest, per-org weekly digest, synthetic demo seed) — moved to private `ckoglmeier/dewey-cloud` repo before merge; (4) CLI open-core licensing — install.sh accepts DEWEY_LICENSE_KEY, dewey-telemetry.sh forward pushes batches; the open-core guarantee (no license ever degrades local function) is test-asserted; (5) eval harness under evals/ run on the advanced model: routing 93.8% / flows 100%.
 - **Adversarial security review of the money path.** Returned NO-SHIP on two HIGH issues (webhook replay via missing event id; validate endpoint leaking org/plan/status) — both fixed and regression-tested before PR #4. Verified the full purchase→install→forward→digest loop end-to-end.

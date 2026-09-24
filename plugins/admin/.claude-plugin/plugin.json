@@ -6,8 +6,10 @@
     "name": "CK",
     "contact": "@ck"
   },
-  "surfaces": [
-    "claude-code",
-    "cowork"
-  ]
+  "metadata": {
+    "surfaces": [
+      "claude-code",
+      "cowork"
+    ]
+  }
 }

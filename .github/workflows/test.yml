@@ -13,6 +13,24 @@ jobs:
       - name: Run test suite
         run: bash tests/run.sh
 
+  validate:
+    # Anthropic's own validator, strict mode: fails on unrecognized manifest
+    # fields. Layer 18 runs this locally when a capable `claude` CLI is on PATH;
+    # here we install the CLI on the runner. Non-blocking until the installer
+    # proves stable in CI, then flip continue-on-error off.
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Claude Code CLI
+        run: curl -fsSL https://claude.ai/install.sh | bash
+      - name: claude plugin validate --strict
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          claude --version
+          claude plugin validate --strict .
+          for p in plugins/*/; do claude plugin validate --strict "$p"; done
+
   eval:
     # Eval harness smoke test in skip mode (no backend, no API credits).
     # The real eval (DEWEY_EVAL=1 + backend) runs manually/pre-release.

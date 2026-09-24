@@ -7,6 +7,12 @@ triggers:
   - "full strategic analysis of this market opportunity"
   - "help me think through this GTM decision end-to-end"
   - "run a complete strategy session on this competitive threat"
+when_to_use: >-
+  Example requests: "strategy session: help me think through this product pivot";
+  "which strategy tool should I use for this pricing decision?";
+  "full strategic analysis of this market opportunity";
+  "help me think through this GTM decision end-to-end";
+  "run a complete strategy session on this competitive threat".
 ---
 
 ## PURPOSE

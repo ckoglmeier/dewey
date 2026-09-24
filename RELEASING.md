@@ -77,5 +77,7 @@ If any check fails, delete the GitHub release (`gh release delete vX.Y.Z --yes`)
 ## Notes
 
 - **dist/** is gitignored. Build artifacts are never committed to the repo.
+- Codex users receive updates through the background refresh, which re-runs `dewey-sync-codex.sh` (Codex re-copies each plugin on `codex plugin add`); no per-plugin `version` bump is required for that. Bump plugin versions when the change is meaningful to users anyway.
+- If `.claude-plugin/marketplace.json` changed, run `python3 scripts/sync-codex-marketplace.py`; if any `triggers:` changed, run `python3 scripts/sync-when-to-use.py`. Layers 3 and 15 fail on drift.
 - The `scripts/build-release.sh` script does not push, tag, or create releases — it only builds local artifacts. All network operations are your responsibility.
 - After creating a release, the next `bash tests/run.sh` run exercises the offline suite only. A post-release clean-VM test is the definitive verification.

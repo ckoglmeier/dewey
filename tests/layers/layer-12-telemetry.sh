@@ -52,13 +52,26 @@ test ! -e '$TELEM_LOG2'
 TELEM_CACHE2="$TELEM_SANDBOX/dewey2"
 TELEM_LOG3="$TELEM_SANDBOX/log3"
 mkdir -p "$TELEM_CACHE2/plugins/demo/.claude-plugin" "$TELEM_CACHE2/plugins/demo/skills/foo"
-printf '{"name":"demo","telemetry":false}\n' > "$TELEM_CACHE2/plugins/demo/.claude-plugin/plugin.json"
+printf '{"name":"demo","metadata":{"telemetry":false}}\n' > "$TELEM_CACHE2/plugins/demo/.claude-plugin/plugin.json"
 printf -- "---\nname: foo\n---\nbody\n" > "$TELEM_CACHE2/plugins/demo/skills/foo/SKILL.md"
-check "plugin telemetry: false suppresses emit (no log file)" \
+check "plugin metadata.telemetry: false suppresses emit (no log file)" \
   "
 DEWEY_DIR='$TELEM_CACHE2' DEWEY_LOG='$TELEM_LOG3' \
   bash '$TELEMETRY_SRC' emit event=test plugin=demo parent=foo
 test ! -e '$TELEM_LOG3'
+"
+
+# Legacy (pre-2.3) top-level telemetry: false is still honoured
+TELEM_CACHE2B="$TELEM_SANDBOX/dewey2b"
+TELEM_LOG3B="$TELEM_SANDBOX/log3b"
+mkdir -p "$TELEM_CACHE2B/plugins/demo/.claude-plugin" "$TELEM_CACHE2B/plugins/demo/skills/foo"
+printf '{"name":"demo","telemetry":false}\n' > "$TELEM_CACHE2B/plugins/demo/.claude-plugin/plugin.json"
+printf -- "---\nname: foo\n---\nbody\n" > "$TELEM_CACHE2B/plugins/demo/skills/foo/SKILL.md"
+check "legacy top-level plugin telemetry: false still suppresses emit" \
+  "
+DEWEY_DIR='$TELEM_CACHE2B' DEWEY_LOG='$TELEM_LOG3B' \
+  bash '$TELEMETRY_SRC' emit event=test plugin=demo parent=foo
+test ! -e '$TELEM_LOG3B'
 "
 
 # Skill-level opt-out: telemetry: false in SKILL.md frontmatter (plugin allows)

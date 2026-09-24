@@ -86,7 +86,7 @@ The most common shape is `git-subdir`, which points at a specific folder inside 
 }
 ```
 
-Claude Code supports four object-source types: `git-subdir`, `github`, `url`, and `npm`. See the [Claude Code marketplace docs](https://docs.claude.com/en/docs/claude-code/plugin-marketplaces) for the full schema.
+Claude Code (2.1.280+) accepts six object-source types: `github`, `url` (any git URL), `git-subdir` (sparse clone of a sub-directory), `npm`, `archive` (a zip over HTTPS, with optional `sha256`), and `command`. The 2.1.47 validator rejected `git-subdir` for a while (see [docs/decisions/external-plugin-distribution.md](decisions/external-plugin-distribution.md)); current builds accept it again, and Layer 3b validates all six shapes offline. Full schema: https://code.claude.com/docs/en/plugin-marketplaces
 
 **Rules of thumb:**
 
@@ -95,7 +95,7 @@ Claude Code supports four object-source types: `git-subdir`, `github`, `url`, an
 - Always pin with `ref` (branch name) or `sha` (exact commit). `ref: "main"` means "track latest"; a SHA means "deterministic, requires a bump PR to move forward." Dewey currently uses `ref: "main"` for its external entries — simple, with a 24h refresh cadence as the safety net.
 - External plugins do **not** need a CODEOWNERS line or a `plugins/*/` directory in Dewey. Ownership and validation live in the upstream repo. Dewey's test suite only validates the schema of the external entry (correct type, required fields, pinning) — it trusts the upstream for content quality.
 
-If you're adding the first external plugin from a new upstream repo, it's worth running `git ls-remote <url>` manually and sparse-cloning the target path once to sanity-check that the upstream layout matches your marketplace entry. A future opt-in test layer will automate this.
+If you're adding the first external plugin from a new upstream repo, it's worth running `git ls-remote <url>` manually and sparse-cloning the target path once to sanity-check that the upstream layout matches your marketplace entry. Layer 8 (`DEWEY_VALIDATE_EXTERNAL=1 bash tests/run.sh`, also run weekly by `drift-check.yml`) automates this for `github`, `url`, and `npm` sources.
 
 ## What about reference content (battlecards, brand voice, strategy)?
 

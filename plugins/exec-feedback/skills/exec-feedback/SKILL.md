@@ -7,6 +7,12 @@ triggers:
   - "give me first-pass feedback on this brief before I send it to the exec"
   - "doc review — be brutal"
   - "review this strategy proposal and tell me what the executive would push back on"
+when_to_use: >-
+  Example requests: "give me feedback on this doc the way a tough exec would";
+  "what would Sarah say about this proposal?";
+  "give me first-pass feedback on this brief before I send it to the exec";
+  "doc review — be brutal";
+  "review this strategy proposal and tell me what the executive would push back on".
 ---
 
 # Executive Feedback Skill

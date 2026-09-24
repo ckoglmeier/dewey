@@ -7,6 +7,12 @@ triggers:
   - "what's HubSpot's pricing and where do they lose to us?"
   - "pull a quick competitor brief on Outreach and how we position against them"
   - "I'm going up against Gong in a deal — pull their recent moves and how we differ"
+when_to_use: >-
+  Example requests: "give me a competitive analysis of Salesforce";
+  "battlecard on Notion before my deal call tomorrow";
+  "what's HubSpot's pricing and where do they lose to us?";
+  "pull a quick competitor brief on Outreach and how we position against them";
+  "I'm going up against Gong in a deal — pull their recent moves and how we differ".
 argument-hint: "[competitor-name]"
 requires-context:
   - competitive-intelligence/positioning
@@ -23,7 +29,7 @@ Before analysing the competitor, load the canonical positioning context so the b
 - Stable ID: `competitive-intelligence/positioning`
 - Look for it at one of these paths (read whichever exists):
   - `~/.claude/dewey/plugins/competitive-intelligence/context/positioning/context.md` (Claude Code or Cowork)
-  - `~/.codex/context/competitive-intelligence/positioning/context.md` (standalone Codex)
+  - `context/positioning/context.md` relative to this plugin's root, i.e. two directories up from this SKILL.md (Codex installs Dewey plugins as copies, `context/` included)
 
 Read the file in full. If neither path exists, stop and tell the user the `competitive-intelligence` plugin appears to be incomplete — they should run `/dewey update`. Do not proceed with a brief based on guessed positioning.
 

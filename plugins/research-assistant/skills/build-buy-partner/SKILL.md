@@ -7,6 +7,12 @@ triggers:
   - "what are our partnership options for payments infrastructure"
   - "help me think through the build vs. buy vs. partner decision for our analytics layer"
   - "is there a strategic partner or acquisition that could fill this capability gap faster than building"
+when_to_use: >-
+  Example requests: "should we build or buy a data enrichment capability";
+  "evaluate M&A targets we could acquire for workflow automation";
+  "what are our partnership options for payments infrastructure";
+  "help me think through the build vs. buy vs. partner decision for our analytics layer";
+  "is there a strategic partner or acquisition that could fill this capability gap faster than building".
 ---
 
 # Build / Buy / Partner Research Type

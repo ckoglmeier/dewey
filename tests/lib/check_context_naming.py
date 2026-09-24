@@ -27,7 +27,9 @@ def main() -> int:
 
     with open(manifest) as f:
         p = json.load(f)
-    ctx = p.get("context") or []
+    meta = p.get("metadata") or {}
+    ctx = meta.get("context") if "context" in meta else p.get("context")
+    ctx = ctx or []
     for entry in ctx:
         cid = entry.get("id", "<unknown>")
         path = entry.get("path", "")

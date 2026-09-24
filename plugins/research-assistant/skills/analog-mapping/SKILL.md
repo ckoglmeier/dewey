@@ -7,6 +7,12 @@ triggers:
   - "map analog companies for our B2B2C marketplace model"
   - "build a list of companies worth getting introduced to that have cracked recurring revenue from physical assets"
   - "find analogs to our model outside our industry"
+when_to_use: >-
+  Example requests: "find companies structurally similar to Stripe in other industries";
+  "who else has solved this kind of problem in a different domain";
+  "map analog companies for our B2B2C marketplace model";
+  "build a list of companies worth getting introduced to that have cracked recurring revenue from physical assets";
+  "find analogs to our model outside our industry".
 ---
 
 # Analog Mapping Research Type

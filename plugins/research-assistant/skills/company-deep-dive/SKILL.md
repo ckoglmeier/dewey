@@ -7,6 +7,12 @@ triggers:
   - "what does this company actually do and who are their customers"
   - "I need to be able to speak intelligently about Shopify's competitive position"
   - "give me a deep business understanding of ServiceNow — model, moat, and what management has been saying"
+when_to_use: >-
+  Example requests: "deep dive on Palantir — how does the business actually work";
+  "help me truly understand Snowflake's business model before my meeting";
+  "what does this company actually do and who are their customers";
+  "I need to be able to speak intelligently about Shopify's competitive position";
+  "give me a deep business understanding of ServiceNow — model, moat, and what management has been saying".
 ---
 
 # Company Deep Dive - Business Understanding Report

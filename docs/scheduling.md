@@ -8,9 +8,9 @@ Dewey does **not** ship its own scheduler. Every host where Dewey runs already h
 |---|---|---|
 | **Claude Code** | Routines (cloud-executed cron) | Use the `schedule` skill. Routines run remotely, so they fire whether your laptop is on or off. |
 | **Cowork** | scheduled-tasks MCP | Create a scheduled task that invokes a Dewey skill. Local-machine-bound. |
-| **Codex** | No native scheduler at the moment | If you need scheduling on Codex, use the OS scheduler directly (`crontab` / `launchd`) and have it call `codex exec /<skill>`. |
+| **Codex** | Automations (Codex app; stored under `~/.codex/automations/<name>/automation.toml`) | Create an automation whose prompt invokes the skill as `$<skill>` — Codex's skill syntax. |
 
-To run a Dewey skill on a schedule, point the host's scheduler at the skill name — e.g., a Routine that runs `/weekly-status-update` every Monday at 8am. The skill loads its required context, runs, and writes its output wherever the skill body says.
+To run a Dewey skill on a schedule, point the host's scheduler at the skill name — e.g., a Routine that runs `/weekly-status-update` every Monday at 8am (in Codex: `$weekly-status-update`). The skill loads its required context, runs, and writes its output wherever the skill body says.
 
 ## How to schedule a Dewey skill from Cowork
 
