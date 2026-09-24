@@ -7,6 +7,12 @@ triggers:
   - "assess Notion as a partnership target — what are the risks"
   - "we're evaluating a Series B investment in this company, give me a go/no-go assessment"
   - "evaluate this vendor as an acquisition target and flag any deal breakers"
+when_to_use: >-
+  Example requests: "run due diligence on Acme Corp before we invest";
+  "should we acquire SkillsEngine — full diligence";
+  "assess Notion as a partnership target — what are the risks";
+  "we're evaluating a Series B investment in this company, give me a go/no-go assessment";
+  "evaluate this vendor as an acquisition target and flag any deal breakers".
 ---
 
 # Due Diligence Research Type

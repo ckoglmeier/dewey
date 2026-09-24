@@ -63,6 +63,29 @@ for line in fm.splitlines():
         break
 '"
 
+  # Real YAML parsers reject an unquoted plain scalar that contains ": " (or
+  # " #"): Claude Code then loads the skill with EMPTY frontmatter and silently
+  # drops name/description/when_to_use. The naive parsers in this suite would
+  # not notice, so check the hazard explicitly (stdlib only — no PyYAML).
+  check "[$rel] no unquoted plain scalar contains ': ' or ' #' (would break real YAML parsers)" \
+    "python3 -c '
+import re
+text = open(\"$skill\").read()
+m = re.match(r\"^---\\n(.*?)\\n---\\n\", text, re.DOTALL)
+fm = m.group(1)
+bad = []
+for line in fm.splitlines():
+    km = re.match(r\"^([A-Za-z_][A-Za-z0-9_-]*):[ \\t]+(.*)$\", line)
+    if not km:
+        continue
+    v = km.group(2).strip()
+    if not v or v[0] in \"\\\"\x27>|[{\":
+        continue
+    if \": \" in v or \" #\" in v:
+        bad.append(km.group(1))
+assert not bad, \"quote the value of: \" + \", \".join(bad)
+'"
+
   check "[$rel] body has non-trivial content (>200 chars after frontmatter)" \
     "python3 -c '
 import re

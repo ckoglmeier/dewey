@@ -13,6 +13,11 @@ set -uo pipefail
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$REPO_ROOT"
 
+# Keep the suite hermetic: the Codex sync helper must never call the real
+# `codex` CLI from a test sandbox. Layer 10 has an opt-in live test
+# (DEWEY_TEST_CODEX_PLUGIN=1) that overrides this for one sandbox.
+export DEWEY_CODEX_MODE="${DEWEY_CODEX_MODE:-symlink}"
+
 # ---- Test framework ---------------------------------------------------------
 PASSED=0
 FAILED=0
@@ -78,6 +83,7 @@ LAYERS=(
   layer-15-triggers.sh
   layer-16-hosted.sh
   layer-17-eval.sh
+  layer-18-validate.sh
 )
 
 for layer in "${LAYERS[@]}"; do

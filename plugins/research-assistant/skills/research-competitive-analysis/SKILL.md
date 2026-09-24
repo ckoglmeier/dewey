@@ -7,6 +7,12 @@ triggers:
   - "how does Gong compare to our product in competitive deals"
   - "what would a buyer choose instead of us in a competitive deal, and why"
   - "run a competitive landscape on the data observability space"
+when_to_use: >-
+  Example requests: "do a competitive analysis of the sales engagement software landscape";
+  "who are we up against in mid-market HRIS";
+  "how does Gong compare to our product in competitive deals";
+  "what would a buyer choose instead of us in a competitive deal, and why";
+  "run a competitive landscape on the data observability space".
 ---
 
 # Competitive Analysis Research Type

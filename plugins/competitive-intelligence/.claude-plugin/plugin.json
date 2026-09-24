@@ -6,18 +6,20 @@
     "name": "CK",
     "contact": "@ck"
   },
-  "surfaces": [
-    "claude-code",
-    "cowork",
-    "codex",
-    "chat"
-  ],
-  "context": [
-    {
-      "id": "competitive-intelligence/positioning",
-      "path": "context/positioning/context.md",
-      "title": "Positioning reference",
-      "description": "Canonical positioning, differentiators, non-fit segments, and banned phrases used by competitive-intelligence skills."
-    }
-  ]
+  "metadata": {
+    "surfaces": [
+      "claude-code",
+      "cowork",
+      "codex",
+      "chat"
+    ],
+    "context": [
+      {
+        "id": "competitive-intelligence/positioning",
+        "path": "context/positioning/context.md",
+        "title": "Positioning reference",
+        "description": "Canonical positioning, differentiators, non-fit segments, and banned phrases used by competitive-intelligence skills."
+      }
+    ]
+  }
 }

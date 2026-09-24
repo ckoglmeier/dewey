@@ -4,6 +4,8 @@
 **Author:** CK
 **Last updated:** 2026-05-06
 
+> **Revision 2026-09-24:** context entries live under `metadata.context` in `plugin.json` (Claude Code reserves the top level and `claude plugin validate --strict` rejects custom keys there), and Codex receives canonical context through native plugin installs, which copy `context/` with the plugin — not through a `~/.codex/context/` mirror. The v1 decisions below are otherwise unchanged.
+
 ## Problem
 
 Skills tell Claude *how to do something*. Knowledge work also requires *reference material* — battlecards, positioning notes, brand voice guidelines, ICP definitions, FAQ corpora, customer account profiles, strategy documents. This is content, not procedure.

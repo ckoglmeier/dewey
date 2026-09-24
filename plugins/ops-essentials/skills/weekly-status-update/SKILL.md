@@ -7,6 +7,12 @@ triggers:
   - "help me write a weekly report for my manager covering the Acme project"
   - "draft my async standup for this week"
   - "I need to send a weekly status to the exec team — help me draft it"
+when_to_use: >-
+  Example requests: "write my weekly status update for the engineering team";
+  "Friday wrap-up time, draft my update";
+  "help me write a weekly report for my manager covering the Acme project";
+  "draft my async standup for this week";
+  "I need to send a weekly status to the exec team — help me draft it".
 argument-hint: "[audience or project]"
 ---
 

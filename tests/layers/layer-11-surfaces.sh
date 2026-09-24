@@ -9,14 +9,24 @@ for plugin_dir in plugins/*/; do
   plugin_name=$(basename "$plugin_dir")
   manifest="$plugin_dir.claude-plugin/plugin.json"
 
-  check "[$plugin_name] plugin.json declares 'surfaces' array" \
+  check "[$plugin_name] plugin.json declares metadata.surfaces array" \
     "python3 -c '
 import json, sys
 p = json.load(open(\"$manifest\"))
-s = p.get(\"surfaces\")
+s = (p.get(\"metadata\") or {}).get(\"surfaces\")
 assert isinstance(s, list), \"surfaces must be a list\"
 assert len(s) > 0, \"surfaces must be non-empty\"
 for v in s: assert v in {\"claude-code\",\"cowork\",\"codex\",\"chat\"}, f\"invalid surface: {v}\"
+'"
+
+  # Dewey-specific keys must live under the official free-form `metadata` object.
+  # Top-level custom keys are ignored by Claude Code but fail `claude plugin validate --strict`.
+  check "[$plugin_name] no legacy top-level surfaces/context/telemetry keys (must live under metadata)" \
+    "python3 -c '
+import json
+p = json.load(open(\"$manifest\"))
+legacy = [k for k in (\"surfaces\", \"context\", \"telemetry\") if k in p]
+assert not legacy, \"move these keys under metadata: \" + str(legacy)
 '"
 
   # If plugin claims chat support, no SKILL.md inside may use Bash in allowed-tools.
@@ -26,7 +36,7 @@ import json, re, glob, os, sys
 manifest = \"$manifest\"
 plugin_dir = \"$plugin_dir\"
 p = json.load(open(manifest))
-surfaces = p.get(\"surfaces\", [\"claude-code\"])
+surfaces = (p.get(\"metadata\") or {}).get(\"surfaces\", [\"claude-code\"])
 if \"chat\" not in surfaces: sys.exit(0)
 for skill_md in glob.glob(os.path.join(plugin_dir, \"skills\", \"*\", \"SKILL.md\")):
     text = open(skill_md).read()

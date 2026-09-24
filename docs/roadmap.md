@@ -9,13 +9,13 @@ A working snapshot of what's done, what's partial, and what's deferred. Updated 
 - Atomic-swap reference cache with 24h background refresh
 - `SessionStart` hook for first-run welcome and refresh kickoff
 - Marketplace registration via `~/.claude/plugins/known_marketplaces.json`
-- External plugin support in `marketplace.json` (object `source` shapes — `git-subdir`, `github`, `url`, `npm`) — *see Partial below for current Claude Code validator caveat*
+- External plugin support in `marketplace.json` (object `source` shapes — `github`, `url`, `git-subdir`, `npm`, `archive`, `command`), validated offline by Layer 3b and live by Layer 8
 
 ### Multi-agent reach
 - **Claude Code**: native (the original target)
 - **Cowork**: shares `~/.claude/` with Claude Code — zero extra work, automatic
-- **OpenAI Codex**: skills + canonical context mirrored as symlinks to `~/.codex/skills/` and `~/.codex/context/<plugin>/` via `dewey-sync-codex.sh`
-- `surfaces:` field in `plugin.json` declares which agents a plugin supports; Guide filters recommendations to the current surface
+- **OpenAI Codex**: Dewey registers as a native Codex plugin marketplace (`.agents/plugins/marketplace.json`, generated from the Claude manifest) and installs its plugins with `codex plugin add`; older Codex builds get skill-directory symlinks under `~/.agents/skills/`. Skills are invoked with `$name`. See `docs/codex-sync.md`
+- `metadata.surfaces` in `plugin.json` declares which agents a plugin supports; Guide filters recommendations to the current surface
 
 ### The Guide skill (`/dewey`)
 - `recommend` — path-driven role recommendation
@@ -25,16 +25,16 @@ A working snapshot of what's done, what's partial, and what's deferred. Updated 
 - `owners` — look up plugin maintainer
 - `update` — re-run installer to refresh Guide and cache
 - `analytics` — local usage summary
-- `sync` — Codex sync status / force / agents-md generation
+- `sync` — Codex sync status / force (native plugin marketplace, symlink fallback)
 - `propose` — open PRs against canonical (six sub-flows: new-skill / update / promote, plus parallel new-context / update-context / promote-context-extension)
 
 ### Canonical context (v1)
-- `context: []` array in `plugin.json` with stable `<plugin>/<bundle>` IDs
+- `metadata.context` array in `plugin.json` with stable `<plugin>/<bundle>` IDs
 - `requires-context:` declarations in skill frontmatter
 - `extends-context:` for layered extensions (mirrors the skill extension convention)
 - Layer 14 lint: schema validation, ID resolution, frontmatter/body drift detection, surface compatibility, size limits (20KB/100KB per file; 80KB/300KB total) with `allow-large-context: true` override
 - Demonstrator content seeded (`competitive-intelligence/positioning`)
-- Codex sync mirrors `context/` alongside `skills/`
+- Codex plugin installs carry `context/` along with `skills/`; skill bodies reference the Dewey cache path and a plugin-relative path
 - Convention-based loading via explicit Read in skill bodies (no runtime mediator)
 
 ### Telemetry — capture and forwarding
@@ -44,13 +44,16 @@ A working snapshot of what's done, what's partial, and what's deferred. Updated 
 - Body-forwarding gate: `DEWEY_TELEMETRY_FORWARD_BODIES=1` opt-in to forward `additions` and `user_intent`; default-strip via `dewey-telemetry.sh strip-bodies`
 - `DEWEY_TELEMETRY_ENDPOINT` contract for forwarding (no implementation; documented for future hosted aggregator to consume); full wire contract in [`docs/hosted-api.md`](hosted-api.md)
 
+### Skill routing
+- `when_to_use` is generated from each skill's `triggers:` by `scripts/sync-when-to-use.py`, so the example requests authors write reach Claude Code's router (which reads `description` + `when_to_use`); Layer 15 fails on drift
+
 ### PR authoring
 - `dewey-propose.sh`: clone-or-refresh working dir, branch, lint via `tests/run.sh`, push, open PR via `gh`. Auto-forks if no write access.
 - Path-traversal guards on `--target-path`
 - `--check`, `--prepare`, `--dry-run` modes
 
 ### Test suite
-- 383 tests across 15 active layers, split into per-layer files under `tests/layers/` sourced by a thin `tests/run.sh` harness: marketplace schema, install pipeline (no-git tarball path with checksum), refresh script semantics, ownership, plugin packaging, surfaces, analytics log, Codex sync (skills + context), extension telemetry (helper + opt-out gates + body-strip), propose helper, canonical context (schema + lint + size + surface compat + naming convention + load flow), trigger & description quality (Layer 15 — see `docs/skill-triggers.md`)
+- 500+ tests across 18 layers, split into per-layer files under `tests/layers/` sourced by a thin `tests/run.sh` harness: marketplace schema (incl. the generated Codex manifest), install pipeline (no-git tarball path with checksum), refresh script semantics, ownership, plugin packaging, surfaces, analytics log, Codex sync (symlink mode hermetic; plugin mode opt-in via `DEWEY_TEST_CODEX_PLUGIN=1`), extension telemetry (helper + opt-out gates + body-strip + forward), propose helper, canonical context (schema + lint + size + surface compat + naming convention + load flow), trigger & description quality incl. the generated `when_to_use` (Layer 15 — see `docs/skill-triggers.md`), hosted contract mock (Layer 16), eval-case drift (Layer 17), `claude plugin validate --strict` when a capable CLI is present (Layer 18)
 - CI: `.github/workflows/test.yml` runs the full suite on every push to main and every PR; `drift-check.yml` runs opt-in Layer 8 live external validation weekly
 
 ### Convention docs
@@ -62,8 +65,8 @@ All under `docs/`: `extending-skills.md`, `path-files.md`, `pr-checklist.md`, `n
 Earlier versions shipped `dewey-schedule.sh` and a `/dewey schedule` Guide flow. We removed both because they reinvented what every host already provides: Claude Code has Routines (cloud-executed cron) and Cowork has the scheduled-tasks MCP (local). For individual scheduling, point the host's scheduler at `/<skill-name>`. See [scheduling.md](scheduling.md). Org-managed scheduled distribution (centrally-built newsletters, team-wide weekly digests with curated content) is still a real Dewey use case but lives in the hosted bucket — see below.
 
 ### External plugin references
-- **Done**: schema validation for `git-subdir`, `github`, `url`, `npm` source types in `marketplace.json`. Layer 3b enforces the schema offline.
-- **Blocked on Claude Code**: three external `git-subdir` entries (`exec-feedback`, `research-assistant`, `template-strategy-feedback`) were temporarily removed because Claude Code's `marketplace add` validator currently rejects `git-subdir` sources at registration time, even though they work at runtime. Re-add once the validator is fixed.
+- **Done**: schema validation for `github`, `url`, `git-subdir`, `npm`, `archive`, `command` source types in `marketplace.json` (Layer 3b), live validation for `github` / `url` / `npm` (Layer 8).
+- **Unblocked 2026-09-24**: Claude Code 2.1.280 accepts `git-subdir` again (2.1.47 rejected it). The three former external entries were inlined as in-tree seed plugins by decision (Option C in `docs/decisions/external-plugin-distribution.md`) and stay there; nothing needs re-adding. Still **open**: no live-validation handler for `git-subdir` / `archive` / `command` entries in Layer 8.
 
 ### Cowork compatibility
 - **Done**: Cowork shares `~/.claude/` with Claude Code, so installs propagate automatically. Verified by inspecting a live Cowork install (`~/Library/Application Support/Claude/claude-code/...` bundles a Claude Code runtime).
@@ -83,7 +86,7 @@ Earlier versions shipped `dewey-schedule.sh` and a `/dewey schedule` Guide flow.
 Daily summary of recent sessions and connected tools to refresh user context. Currently captured manually via memory skills, not a Dewey convention.
 
 ### Chat (claude.ai) distribution
-Cowork shares Claude Code's filesystem; Codex is mirrored via symlink; Chat is hosted and has no local skill directory. To get Dewey skills into Chat:
+Cowork shares Claude Code's filesystem; Codex installs Dewey as native plugins; Chat is hosted and has no local skill directory. Since mid-2026 the sync runs the *other* way too — skills and plugins enabled on a claude.ai account download into Claude Code / Cowork (`~/.claude/plugins/synced/`) — but there is still no way to push a Git-backed catalog into claude.ai (anthropics/claude-code#28729 remains open). To get Dewey skills into Chat:
 - **Manual upload + bundle export**: a `dewey-export-chat.sh` that produces an upload bundle. Documented click path. No native distribution.
 - **API push**: only if Anthropic exposes a Skills API for claude.ai accounts. Not yet investigated.
 - **Org-managed marketplace** for Team/Enterprise plans: lands automatically when a company adopts Dewey in the admin marketplace, but that's an Anthropic-side feature not a Dewey one.

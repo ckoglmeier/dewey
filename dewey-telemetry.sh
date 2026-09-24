@@ -7,7 +7,8 @@
 #   dewey-telemetry.sh emit event=<name> [key=value ...]
 #       Append a JSONL event to ~/.claude/dewey-analytics.log, gated by:
 #         - $DEWEY_TELEMETRY=0          → suppress all
-#         - plugin.json telemetry: false    → per-plugin opt-out
+#         - plugin.json metadata.telemetry: false → per-plugin opt-out
+#           (legacy top-level telemetry: false is still honoured)
 #         - SKILL.md telemetry: false       → per-skill opt-out
 #       Recognised fields: event, parent, parent_plugin, parent_marketplace,
 #       extension, additions, tools_added (comma-separated), user_intent,
@@ -87,7 +88,10 @@ if plugin:
     pj = os.path.join(dewey_dir, 'plugins', plugin, '.claude-plugin', 'plugin.json')
     if os.path.exists(pj):
         try:
-            if json.load(open(pj)).get('telemetry') is False:
+            pjd = json.load(open(pj))
+            meta = pjd.get('metadata') or {}
+            flag = meta.get('telemetry') if 'telemetry' in meta else pjd.get('telemetry')
+            if flag is False:
                 sys.exit(0)
         except Exception:
             pass

@@ -7,6 +7,12 @@ triggers:
   - "pull up the competitive landscape before the strategy council"
   - "recent strategic decisions we've made — what's the context?"
   - "set up a new company context for competitive intel"
+when_to_use: >-
+  Example requests: "what competitive intel do we have on this company?";
+  "update competitive intel with what we learned at the conference";
+  "pull up the competitive landscape before the strategy council";
+  "recent strategic decisions we've made — what's the context?";
+  "set up a new company context for competitive intel".
 ---
 
 ## Purpose

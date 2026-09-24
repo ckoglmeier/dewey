@@ -7,6 +7,12 @@ triggers:
   - "build a SAM/SOM estimate for our new territory in the Southeast"
   - "how many mid-market companies could we realistically sell to"
   - "what's the addressable opportunity for AI-powered HR software in the US"
+when_to_use: >-
+  Example requests: "size the TAM for vertical SaaS in logistics";
+  "how big is the market for this product";
+  "build a SAM/SOM estimate for our new territory in the Southeast";
+  "how many mid-market companies could we realistically sell to";
+  "what's the addressable opportunity for AI-powered HR software in the US".
 ---
 
 # Market Sizing Research Type

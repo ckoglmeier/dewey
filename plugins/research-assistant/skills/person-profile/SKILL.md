@@ -7,6 +7,12 @@ triggers:
   - "prep me for a call with the new head of procurement at Salesforce"
   - "background on Jensen Huang — what should I know before our investor meeting"
   - "what has this person said publicly about AI regulation"
+when_to_use: >-
+  Example requests: "profile the CEO of Vercel before our meeting tomorrow";
+  "who is Sarah Guo and what does she care about";
+  "prep me for a call with the new head of procurement at Salesforce";
+  "background on Jensen Huang — what should I know before our investor meeting";
+  "what has this person said publicly about AI regulation".
 ---
 
 # Person Profile Research Type

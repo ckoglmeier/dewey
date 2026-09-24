@@ -7,6 +7,12 @@ triggers:
   - "what legislation is pending that could affect our AI product"
   - "what's the regulatory risk if we enter the healthcare data market"
   - "how is data brokering regulated and what compliance burden does that create"
+when_to_use: >-
+  Example requests: "what are the compliance requirements for selling HR software to US school districts";
+  "map the regulatory landscape for fintech lending in the EU";
+  "what legislation is pending that could affect our AI product";
+  "what's the regulatory risk if we enter the healthcare data market";
+  "how is data brokering regulated and what compliance burden does that create".
 ---
 
 # Regulatory Landscape Research Type

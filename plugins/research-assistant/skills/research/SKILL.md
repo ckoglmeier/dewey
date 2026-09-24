@@ -7,6 +7,12 @@ triggers:
   - "I need a deep investigation into the HR tech market"
   - "pull together everything we know about this company before the meeting"
   - "help me size the market for AI-powered workflow automation"
+when_to_use: >-
+  Example requests: "research the competitive landscape for sales engagement software";
+  "dig into what's happening in the vertical SaaS market";
+  "I need a deep investigation into the HR tech market";
+  "pull together everything we know about this company before the meeting";
+  "help me size the market for AI-powered workflow automation".
 ---
 
 # Research - Multi-Agent Research Orchestrator

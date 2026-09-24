@@ -1,20 +1,22 @@
-# Dewey + OpenAI Codex sync
+# Dewey + OpenAI Codex
 
-Dewey works with both Claude Code and OpenAI Codex. SKILL.md format is identical between the two agents — the same skill files work in both without modification.
-
-When you have both agents installed, Dewey mirrors its skills to `~/.codex/skills/` as symlinks so Codex picks them up automatically.
+Dewey works with both Claude Code and OpenAI Codex. Since Dewey 2.3 the Codex integration uses Codex's **native plugin marketplace** (Codex 0.149+): Codex reads Dewey's manifests directly, so the same plugins install in both agents without translation.
 
 ## How it works
 
 | | Claude Code | OpenAI Codex |
 |---|---|---|
-| **Skill directory** | `~/.claude/skills/` | `~/.codex/skills/` |
-| **Plugin cache** | `~/.claude/plugins/cache/` | (not applicable) |
-| **Reference cache** | `~/.claude/dewey/` | synced from Dewey cache |
-| **Skill format** | SKILL.md | SKILL.md (identical) |
-| **Project context** | CLAUDE.md | AGENTS.md |
+| **Marketplace manifest** | `.claude-plugin/marketplace.json` | `.agents/plugins/marketplace.json` (generated from the Claude one; Codex also accepts the Claude manifest as a legacy-compatible fallback) |
+| **Plugin manifest** | `.claude-plugin/plugin.json` | same file (Codex reads it) |
+| **Install** | `claude plugin install <plugin>@dewey` | `codex plugin add <plugin>@dewey` |
+| **Where installed plugins live** | in place, from `~/.claude/dewey/plugins/` | copied to `${CODEX_HOME:-~/.codex}/plugins/cache/dewey/<plugin>/<version>/` |
+| **Skill format** | `SKILL.md` (Agent Skills core + Claude extras) | `SKILL.md` (Agent Skills core; Claude-only keys such as `allowed-tools`, `argument-hint`, `user-invocable` are silently ignored) |
+| **Invoke a skill** | `/skill-name` | `$skill-name` — type `$` and pick from the list. `/` is reserved for Codex's own commands |
+| **User skills dir** | `~/.claude/skills/` | `~/.agents/skills/` (`~/.codex/skills/` is deprecated but still scanned) |
+| **Project context** | `CLAUDE.md` | `AGENTS.md` (no skill list needed — Codex builds its own catalog) |
+| **Scheduler** | Routines | Automations (`~/.codex/automations/`) |
 
-Dewey uses **symlinks** rather than copies, so when the Dewey cache refreshes (every 24h in the background), the Codex skills update automatically too.
+The Guide is not part of any plugin, so the sync links it as a directory symlink at `~/.agents/skills/dewey` — invoke it in Codex as `$dewey`.
 
 ## Setup
 
@@ -26,22 +28,29 @@ curl -fsSL https://raw.githubusercontent.com/ckoglmeier/dewey/main/install.sh | 
 
 If you install Codex after Dewey is already set up, run:
 
-```bash
+```
 /dewey sync force
 ```
 
-Or re-run the installer:
+Or re-run the installer with `/dewey update`. Codex detects new plugins and skills automatically; no restart is needed.
 
-```bash
-/dewey update
-```
+## What the sync does
+
+`~/.claude/dewey-sync-codex.sh` picks a mode:
+
+- **plugin** (default when `codex plugin` exists): registers `~/.claude/dewey` as a Codex marketplace named after the Dewey manifest (`dewey`, or your fork's name) and runs `codex plugin add <plugin>@dewey` for every in-tree plugin. Re-running it re-copies each plugin from the cache, which is how Dewey refreshes reach Codex: the background refresh script runs the sync after every successful cache update.
+- **symlink** (fallback for Codex builds without `codex plugin`): symlinks every skill *directory* into `~/.agents/skills/<skill>`. Codex follows symlinked skill directories; it never discovers symlinked `SKILL.md` *files*, which is why Dewey ≤ 2.2's per-file mirror silently stopped working.
+
+Both modes remove leftovers from Dewey ≤ 2.2: `~/.codex/skills/<name>/SKILL.md` file symlinks and `~/.codex/context/<plugin>` mirrors (`~/.codex/context/` is not a Codex concept). Anything in Codex that Dewey didn't create is left alone.
 
 ## Env vars
 
 | Var | Default | Effect |
 |---|---|---|
-| `DEWEY_SYNC_CODEX` | `auto` | `auto` = sync if Codex detected; `1` = always sync; `0` = never sync |
-| `CODEX_HOME` | `~/.codex` | Where Codex stores config/skills |
+| `DEWEY_SYNC_CODEX` | `auto` | Installer: `auto` = sync if Codex detected; `1` = always; `0` = never |
+| `DEWEY_CODEX_MODE` | `auto` | `auto` / `plugin` / `symlink` (see above) |
+| `CODEX_HOME` | `~/.codex` | Codex config dir (Codex honours the same variable) |
+| `DEWEY_AGENTS_SKILLS_DIR` | `~/.agents/skills` | Where skill / Guide symlinks go |
 
 ## Manual sync
 
@@ -49,10 +58,10 @@ Or re-run the installer:
 # Check current sync state
 bash ~/.claude/dewey-sync-codex.sh --status
 
-# Force a full re-sync
+# Sync now (register marketplace + install / refresh plugins)
 bash ~/.claude/dewey-sync-codex.sh
 
-# Remove all Dewey symlinks from Codex (leaves non-Dewey files alone)
+# Remove everything Dewey put in Codex (plugins, marketplace, symlinks)
 bash ~/.claude/dewey-sync-codex.sh --remove
 
 # Dry-run: show what would change
@@ -67,63 +76,38 @@ Or from within Claude Code:
 /dewey sync status
 ```
 
-## AGENTS.md for project context
-
-Codex reads `AGENTS.md` from your repo root as project-level context. Generate one that lists your installed Dewey skills:
+You can also skip Dewey's helper entirely and use Codex directly:
 
 ```bash
-bash ~/.claude/dewey-sync-codex.sh --agents-md .
+codex plugin marketplace add ~/.claude/dewey      # or: codex plugin marketplace add ckoglmeier/dewey
+codex plugin add ops-essentials@dewey
+codex plugin list
 ```
 
-Or: `/dewey sync agents-md`
+## Canonical context in Codex
 
-The generated file looks like:
+Skills that declare `requires-context:` list two places to read the bundle from: the Dewey cache (`~/.claude/dewey/plugins/<plugin>/context/...`, present on any machine with Dewey installed) and a path relative to the plugin root (`context/<bundle>/context.md`), which works inside Codex's plugin cache because `codex plugin add` copies the whole plugin, `context/` included. No separate context mirror is needed.
 
-```markdown
-# Dewey Skills
+## Keeping the manifests in sync
 
-This project has access to skills from the Dewey marketplace.
-The following skills are available in your Codex environment:
+`.agents/plugins/marketplace.json` is generated. After editing `.claude-plugin/marketplace.json`:
 
-- `/meeting-prep` — Prepare for meetings...
-- `/competitive-analysis` — Analyze competitors...
-...
+```bash
+python3 scripts/sync-codex-marketplace.py
 ```
 
-Commit it to your repo so Codex sees the skill list in every session.
-
-## What gets synced
-
-Everything in the Dewey reference cache is mirrored:
-- All skills from all installed plugins (`plugins/*/skills/*/SKILL.md`)
-- The Guide skill itself (`guide/SKILL.md` → `~/.codex/skills/dewey/SKILL.md`)
-- All canonical context directories (`plugins/*/context/`) → `~/.codex/context/<plugin>/`
-
-Skills and context that exist in `~/.codex/skills/` or `~/.codex/context/` but are not from Dewey are **not touched**.
-
-### Why a separate `~/.codex/context/` directory?
-
-Dewey skills declare `requires-context:` for canonical content (see [canonical-context.md](canonical-context.md)). On Claude Code and Cowork, those files live at `~/.claude/dewey/plugins/<plugin>/context/...`. Standalone Codex doesn't share `~/.claude/`, so the sync mirrors each plugin's `context/` directory to `~/.codex/context/<plugin>/`. Skills authored for Dewey should reference both possible paths in their "First, load:" step so they work in either environment.
-
-## Refresh cadence
-
-The Dewey background refresh (`~/.claude/dewey-refresh.sh`) runs the Codex sync automatically on each successful cache update, so new skills added to Dewey appear in Codex within 24h with no user action.
+Layer 3 of the test suite fails if the two drift.
 
 ## Troubleshooting
 
 **"Codex not detected"**
-The sync checks for `~/.codex/` or `codex` on PATH. Make sure Codex is installed: [github.com/openai/codex](https://github.com/openai/codex)
+The sync checks for `${CODEX_HOME:-~/.codex}` or `codex` on PATH. Install the Codex CLI first: https://github.com/openai/codex (the Codex desktop app merged into the ChatGPT app in July 2026; the CLI is a separate install).
 
-**Skill shows up in status but Codex doesn't offer it**
-Codex reads skills at session start. Close and reopen Codex after syncing.
+**A skill doesn't show up in Codex**
+Type `$` — skills are listed there, not under `/`. Run `bash ~/.claude/dewey-sync-codex.sh --status` to see what's installed. If you are on the symlink fallback, make sure the entry under `~/.agents/skills/` is a symlinked *directory*, not a symlinked file.
 
-**Symlink is broken**
-Run `bash ~/.claude/dewey-sync-codex.sh` to re-sync. This happens if the Dewey cache was cleared and re-downloaded (the symlink target changed). The refresh script handles this automatically on next background refresh.
+**Plugin content is stale in Codex**
+Codex copies plugins into its cache. Run `/dewey sync force` (or wait for the next background refresh, which re-syncs automatically).
 
-**Want copies instead of symlinks**
-The sync uses symlinks by design so refreshes propagate automatically. If you need copies (e.g. for a shared system where home dirs differ), run after sync:
-```bash
-for link in ~/.codex/skills/*/SKILL.md; do
-  [[ -L "$link" ]] && cp "$(readlink "$link")" "${link}.copy" && mv "${link}.copy" "$link"
-done
-```
+**Testing the plugin mode**
+`DEWEY_TEST_CODEX_PLUGIN=1 bash tests/run.sh` runs the live plugin-mode tests against a sandboxed `CODEX_HOME` on a machine with `codex` installed. The default suite never calls the real CLI.

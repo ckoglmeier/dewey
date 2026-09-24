@@ -1,0 +1,72 @@
+{
+  "name": "dewey",
+  "interface": {
+    "displayName": "Dewey"
+  },
+  "plugins": [
+    {
+      "name": "competitive-intelligence",
+      "source": {
+        "source": "local",
+        "path": "./plugins/competitive-intelligence"
+      },
+      "category": "research"
+    },
+    {
+      "name": "customer-research",
+      "source": {
+        "source": "local",
+        "path": "./plugins/customer-research"
+      },
+      "category": "research"
+    },
+    {
+      "name": "ops-essentials",
+      "source": {
+        "source": "local",
+        "path": "./plugins/ops-essentials"
+      },
+      "category": "operations"
+    },
+    {
+      "name": "sales-enablement",
+      "source": {
+        "source": "local",
+        "path": "./plugins/sales-enablement"
+      },
+      "category": "sales"
+    },
+    {
+      "name": "exec-feedback",
+      "source": {
+        "source": "local",
+        "path": "./plugins/exec-feedback"
+      },
+      "category": "writing"
+    },
+    {
+      "name": "research-assistant",
+      "source": {
+        "source": "local",
+        "path": "./plugins/research-assistant"
+      },
+      "category": "research"
+    },
+    {
+      "name": "template-strategy-feedback",
+      "source": {
+        "source": "local",
+        "path": "./plugins/template-strategy-feedback"
+      },
+      "category": "strategy"
+    },
+    {
+      "name": "admin",
+      "source": {
+        "source": "local",
+        "path": "./plugins/admin"
+      },
+      "category": "operations"
+    }
+  ]
+}

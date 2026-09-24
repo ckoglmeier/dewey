@@ -10,7 +10,7 @@ Evaluates two categories:
 
 Backend selection (first match wins):
   1. DEWEY_EVAL_BACKEND=api AND ANTHROPIC_API_KEY set AND `anthropic` importable
-     → Anthropic SDK, model from DEWEY_EVAL_MODEL (default: claude-sonnet-4-6)
+     → Anthropic SDK, model from DEWEY_EVAL_MODEL (default: claude-sonnet-5)
   2. DEWEY_EVAL_BACKEND=cmd (or fallback) AND DEWEY_EVAL_CMD set
      → subprocess, reads prompt on stdin, model text on stdout
   3. None of the above → exit 77 with a clear message (same skip-code as Layer 8)
@@ -57,7 +57,7 @@ REPORT_PATH = EVALS_DIR / "last_report.json"
 TRIGGER_BAR = 0.90
 FLOW_BAR = 1.00
 
-DEFAULT_MODEL = "claude-sonnet-4-6"
+DEFAULT_MODEL = "claude-sonnet-5"
 
 
 # ---------------------------------------------------------------------------
@@ -100,7 +100,15 @@ def _try_anthropic_backend() -> "callable | None":
             max_tokens=512,
             messages=[{"role": "user", "content": prompt}],
         )
-        return message.content[0].text
+        # Models with thinking on by default (Opus 5+, Sonnet 5, Fable) may put a
+        # `thinking` block first; never assume content[0] is text. A `refusal`
+        # stop reason carries no answer at all.
+        if getattr(message, "stop_reason", None) == "refusal":
+            raise RuntimeError("model refused the eval prompt (stop_reason=refusal)")
+        for block in message.content:
+            if getattr(block, "type", None) == "text":
+                return block.text
+        raise RuntimeError("no text block in model response")
 
     print(f"[eval] backend: anthropic SDK, model={model}")
     return call

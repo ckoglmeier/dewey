@@ -5,6 +5,8 @@
 **Last updated:** 2026-05-06
 **Verified against:** Claude Code v2.1.47
 
+> **Update 2026-09-24 (Claude Code 2.1.280):** the blocker below is gone. `claude plugin validate` on 2.1.280 accepts `git-subdir` (and the newer `archive` and `command` source types); only `git` is still rejected. The `github` fetcher also documents `ref`/`sha` pinning now. Layer 3b's accepted set was widened accordingly. The Option C resolution stands — the seed plugins are in-tree by choice, not necessity — so Options A/B are available if a third-party author ever needs them. The findings section below is preserved as history of the 2.1.47 behaviour.
+
 ## Resolution
 
 For the three templates (`exec-feedback`, `research-assistant`, `template-strategy-feedback`) and the rest of the canonical Dewey catalog: **Option C — inline as in-tree plugins.**

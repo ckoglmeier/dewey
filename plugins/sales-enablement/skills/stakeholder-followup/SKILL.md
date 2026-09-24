@@ -7,6 +7,12 @@ triggers:
   - "send a follow-up to Sarah after our demo call today"
   - "I finished a sales call, help me draft the next steps message"
   - "write a follow-up email that recaps what we discussed and pushes for a next meeting"
+when_to_use: >-
+  Example requests: "I just got off a call with Acme — write the follow-up";
+  "draft a recap for the meeting with Brian";
+  "send a follow-up to Sarah after our demo call today";
+  "I finished a sales call, help me draft the next steps message";
+  "write a follow-up email that recaps what we discussed and pushes for a next meeting".
 argument-hint: "[account or call topic]"
 ---
 

@@ -16,7 +16,7 @@ Skill discovery in Claude Code depends on the `description` frontmatter field. G
 
 **The lint now enforces** (Layer 15, `tests/lib/check_description_quality.py` — a violating PR fails CI):
 
-- Description length 50–250 chars (truncation kicks in at 250)
+- Description length 50–250 chars (house style — Claude Code truncates `description` + `when_to_use` at 1,536 chars combined, and the lint keeps the pair under that)
 - First sentence must not lead with a vague verb ("helps", "assists", "supports", "provides")
 
 **Reviewers still judge:**
@@ -26,7 +26,7 @@ Skill discovery in Claude Code depends on the `description` frontmatter field. G
 
 ### 2b. Does it declare realistic triggers? *(lint-enforced)*
 
-Every user-invocable skill needs a `triggers:` frontmatter field with 3–5 example user utterances. See [skill-triggers.md](skill-triggers.md) for the format and what makes a good trigger. The lint (`tests/lib/check_triggers.py`) fails a PR with no triggers, triggers over 200 chars, or triggers sharing zero significant words with the description; it warns below 3. Skills marked `user-invocable: false` must **not** have triggers — routing to them goes through their orchestrator.
+Every user-invocable skill needs a `triggers:` frontmatter field with 3–5 example user utterances. See [skill-triggers.md](skill-triggers.md) for the format and what makes a good trigger. The lint (`tests/lib/check_triggers.py`) fails a PR with no triggers, triggers over 200 chars, or triggers sharing zero significant words with the description; it warns below 3. Skills marked `user-invocable: false` must **not** have triggers — routing to them goes through their orchestrator. `when_to_use` is generated from the triggers by `scripts/sync-when-to-use.py` (it is the field Claude Code's router actually reads); run it after editing triggers, or Layer 15 fails on drift.
 
 **Reviewers still judge:** are the triggers things a real user would actually type, and do they route to *this* skill rather than a sibling? The lint can't tell a realistic utterance from a paraphrase of the description.
 
@@ -51,7 +51,7 @@ Per the Claude Code skill docs: keep `SKILL.md` under 500 lines and move detaile
 ### 7. Plugin packaging
 
 - The skill lives at `plugins/<plugin>/skills/<skill>/SKILL.md`.
-- The plugin has a `.claude-plugin/plugin.json` with `name`, `description`, `version`, and **`owner`**. The `owner` field has shape `{"name": "...", "contact": "..."}` — Slack handle, email, or GitHub handle. Test suite enforces this; an unowned plugin will fail CI.
+- The plugin has a `.claude-plugin/plugin.json` with `name`, `description`, `version`, and **`author`** (Claude Code's schema name for the owner). The `author` field has shape `{"name": "...", "contact": "..."}` — Slack handle, email, or GitHub handle. Test suite enforces this; an unowned plugin will fail CI. Dewey-specific keys (`surfaces`, `context`, `telemetry`) go under `metadata` — `claude plugin validate --strict` (Layer 18) rejects custom top-level keys.
 - The plugin appears in the top-level `.claude-plugin/marketplace.json` with a description, category, and tags.
 - The plugin directory has a corresponding line in the root `CODEOWNERS` file so GitHub auto-requests review from the right person on subsequent PRs. Test suite enforces this too.
 

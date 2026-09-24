@@ -56,7 +56,7 @@ If your company runs a Dewey instance and wants aggregated analytics, set:
 export DEWEY_TELEMETRY_ENDPOINT=https://your-internal-analytics.example.com/dewey
 ```
 
-When set, the Guide will POST the contents of the local log to that endpoint on session end, then truncate the local log. Before sending, the log is filtered through `~/.claude/dewey-telemetry.sh strip-bodies` which removes the prose fields (`additions`, `user_intent`) from `extension_created` events unless `DEWEY_TELEMETRY_FORWARD_BODIES=1` is also set. See [extension-telemetry.md](extension-telemetry.md) for the full privacy model.
+When set — and a license key is present at `~/.claude/dewey-license` (see [hosted-api.md](hosted-api.md)) — the `SessionStart` hook runs `~/.claude/dewey-telemetry.sh forward` in the background at the start of every Claude Code session. It sends the events after the last forwarded byte offset (`~/.claude/dewey-forward-offset`) in batches of at most 500 lines or 900 KB, advances the offset on a `200`, retries the same batch next time otherwise, and never truncates or rewrites the local log. Before sending, each batch is filtered through `~/.claude/dewey-telemetry.sh strip-bodies`, which removes the prose fields (`additions`, `user_intent`) from `extension_created` events unless `DEWEY_TELEMETRY_FORWARD_BODIES=1` is also set. See [extension-telemetry.md](extension-telemetry.md) for the full privacy model.
 
 This is intentionally simple — no SDK, no vendor dependency. Your endpoint is responsible for ingestion, deduplication, and storage.
 
@@ -65,12 +65,12 @@ This is intentionally simple — no SDK, no vendor dependency. Your endpoint is 
 Three layers, evaluated in order:
 
 1. **Global opt-out** — `DEWEY_TELEMETRY=0` suppresses everything; the log file isn't even created.
-2. **Per-plugin / per-skill opt-out** — `telemetry: false` in `plugin.json` or SKILL.md frontmatter suppresses all events for that scope at capture time.
+2. **Per-plugin / per-skill opt-out** — `metadata.telemetry: false` in `plugin.json` or `telemetry: false` in SKILL.md frontmatter suppresses all events for that scope at capture time.
 3. **Body-forwarding opt-in** — `DEWEY_TELEMETRY_FORWARD_BODIES=1` allows the user-authored prose in `extension_created` events to leave the machine. Off by default.
 
 Other notes:
 
 - No personally identifiable information is logged by default. Events contain skill names, paths, and (with body forwarding) user-authored extension content.
 - The log is local. It lives at `~/.claude/dewey-analytics.log` and is only readable by you.
-- Forwarding requires the explicit `DEWEY_TELEMETRY_ENDPOINT` env var.
+- Forwarding requires the explicit `DEWEY_TELEMETRY_ENDPOINT` env var *and* a license key; without both, `forward` exits silently.
 - To delete all local analytics: `rm ~/.claude/dewey-analytics.log`

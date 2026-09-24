@@ -7,6 +7,12 @@ triggers:
   - "what are the big trends shaping B2B fintech in 2026"
   - "what's the state of the CDP industry post-consolidation"
   - "pull together what's happening with usage-based pricing as a trend"
+when_to_use: >-
+  Example requests: "what's happening in the vertical SaaS market right now";
+  "how is AI changing workforce development technology";
+  "what are the big trends shaping B2B fintech in 2026";
+  "what's the state of the CDP industry post-consolidation";
+  "pull together what's happening with usage-based pricing as a trend".
 ---
 
 # Industry & Trend Research Type

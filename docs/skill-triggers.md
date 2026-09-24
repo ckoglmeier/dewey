@@ -20,6 +20,25 @@ triggers:
 
 Each trigger is a quoted string on its own line under `triggers:`. Keep every trigger at or under 200 characters.
 
+## `when_to_use` — what the router actually reads
+
+`triggers:` is a Dewey convention; no runtime reads it. Claude Code decides whether to invoke a skill from its `description` and its official `when_to_use` field (combined, truncated at 1,536 characters). So the triggers are mirrored into `when_to_use` as a folded block:
+
+```yaml
+when_to_use: >-
+  Example requests: "do a competitive analysis of the sales engagement software landscape";
+  "who are we up against in mid-market HRIS";
+  "how does Gong compare to our product in competitive deals".
+```
+
+Don't write this by hand. After editing `triggers:`, run:
+
+```bash
+python3 scripts/sync-when-to-use.py
+```
+
+It rewrites `when_to_use` in every in-tree skill and is idempotent; `--check` reports drift without writing. Codex ignores both fields beyond `description`, so nothing changes there.
+
 ## Writing good triggers
 
 A trigger should read like something a real user would type, not like a paraphrase of the description. Vary phrasing across your trigger set — different vocabulary, different levels of specificity:
@@ -40,6 +59,12 @@ Layer 15 (`bash tests/run.sh`) runs two checks against every in-tree SKILL.md:
 - Skill has no `triggers:` field at all
 - Any trigger is empty or longer than 200 characters
 - A trigger shares zero significant words with the skill's `description:` and `name:` fields (stop words, punctuation, and words under 3 characters are excluded before comparison — one overlap word is enough to pass)
+- A skill with triggers has no `when_to_use:`, or `when_to_use` does not contain every trigger verbatim
+- `description` + `when_to_use` exceed 1,536 characters combined
+
+**`scripts/sync-when-to-use.py --check` (hard failure)**
+
+- `when_to_use` differs from what the generator would write
 
 **`check_triggers.py` (warnings, printed to stderr, do not fail the suite)**
 

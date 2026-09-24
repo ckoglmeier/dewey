@@ -33,18 +33,18 @@ If `~/.claude/dewey/` does not exist, tell the user the install script hasn't ru
 
 ## Surface awareness
 
-Dewey skills declare which surfaces they support in `plugin.json` under `surfaces` (e.g. `["claude-code", "cowork", "codex", "chat"]`). When recommending or listing plugins, filter to those that include the **current surface**.
+Dewey skills declare which surfaces they support in `plugin.json` under `metadata.surfaces` (e.g. `["claude-code", "cowork", "codex", "chat"]`). When recommending or listing plugins, filter to those that include the **current surface**.
 
 Detect the current surface in this order:
 
 1. If `$DEWEY_SURFACE` is set in the environment, use that value.
 2. Otherwise, infer:
    - If `~/Library/Application Support/Claude/cowork-enabled-cli-ops.json` exists *and* `~/.claude/sessions/` shows a recent Cowork session → `cowork`
-   - If `~/.codex/` exists and `$CODEX_HOME` or `codex` is on PATH → could be `codex`
+   - If `${CODEX_HOME:-~/.codex}` exists or `codex` is on PATH → could be `codex`
    - Otherwise, default to `claude-code`
 3. If you can't tell with confidence, ask the user: *"Are you using Claude Code, Cowork, Codex, or claude.ai chat?"* Their answer is the surface.
 
-When filtering: a plugin missing the `surfaces` field is treated as `["claude-code"]` (the conservative default).
+When filtering: a plugin missing `metadata.surfaces` is treated as `["claude-code"]` (the conservative default).
 
 If a recommended-by-path plugin doesn't match the current surface, skip it and tell the user: *"`<plugin>` isn't compatible with `<surface>` — it requires tools that aren't available there."* Don't silently drop it.
 
@@ -66,7 +66,7 @@ Look at `$ARGUMENTS`. The first word (`$0`) is the subcommand. If empty, show th
 - `load` → §11 Load (load a canonical context bundle into the conversation on demand; `$1` = topic, optional)
 - `admin-setup` → tell the user to install and run the `dewey-admin-setup` skill: *"Setting Dewey up for your company? Install the `admin` plugin and run `/dewey-admin-setup`."*
 - `license` → §12 License (show status or activate a license key)
-- `schedule` → tell the user Dewey doesn't own scheduling. Use Claude Code's Routines (cloud) or Cowork's scheduled-tasks MCP (local) to schedule a Dewey skill. Point them at [docs/scheduling.md](https://github.com/ckoglmeier/dewey/blob/main/docs/scheduling.md). Don't try to schedule it yourself.
+- `schedule` → tell the user Dewey doesn't own scheduling. Use Claude Code's Routines (cloud), Cowork's scheduled-tasks MCP (local), or Codex's automations to schedule a Dewey skill. Point them at [docs/scheduling.md](https://github.com/ckoglmeier/dewey/blob/main/docs/scheduling.md). Don't try to schedule it yourself.
 - empty / anything else → show the menu below
 
 ### Menu (when no subcommand)
@@ -88,7 +88,7 @@ Look at `$ARGUMENTS`. The first word (`$0`) is the subcommand. If empty, show th
 >
 > Reply with `1`–`12`.
 >
-> *(Want to schedule a skill to run automatically? Dewey doesn't own scheduling — use Claude Code's Routines or Cowork's scheduled tasks. See [docs/scheduling.md](https://github.com/ckoglmeier/dewey/blob/main/docs/scheduling.md).)*
+> *(Want to schedule a skill to run automatically? Dewey doesn't own scheduling — use Claude Code's Routines, Cowork's scheduled tasks, or Codex automations. See [docs/scheduling.md](https://github.com/ckoglmeier/dewey/blob/main/docs/scheduling.md).)*
 
 If the user picks `11`, tell them: *"Setting Dewey up for your company? Install the `admin` plugin (`claude plugin install admin@dewey`) and run `/dewey-admin-setup`."*
 
@@ -104,7 +104,7 @@ Goal: figure out the user's team and role, then recommend the 3–5 most relevan
 2. **Ask** in one message: *"What team are you on, and what's your role?"* (Example: "Sales, AE.")
 3. **List available paths.** Read `~/.claude/dewey/paths/` and look for a path file matching their role. If `paths/sales-ae.md` exists for "Sales, AE", use that.
 4. **No matching path?** Tell them there's no curated path yet for their role, and offer to: (a) recommend based on the plugin descriptions in `marketplace.json` matched to their stated team, or (b) help their team lead create a path file (route to §4).
-5. **Path found?** Read the path file. It will list 3–5 plugins with one-line "why this matters." For each, read its `plugin.json` and check `surfaces`. Drop any whose `surfaces` doesn't include the current surface, and tell the user which ones were dropped and why. Present the remaining plugins as a numbered list with the *why* preserved verbatim.
+5. **Path found?** Read the path file. It will list 3–5 plugins with one-line "why this matters." For each, read its `plugin.json` and check `metadata.surfaces`. Drop any whose surfaces don't include the current surface, and tell the user which ones were dropped and why. Present the remaining plugins as a numbered list with the *why* preserved verbatim.
 6. **Ask for confirmation:** *"Want me to install these for you?"* If yes, route to §2 with the list pre-filled. If they want to pick a subset, let them say "1, 3" and only install those.
 
 6. **Emit analytics** after you present the recommendation (regardless of whether they say yes), via the telemetry helper:
@@ -124,8 +124,8 @@ Important: do not list every plugin in the marketplace. The whole point of the p
 Goal: install one or more plugins from the marketplace. Always confirm before running each install.
 
 1. **Determine the candidate plugin list.** If you arrived from §1 you already have it; otherwise read `~/.claude/dewey/.claude-plugin/marketplace.json` and present the catalog. Either way continue to step 2 — never skip the surface check on the assumption a list was pre-filtered.
-2. **Always apply the surface filter before confirming**, regardless of how the list was built. Detect the current surface (see "Surface awareness"), and for each candidate plugin read its `plugin.json` to check `surfaces`. Drop any plugin whose `surfaces` doesn't include the current surface, telling the user which were dropped and why: *"`<plugin>` not installable here — it doesn't run in `<surface>`."* Present the surviving plugins as a numbered list with descriptions and (if browsing) ask which to install. This filter is idempotent — re-running it on an already-filtered §1 list passes everything through — so running it twice is safe and running it zero times is the bug.
-3. **Resolve `requires-context:` dependencies before confirming.** For each plugin the user wants to install, read its skills' frontmatter and collect every `requires-context:` ID. For each ID, look up which plugin owns it by scanning `marketplace.json` and the plugin manifests under `~/.claude/dewey/plugins/`. Build the set of context-providing plugins that need to be installed. Subtract any that are already installed (`~/.claude/plugins/cache/<plugin>/` exists).
+2. **Always apply the surface filter before confirming**, regardless of how the list was built. Detect the current surface (see "Surface awareness"), and for each candidate plugin read its `plugin.json` to check `metadata.surfaces`. Drop any plugin whose surfaces don't include the current surface, telling the user which were dropped and why: *"`<plugin>` not installable here — it doesn't run in `<surface>`."* Present the surviving plugins as a numbered list with descriptions and (if browsing) ask which to install. This filter is idempotent — re-running it on an already-filtered §1 list passes everything through — so running it twice is safe and running it zero times is the bug.
+3. **Resolve `requires-context:` dependencies before confirming.** For each plugin the user wants to install, read its skills' frontmatter and collect every `requires-context:` ID. For each ID, look up which plugin owns it by scanning `marketplace.json` and the `metadata.context` entries in the plugin manifests under `~/.claude/dewey/plugins/`. Build the set of context-providing plugins that need to be installed. Subtract any that are already installed. A plugin is installed when `claude plugin list --json` lists `<plugin>@dewey` (older CLIs: `~/.claude/settings.json` has `"<plugin>@dewey": true` under `enabledPlugins`). Don't look in `~/.claude/plugins/cache/` — Dewey's marketplace is a local directory, so its plugins load in place from `~/.claude/dewey/plugins/` and never appear in the cache.
 
    - **If all required context plugins are already installed**: no extra step. Continue.
    - **If any are missing**: tell the user clearly, e.g. *"`competitive-analysis` requires context from the `brand` plugin, which isn't installed. Install `brand` too?"* Wait for an explicit yes/no.
@@ -141,7 +141,7 @@ Goal: install one or more plugins from the marketplace. Always confirm before ru
    ```
 
    Run each as a separate Bash call so the user sees output for each one. If a plugin fails to install, stop and surface the error — don't silently continue.
-6. **Confirm success** by listing what was installed and one example slash command per plugin. Encourage the user to try one immediately so they get a "wow" before the conversation ends. Per the Ramp finding, the moment a non-technical user runs their first installed skill on real data is when Dewey becomes real to them.
+6. **Confirm success** by listing what was installed and one example slash command per plugin. Tell the user to run `/reload-plugins` (or open a new session) so the new skills are available right away — Claude Code loads plugin skills at startup or on reload. Encourage the user to try one immediately so they get a "wow" before the conversation ends. Per the Ramp finding, the moment a non-technical user runs their first installed skill on real data is when Dewey becomes real to them.
 
 7. **Emit analytics** after each successful install, via the telemetry helper:
 
@@ -157,7 +157,7 @@ Goal: install one or more plugins from the marketplace. Always confirm before ru
 
 Goal: let the user customize an existing Dewey skill *without forking it*. Generates a local extension SKILL.md that composes the parent by reference.
 
-1. **Identify the parent skill.** If `$1` is set (e.g., `/dewey extend competitive-analysis`), that's the parent. Otherwise ask: *"Which skill do you want to extend?"* and list installed skills they could pick from (read from `~/.claude/plugins/cache/` or list installed plugins via `claude plugin list` if available).
+1. **Identify the parent skill.** If `$1` is set (e.g., `/dewey extend competitive-analysis`), that's the parent. Otherwise ask: *"Which skill do you want to extend?"* and list installed skills they could pick from (run `claude plugin list --json`, keep the entries ending in `@dewey`, and read their skills from `~/.claude/dewey/plugins/<plugin>/skills/`).
 2. **Read the parent skill** from `~/.claude/dewey/plugins/<plugin>/skills/<parent>/SKILL.md`. **Note the plugin name** — you'll need it for the telemetry emission in step 7. If you can't find the parent under `~/.claude/dewey/plugins/`, tell the user the parent isn't a Dewey marketplace skill and stop (extending non-Dewey skills is fine but skip telemetry).
 3. **Show them the parent's description and ask:** *"What would you like to add or change when this skill runs?"* **Save their exact one-line answer** as `USER_INTENT` for the telemetry emission.
 4. **Draft the extension SKILL.md** in this format:
@@ -253,13 +253,13 @@ Goal: help a team lead draft a path file (`paths/<role>.md`) and open a PR again
 Goal: tell the user who maintains each plugin so they know who to ping with questions, bug reports, or feature requests.
 
 1. Read every `~/.claude/dewey/plugins/*/.claude-plugin/plugin.json`.
-2. For each one, pull `name`, `description`, and `owner` (which has shape `{"name": ..., "contact": ...}`).
+2. For each one, pull `name`, `description`, and `author` (which has shape `{"name": ..., "contact": ...}` — Claude Code's schema calls this field `author`; Dewey uses it as the owner).
 3. Output a table grouped by owner:
 
    ```
    # Dewey plugin owners
 
-   ## <owner name> (<contact>)
+   ## <author name> (<contact>)
    - <plugin-name> — <one-line description>
    - <plugin-name> — <one-line description>
 
@@ -267,7 +267,7 @@ Goal: tell the user who maintains each plugin so they know who to ping with ques
    - ...
    ```
 
-4. If a plugin is missing the `owner` field, list it under a `## Unowned` heading and tell the user to flag it to the Dewey maintainer — every central plugin should have an owner. The test suite enforces this, so an unowned plugin in production is a real bug.
+4. If a plugin is missing the `author` field, list it under a `## Unowned` heading and tell the user to flag it to the Dewey maintainer — every central plugin should have an owner. The test suite enforces this, so an unowned plugin in production is a real bug.
 5. Also point out the `CODEOWNERS` file at the root of the Dewey repo: GitHub uses it to auto-request reviews on PRs that touch each plugin. Source-controlled ownership, no separate web UI.
 
 This subcommand is read-only — no confirm-before-action block needed.
@@ -294,7 +294,7 @@ Goal: pull the latest version of the Dewey Guide and reference cache. The refere
 
    Surface the output as it runs.
 3. After it finishes, also delete `$HOME/.claude/dewey-last-refresh` so the next session re-pulls the cache regardless of the 24h marker.
-4. Tell the user to start a new Claude Code session if they want the updated Guide to load — Claude reads skills at session start.
+4. Tell the user the updated Guide loads without a restart — Claude Code watches `~/.claude/skills/` and picks up the change within the current session. Refreshed plugins are applied on the next session or `/reload-plugins`.
 
 If the installer fails (no network, permission error), surface the error and stop. Do not silently retry.
 
@@ -308,8 +308,9 @@ Dewey does **not** own scheduling. If the user asks `/dewey schedule`, tell them
 >
 > - **Claude Code**: Routines (cloud-executed cron — runs whether your laptop is on or off). Run `/schedule` to set one up.
 > - **Cowork**: scheduled-tasks (local-machine-bound). Use Cowork's task picker to schedule a Dewey skill by name.
+> - **Codex**: automations (`~/.codex/automations/`, managed from the Codex app). Point one at `$<skill-name>`.
 >
-> Point the host's scheduler at the skill: `/<skill-name>`. The skill will load its own context and run.
+> Point the host's scheduler at the skill: `/<skill-name>` (Claude Code, Cowork) or `$<skill-name>` (Codex). The skill will load its own context and run.
 >
 > See [docs/scheduling.md](https://github.com/ckoglmeier/dewey/blob/main/docs/scheduling.md) for the full picture, including why Dewey may eventually own *org-managed* scheduling (centrally-built newsletters, team-wide weekly digests) in the future hosted version.
 
@@ -393,18 +394,20 @@ This subcommand is read-only — no confirm-before-action block needed.
 
 ## §9 Sync
 
-Goal: keep Dewey skills available in OpenAI Codex so users who work in both agents share the same skill library. SKILL.md format is identical between Claude Code and Codex — the sync is a directory mirror, no translation needed.
+Goal: make Dewey's plugins and the Guide available in OpenAI Codex so users who work in both agents share the same library.
 
-This subcommand has three modes. Look at `$1` (the word after `sync`):
+How it works (Dewey 2.3+): Codex 0.149+ has a native plugin marketplace and reads Dewey's manifests directly. The sync helper registers the Dewey cache as a Codex marketplace and installs every in-tree plugin with `codex plugin add <plugin>@dewey`; the Guide is linked as `~/.agents/skills/dewey`. On older Codex builds without `codex plugin`, the helper falls back to symlinking each skill *directory* into `~/.agents/skills/` (Codex follows symlinked directories but never discovers symlinked `SKILL.md` files). Either way, Codex invokes skills with `$` — type `$` and pick from the list (e.g. `$meeting-prep`); `/` is reserved for Codex's own commands. Codex detects new skills automatically, no restart needed. The background refresh re-runs the sync, so canonical updates reach Codex within a day.
+
+This subcommand has two modes. Look at `$1` (the word after `sync`):
 - `status` (or no argument) → show current sync state
-- `force` → re-sync all skills now
-- `agents-md` → generate an AGENTS.md in the current working directory for Codex project context
+- `force` → sync now
+- `agents-md` → tell the user this was removed in Dewey 2.3: Codex builds its own skill catalog, so an AGENTS.md skill list is redundant (and the old one used the wrong `/name` syntax). Don't write one.
 
 ### Status (default)
 
 1. **Check Codex is installed:**
    ```bash
-   bash -c 'test -d ~/.codex || command -v codex >/dev/null 2>&1 && echo detected || echo not-detected'
+   bash -c 'test -d "${CODEX_HOME:-$HOME/.codex}" || command -v codex >/dev/null 2>&1 && echo detected || echo not-detected'
    ```
    If not detected, tell the user: *"Codex isn't installed or `~/.codex/` doesn't exist. Install Codex first: https://github.com/openai/codex"*
 
@@ -413,14 +416,14 @@ This subcommand has three modes. Look at `$1` (the word after `sync`):
    bash ~/.claude/dewey-sync-codex.sh --status
    ```
 
-3. **Present the output** and explain: *"Skills marked ✓ are already in Codex. Skills marked ✗ aren't synced yet — say 'sync now' to mirror them."*
+3. **Present the output** and explain: *"Plugins marked ✓ are installed in Codex. Plugins marked ✗ aren't yet — say 'sync now' to install them."*
 
 4. **If they say sync now** → proceed to Force Sync below.
 
 ### Force sync
 
 1. **Show the plan:**
-   > **About to do:** Mirror all Dewey skills to `~/.codex/skills/` as symlinks. Skills already there will be updated; non-Dewey files won't be touched.
+   > **About to do:** Register `~/.claude/dewey` as a Codex plugin marketplace and install every Dewey plugin into Codex (on older Codex builds: link each skill into `~/.agents/skills/`). Plugins already there are refreshed; anything not from Dewey is left alone.
    >
    > Say **yes** to proceed.
 
@@ -429,30 +432,17 @@ This subcommand has three modes. Look at `$1` (the word after `sync`):
    bash ~/.claude/dewey-sync-codex.sh
    ```
 
-3. **Confirm** by listing what was synced. Tell the user: *"Codex will pick these up on next session start — no Codex restart needed if it's already running."*
+3. **Confirm** by listing what was synced. Tell the user: *"In Codex, type `$` and pick a skill — for example `$meeting-prep`. Codex picks up new skills automatically."*
 
 4. **Emit analytics:**
    ```bash
    bash -c 'if [ "${DEWEY_TELEMETRY:-1}" != "0" ]; then printf "{\"ts\":\"%s\",\"event\":\"codex_sync\",\"mode\":\"force\"}\n" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> ~/.claude/dewey-analytics.log 2>/dev/null; fi'
    ```
 
-### Generate AGENTS.md
-
-If the user asks for `agents-md` or says "generate an AGENTS.md":
-
-1. **Confirm target directory** — default is their current working directory. Ask: *"Write AGENTS.md to `<cwd>`?"*
-
-2. **On approval:**
-   ```bash
-   bash ~/.claude/dewey-sync-codex.sh --agents-md .
-   ```
-
-3. **Show them** what was written. Explain: *"Commit this AGENTS.md to your repo so Codex sees the Dewey skill list automatically when it works in that project."*
-
 ### If Codex isn't detected
 
 Tell the user:
-> Codex isn't installed — `~/.codex/` doesn't exist and `codex` isn't on PATH. Once you install Codex, re-run the Dewey installer (`/dewey update`) and it will detect Codex automatically and mirror skills. Or run `/dewey sync force` at any time.
+> Codex isn't installed — `~/.codex/` doesn't exist and `codex` isn't on PATH. Once you install Codex, re-run the Dewey installer (`/dewey update`) and it will detect Codex automatically. Or run `/dewey sync force` at any time.
 
 ---
 
@@ -507,7 +497,7 @@ Goal: turn a drafted change into a GitHub PR against the canonical Dewey repo. T
 2. Ask: bundle name (kebab-case), title, one-line description, and the markdown body. The body should be reference material, not procedure (see [docs/canonical-context-design.md](https://github.com/ckoglmeier/dewey/blob/main/docs/canonical-context-design.md) — "Content safety").
 3. **Draft two changes**:
    - The new context file at `plugins/<plugin>/context/<bundle>/<bundle>.md`.
-   - An update to `plugins/<plugin>/.claude-plugin/plugin.json` adding an entry under `context: [...]` with `id: <plugin>/<bundle>`, `path`, `title`, `description`. Show both as a unified diff.
+   - An update to `plugins/<plugin>/.claude-plugin/plugin.json` adding an entry under `metadata.context: [...]` with `id: <plugin>/<bundle>`, `path`, `title`, `description`. Show both as a unified diff.
 4. Show the draft. Ask for explicit approval.
 5. **Target paths:** two files in this PR. Run the helper twice in sequence (same branch). The propose helper supports staging multiple files on one branch — run `propose` for each, with `--branch` reused.
 
@@ -568,7 +558,7 @@ The user invokes this with `/dewey load [topic]`. The topic is optional.
 
 ### Step-by-step
 
-1. **Discover available bundles.** Walk `~/.claude/dewey/plugins/*/.claude-plugin/plugin.json`. For each, collect the `context: []` entries' `id`, `title`, and `description`. Also resolve each entry's on-disk `path` so you know what file to read.
+1. **Discover available bundles.** Walk `~/.claude/dewey/plugins/*/.claude-plugin/plugin.json`. For each, collect the `metadata.context` entries' `id`, `title`, and `description`. Also resolve each entry's on-disk `path` so you know what file to read.
 
 2. **Match `$1` against the discovered bundles.**
    - **No `$1`** (user just typed `/dewey load`): show the full list grouped by plugin, e.g.:

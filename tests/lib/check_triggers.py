@@ -13,6 +13,12 @@ Rules:
   FAIL  — a skill with user-invocable: false has a triggers: field
           (orchestrator-internal skills must not be user-routable);
           such skills are otherwise exempt from the triggers requirement
+  FAIL  — a skill with triggers has no when_to_use: field, or its
+          when_to_use does not contain every trigger verbatim
+          (when_to_use is the official field the router reads — see
+          scripts/sync-when-to-use.py, which generates it from triggers)
+  FAIL  — description + when_to_use exceed 1,536 characters combined
+          (Claude Code truncates the pair at that length in the skill listing)
 
 Significant words: lowercase, punctuation stripped, stop words and
 words < 3 chars removed.
@@ -32,6 +38,7 @@ STOP_WORDS = {
 }
 
 MAX_TRIGGER_LEN = 200
+MAX_ROUTING_TEXT = 1536  # description + when_to_use, per Claude Code docs
 
 
 def significant_words(text: str) -> set[str]:
@@ -63,7 +70,7 @@ def parse_scalar_field(fm_lines: list[str], key: str) -> str | None:
         m = re.match(r"^" + re.escape(key) + r"\s*:\s*(.*)", line)
         if m:
             rest = m.group(1).strip()
-            if rest in (">", "|", ""):
+            if rest in (">", "|", ">-", "|-", ">+", "|+", ""):
                 in_block = True
                 continue
             return rest.strip("\"'")
@@ -119,6 +126,7 @@ def check_skill(skill_md: str) -> tuple[list[str], list[str]]:
 
     name_val = parse_scalar_field(fm_lines, "name") or ""
     desc_val = parse_scalar_field(fm_lines, "description") or ""
+    when_val = parse_scalar_field(fm_lines, "when_to_use")
     invocable = parse_scalar_field(fm_lines, "user-invocable")
     triggers = parse_triggers(fm_lines)
 
@@ -138,6 +146,26 @@ def check_skill(skill_md: str) -> tuple[list[str], list[str]]:
 
     if len(triggers) < 3:
         warnings.append(f"WARN: {skill_md}: only {len(triggers)} trigger(s) — recommend at least 3")
+
+    # when_to_use must mirror the triggers (it is what the router actually reads)
+    if when_val is None:
+        failures.append(
+            f"{skill_md}: has triggers but no when_to_use: field — "
+            f"run python3 scripts/sync-when-to-use.py"
+        )
+    else:
+        for trigger in triggers:
+            if trigger.strip() and trigger.strip() not in when_val:
+                failures.append(
+                    f"{skill_md}: when_to_use does not contain trigger {trigger.strip()[:60]!r} — "
+                    f"run python3 scripts/sync-when-to-use.py"
+                )
+        combined = len(desc_val) + len(when_val)
+        if combined > MAX_ROUTING_TEXT:
+            failures.append(
+                f"{skill_md}: description + when_to_use is {combined} chars "
+                f"(max {MAX_ROUTING_TEXT}); trim triggers or description"
+            )
 
     # Significant words from description + name (name tokens split on hyphens)
     name_tokens = name_val.replace("-", " ")

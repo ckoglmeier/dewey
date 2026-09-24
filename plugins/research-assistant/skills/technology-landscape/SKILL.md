@@ -7,6 +7,12 @@ triggers:
   - "we need a product analytics capability — what are our options"
   - "evaluate the top MLOps platforms for a mid-market engineering team"
   - "what should we use for workflow automation and how mature are the vendors"
+when_to_use: >-
+  Example requests: "map the customer data platform landscape for us";
+  "what tools exist for data observability and how do they compare";
+  "we need a product analytics capability — what are our options";
+  "evaluate the top MLOps platforms for a mid-market engineering team";
+  "what should we use for workflow automation and how mature are the vendors".
 ---
 
 # Technology Landscape Research Type

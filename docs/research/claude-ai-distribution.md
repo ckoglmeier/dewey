@@ -4,6 +4,8 @@
 **Verified against:** Anthropic public docs, Claude API beta `skills-2025-10-02`, claude.ai web UI as documented
 **Tracked in CLAUDE.md as todo #2 (Strategic / design)**
 
+> **Update 2026-09-24.** Three things changed since this was written: (1) the Skills API is GA — `client.skills.*`, no `skills-2025-10-02` beta header (the curl below is otherwise unchanged); (2) skills and plugins enabled on a claude.ai account now sync *down* into Claude Code and Cowork (`~/.claude/plugins/synced/`, Claude Code ≥ 2.1.273, settings `syncClaudeAiSkills` / `syncClaudeAiPlugins`), so the "no cross-surface sync" wall is one-directional now — an org that provisions skills in claude.ai reaches Code and Cowork without Dewey; (3) anthropics/claude-code#28729 is still open with no maintainer response, so the recommendation below (wait, build nothing speculative) stands. For Code/Cowork specifically, enterprise admins can already allowlist the Dewey marketplace via managed settings (`strictKnownMarketplaces`, `pluginSuggestionMarketplaces`).
+
 ## Summary
 
 Anthropic offers four distinct distribution channels that touch claude.ai. Each has different mechanics, scope, and admin model. **None of them today supports the automated "push Dewey's catalog into a customer org's claude.ai" workflow Dewey needs**, but the canonical Anthropic feature request that would unlock it (linking a Git repo as the org skill source) is **open and acknowledged** — Dewey slots in directly when it ships.

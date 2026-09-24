@@ -1,15 +1,17 @@
 {
   "name": "exec-feedback",
-  "description": "Template for delivering first-pass document feedback in any executive's voice \u2014 configurable for any leader",
+  "description": "Template for delivering first-pass document feedback in any executive's voice — configurable for any leader",
   "author": {
     "name": "Chandler Koglmeier",
     "contact": "@ck"
   },
   "version": "0.1.0",
-  "surfaces": [
-    "claude-code",
-    "cowork",
-    "codex",
-    "chat"
-  ]
+  "metadata": {
+    "surfaces": [
+      "claude-code",
+      "cowork",
+      "codex",
+      "chat"
+    ]
+  }
 }

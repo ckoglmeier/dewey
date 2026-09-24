@@ -7,6 +7,12 @@ triggers:
   - "partnership landscape for the data infrastructure market"
   - "where does power sit in the healthcare data ecosystem and who should we be talking to"
   - "map the value chain for construction tech — players, relationships, and where leverage sits"
+when_to_use: >-
+  Example requests: "map the ecosystem around the Salesforce AppExchange";
+  "who are the key players we should know in the HR tech space";
+  "partnership landscape for the data infrastructure market";
+  "where does power sit in the healthcare data ecosystem and who should we be talking to";
+  "map the value chain for construction tech — players, relationships, and where leverage sits".
 ---
 
 # Ecosystem Map Research Type

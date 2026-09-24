@@ -7,6 +7,12 @@ triggers:
   - "how would a buyer react to this outbound message?"
   - "review this copy from a buyer's perspective"
   - "run the persona council on this GTM campaign"
+when_to_use: >-
+  Example requests: "persona council: how would our buyers react to this pricing page?";
+  "pressure-test this pitch against our buyer personas";
+  "how would a buyer react to this outbound message?";
+  "review this copy from a buyer's perspective";
+  "run the persona council on this GTM campaign".
 ---
 
 # BUYER PERSONA COUNCIL
