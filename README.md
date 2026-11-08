@@ -1,5 +1,7 @@
 # Dewey
 
+> **Retired.** Mostly, this problem has been solved by various companies, including the frontier labs. As a result, I'm retiring this.
+
 **The canonical record for your team's skills and context — across Claude Code, Cowork, and OpenAI Codex.**
 
 Like the Dewey Decimal System for shared agent capabilities: one place to file what works, organized so anyone on the team can find what they need and put what they discover back. Dewey distributes two things teams share with their agents — **skills** (procedures: how to do something) and **canonical context** (reference content: battlecards, brand voice, ICP definitions, strategy docs). Both are authored once in standard markdown and run in any of the three agents. Cowork shares Claude Code's `~/.claude/` directory — same install, no extra step. When Codex is also installed, Dewey registers itself as a native Codex plugin marketplace (older Codex builds get skill symlinks) — see [docs/codex-sync.md](docs/codex-sync.md).
